@@ -44,6 +44,37 @@ from models.rbac import (
     DEFAULT_ROLES,
     expand_wildcard_permissions
 )
+from models.subscription import (
+    SubscriptionPlan,
+    Subscription,
+    Payment,
+    Invoice,
+    UsageRecord,
+    SubscriptionTier,
+    SubscriptionStatus,
+    PaymentStatus,
+    BillingInterval,
+    DEFAULT_PLANS
+)
+from models.team import (
+    Team,
+    TeamMember,
+    TeamInvitation,
+    TeamProject,
+    TeamActivity,
+    TeamRole,
+    InvitationStatus,
+    TeamActivityType
+)
+from models.sso import (
+    SSOConfiguration,
+    SSOConnection,
+    SSOState,
+    SAMLAssertion,
+    SSOProvider,
+    SSOConnectionStatus,
+    OAUTH2_PROVIDERS
+)
 
 __all__ = [
     # User
@@ -101,5 +132,33 @@ __all__ = [
     "user_roles",
     "DEFAULT_PERMISSIONS",
     "DEFAULT_ROLES",
-    "expand_wildcard_permissions"
+    "expand_wildcard_permissions",
+    # Subscription
+    "SubscriptionPlan",
+    "Subscription",
+    "Payment",
+    "Invoice",
+    "UsageRecord",
+    "SubscriptionTier",
+    "SubscriptionStatus",
+    "PaymentStatus",
+    "BillingInterval",
+    "DEFAULT_PLANS",
+    # Team
+    "Team",
+    "TeamMember",
+    "TeamInvitation",
+    "TeamProject",
+    "TeamActivity",
+    "TeamRole",
+    "InvitationStatus",
+    "TeamActivityType",
+    # SSO
+    "SSOConfiguration",
+    "SSOConnection",
+    "SSOState",
+    "SAMLAssertion",
+    "SSOProvider",
+    "SSOConnectionStatus",
+    "OAUTH2_PROVIDERS"
 ]

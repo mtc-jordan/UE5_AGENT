@@ -29,6 +29,7 @@ class User(Base):
     plugins = relationship("Plugin", back_populates="author", cascade="all, delete-orphan")
     installed_plugins = relationship("PluginInstallation", back_populates="user", cascade="all, delete-orphan")
     comparisons = relationship("ComparisonSession", back_populates="user", cascade="all, delete-orphan")
+    subscription = relationship("Subscription", back_populates="user", uselist=False, cascade="all, delete-orphan")
     
     # RBAC Relationships
     roles = relationship(

@@ -15,6 +15,8 @@ import Plugins from './pages/Plugins'
 import PluginEditor from './pages/PluginEditor'
 import ModelComparison from './pages/ModelComparison'
 import AdminRoles from './pages/AdminRoles'
+import Pricing from './pages/Pricing'
+import SubscriptionSettings from './pages/SubscriptionSettings'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -78,6 +80,8 @@ function App() {
           <Route path="compare" element={<ModelComparison />} />
           <Route path="ue5" element={<UE5Connection />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="settings/subscription" element={<SubscriptionSettings />} />
+          <Route path="pricing" element={<Pricing />} />
           <Route path="admin/roles" element={<AdminRoles />} />
         </Route>
       </Routes>

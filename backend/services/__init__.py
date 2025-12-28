@@ -51,6 +51,14 @@ from services.rbac import (
     PermissionCache,
     rbac_service
 )
+from services.subscription import (
+    SubscriptionService,
+    subscription_service
+)
+from services.stripe_service import (
+    StripeService,
+    stripe_service
+)
 
 __all__ = [
     # Auth
@@ -108,5 +116,10 @@ __all__ = [
     # RBAC
     "RBACService",
     "PermissionCache",
-    "rbac_service"
+    "rbac_service",
+    # Subscription
+    "SubscriptionService",
+    "subscription_service",
+    "StripeService",
+    "stripe_service"
 ]

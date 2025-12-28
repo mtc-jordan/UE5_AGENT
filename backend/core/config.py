@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: Optional[str] = Field(default=None)
     GOOGLE_API_KEY: Optional[str] = Field(default=None)  # Google Gemini API Key
     
+    # Stripe Payment Integration
+    STRIPE_SECRET_KEY: Optional[str] = Field(default=None)
+    STRIPE_PUBLISHABLE_KEY: Optional[str] = Field(default=None)
+    STRIPE_WEBHOOK_SECRET: Optional[str] = Field(default=None)
+    
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000", "*"]
     
@@ -32,6 +37,10 @@ class Settings(BaseSettings):
     @property
     def JWT_SECRET(self) -> str:
         return self.UE5_JWT_SECRET
+    
+    @property
+    def is_stripe_configured(self) -> bool:
+        return bool(self.STRIPE_SECRET_KEY)
     
     class Config:
         env_file = ".env"

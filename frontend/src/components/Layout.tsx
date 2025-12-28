@@ -30,6 +30,7 @@ import {
   Package,
   Scale,
   Shield,
+  CreditCard,
 } from 'lucide-react'
 import { cn, truncate } from '../lib/utils'
 
@@ -241,6 +242,7 @@ export default function Layout() {
     { path: '/plugins', icon: Package, label: 'Plugins' },
     { path: '/ue5', icon: Plug, label: 'UE Connection' },
     { path: '/admin/roles', icon: Shield, label: 'Admin' },
+    { path: '/pricing', icon: CreditCard, label: 'Pricing' },
     { path: '/settings', icon: Settings, label: 'Settings' },
   ]
 
