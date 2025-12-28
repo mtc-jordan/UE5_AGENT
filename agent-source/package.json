@@ -1,6 +1,6 @@
 {
   "name": "ue5-ai-studio-agent",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Local agent for connecting Unreal Engine to UE5 AI Studio cloud platform",
   "main": "src/main.js",
   "author": {

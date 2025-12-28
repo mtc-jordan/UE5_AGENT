@@ -355,7 +355,7 @@ function AgentInstallationGuide() {
         <div className="space-y-4">
           <Step number={1} title="Download and Extract">
             <p>Download the ZIP file and extract it:</p>
-            <CodeBlock code="unzip UE5-AI-Studio-Agent-1.1.0.zip -d ~/Applications/UE5-AI-Studio-Agent" />
+            <CodeBlock code="unzip UE5-AI-Studio-Agent-1.2.0.zip -d ~/Applications/UE5-AI-Studio-Agent" />
           </Step>
           <Step number={2} title="Install Dependencies">
             <p>Open Terminal and navigate to the folder:</p>
@@ -373,8 +373,8 @@ npm install`} />
       <CollapsibleSection title="Linux Installation" icon={Terminal}>
         <div className="space-y-4">
           <Step number={1} title="Download and Extract">
-            <CodeBlock code={`wget https://your-platform/downloads/UE5-AI-Studio-Agent-1.1.0.zip
-unzip UE5-AI-Studio-Agent-1.1.0.zip -d ~/ue5-ai-agent
+            <CodeBlock code={`wget https://your-platform/downloads/UE5-AI-Studio-Agent-1.2.0.zip
+unzip UE5-AI-Studio-Agent-1.2.0.zip -d ~/ue5-ai-agent
 cd ~/ue5-ai-agent`} />
           </Step>
           <Step number={2} title="Install and Run">

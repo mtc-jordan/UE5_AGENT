@@ -13,13 +13,18 @@ DOWNLOADS_DIR = Path(__file__).parent.parent.parent / "downloads"
 
 # Available downloads with metadata
 DOWNLOADS = {
-    "UE5-AI-Studio-Agent-1.1.0.zip": {
+    "UE5-AI-Studio-Agent-1.2.0.zip": {
         "name": "UE5 AI Studio Agent",
-        "version": "1.1.0",
-        "description": "Desktop application that bridges the web platform to your local Unreal Engine 5 editor",
-        "size": "58 KB",
+        "version": "1.2.0",
+        "description": "Desktop application that bridges the web platform to your local Unreal Engine 5 editor. Now with improved screenshot capture support.",
+        "size": "59 KB",
         "category": "agent",
         "platform": ["Windows", "macOS", "Linux"],
+        "changelog": [
+            "Fixed blank screenshot issue - agent now reads screenshots locally",
+            "Improved viewport preview integration",
+            "Better error handling for screenshot capture"
+        ]
     },
     "UE5MCPBridge-v3.3.1-complete.zip": {
         "name": "UE5 MCP Bridge Plugin",
@@ -90,12 +95,12 @@ async def get_download_info(filename: str):
 @router.get("/check/agent")
 async def check_agent_available():
     """Check if the Desktop Agent is available for download."""
-    filename = "UE5-AI-Studio-Agent-1.1.0.zip"
+    filename = "UE5-AI-Studio-Agent-1.2.0.zip"
     file_path = DOWNLOADS_DIR / filename
     return {
         "available": file_path.exists(),
         "filename": filename,
-        "version": "1.1.0",
+        "version": "1.2.0",
     }
 
 
