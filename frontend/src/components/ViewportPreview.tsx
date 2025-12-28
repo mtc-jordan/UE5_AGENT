@@ -4,6 +4,7 @@
  * Real-time viewport preview with:
  * - Screenshot thumbnails with delete option
  * - Full-size image modal with pan and zoom
+ * - Screenshot annotation editor
  * - Before/After comparison slider
  * - Auto-capture toggle
  * - Enhanced UX with click-outside-to-close
@@ -24,11 +25,12 @@ import {
   Eye,
   EyeOff,
   ArrowLeftRight,
-  Minimize2,
   Trash2,
   Move,
-  RotateCcw
+  RotateCcw,
+  Pencil
 } from 'lucide-react';
+import ScreenshotAnnotator from './ScreenshotAnnotator';
 
 // Types
 interface Screenshot {
@@ -63,9 +65,10 @@ interface ViewportPreviewProps {
   autoCapture: boolean;
   onToggleAutoCapture: (enabled: boolean) => void;
   onDeleteScreenshot?: (id: string) => void;
+  onSaveAnnotated?: (screenshotId: string, annotatedData: string) => void;
 }
 
-// Image Modal Component with pan and zoom
+// Image Modal Component with pan, zoom, and edit
 const ImageModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
@@ -75,7 +78,8 @@ const ImageModal: React.FC<{
   hasPrevious?: boolean;
   hasNext?: boolean;
   onDelete?: () => void;
-}> = ({ isOpen, onClose, screenshot, onPrevious, onNext, hasPrevious, hasNext, onDelete }) => {
+  onEdit?: () => void;
+}> = ({ isOpen, onClose, screenshot, onPrevious, onNext, hasPrevious, hasNext, onDelete, onEdit }) => {
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -112,7 +116,7 @@ const ImageModal: React.FC<{
   
   // Mouse down - start dragging
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return; // Only left click
+    if (e.button !== 0) return;
     setIsDragging(true);
     setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
   };
@@ -179,6 +183,10 @@ const ImageModal: React.FC<{
         case '0':
           handleReset();
           break;
+        case 'e':
+        case 'E':
+          if (onEdit) onEdit();
+          break;
         case 'Delete':
         case 'Backspace':
           if (onDelete && !showDeleteConfirm) {
@@ -190,7 +198,7 @@ const ImageModal: React.FC<{
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, hasPrevious, hasNext, onPrevious, onNext, handleClose, showDeleteConfirm, onDelete]);
+  }, [isOpen, hasPrevious, hasNext, onPrevious, onNext, handleClose, showDeleteConfirm, onDelete, onEdit]);
   
   // Click outside to close
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -315,6 +323,16 @@ const ImageModal: React.FC<{
         
         {/* Right side controls */}
         <div className="flex items-center gap-2">
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 transition-all hover:scale-105"
+              title="Edit / Annotate (E)"
+            >
+              <Pencil className="w-5 h-5" />
+              <span className="text-sm font-medium">Annotate</span>
+            </button>
+          )}
           <button
             onClick={handleDownload}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all hover:scale-105"
@@ -420,8 +438,7 @@ const ImageModal: React.FC<{
           <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/60">Esc</kbd> close • 
           <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/60 ml-1">←</kbd> <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/60">→</kbd> navigate • 
           <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/60 ml-1">+</kbd> <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/60">-</kbd> zoom •
-          <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/60 ml-1">Scroll</kbd> zoom •
-          <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/60 ml-1">Drag</kbd> pan •
+          <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/60 ml-1">E</kbd> annotate •
           <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/60 ml-1">Del</kbd> delete
         </div>
       </div>
@@ -593,33 +610,37 @@ const BeforeAfterSlider: React.FC<{
   );
 };
 
-// Screenshot Thumbnail Component with delete button
+// Screenshot Thumbnail Component with delete and edit buttons
 const ScreenshotThumbnail: React.FC<{
   screenshot: Screenshot;
   onClick: () => void;
   onDelete?: () => void;
+  onEdit?: () => void;
   isSelected?: boolean;
-}> = ({ screenshot, onClick, onDelete, isSelected }) => {
+}> = ({ screenshot, onClick, onDelete, onEdit, isSelected }) => {
   const imageUrl = screenshot.base64_data 
     ? `data:image/png;base64,${screenshot.base64_data}`
     : screenshot.file_path;
   
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [showDeleteBtn, setShowDeleteBtn] = useState(false);
+  const [showButtons, setShowButtons] = useState(false);
   
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (onDelete) {
-      onDelete();
-    }
+    if (onDelete) onDelete();
+  };
+  
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onEdit) onEdit();
   };
   
   return (
     <div
       onClick={onClick}
-      onMouseEnter={() => setShowDeleteBtn(true)}
-      onMouseLeave={() => setShowDeleteBtn(false)}
+      onMouseEnter={() => setShowButtons(true)}
+      onMouseLeave={() => setShowButtons(false)}
       className={`
         relative group cursor-pointer rounded-xl overflow-hidden border-2 transition-all duration-200
         hover:scale-105 hover:shadow-lg hover:shadow-purple-500/20
@@ -646,15 +667,28 @@ const ScreenshotThumbnail: React.FC<{
         />
       )}
       
-      {/* Delete button on hover */}
-      {onDelete && showDeleteBtn && (
-        <button
-          onClick={handleDelete}
-          className="absolute top-1.5 right-1.5 p-1.5 bg-red-500/90 hover:bg-red-600 rounded-lg text-white transition-all z-10 shadow-lg"
-          title="Delete screenshot"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
+      {/* Action buttons on hover */}
+      {showButtons && (
+        <div className="absolute top-1.5 right-1.5 flex gap-1 z-10">
+          {onEdit && (
+            <button
+              onClick={handleEdit}
+              className="p-1.5 bg-purple-500/90 hover:bg-purple-600 rounded-lg text-white transition-all shadow-lg"
+              title="Annotate screenshot"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={handleDelete}
+              className="p-1.5 bg-red-500/90 hover:bg-red-600 rounded-lg text-white transition-all shadow-lg"
+              title="Delete screenshot"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       )}
       
       {/* Overlay on hover */}
@@ -695,12 +729,14 @@ export const ViewportPreview: React.FC<ViewportPreviewProps> = ({
   isCapturing,
   autoCapture,
   onToggleAutoCapture,
-  onDeleteScreenshot
+  onDeleteScreenshot,
+  onSaveAnnotated
 }) => {
   const [selectedScreenshot, setSelectedScreenshot] = useState<Screenshot | null>(null);
   const [selectedPair, setSelectedPair] = useState<BeforeAfterPair | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  const [showAnnotator, setShowAnnotator] = useState(false);
   const [viewMode, setViewMode] = useState<'screenshots' | 'comparisons'>('screenshots');
   const [localScreenshots, setLocalScreenshots] = useState<Screenshot[]>(screenshots);
   
@@ -739,9 +775,7 @@ export const ViewportPreview: React.FC<ViewportPreviewProps> = ({
   const handleDeleteFromModal = () => {
     if (selectedScreenshot && onDeleteScreenshot) {
       onDeleteScreenshot(selectedScreenshot.id);
-      // Remove from local state
       setLocalScreenshots(prev => prev.filter(s => s.id !== selectedScreenshot.id));
-      // Navigate to next or previous screenshot, or close modal
       if (currentIndex < localScreenshots.length - 1) {
         setSelectedScreenshot(localScreenshots[currentIndex + 1]);
       } else if (currentIndex > 0) {
@@ -758,6 +792,35 @@ export const ViewportPreview: React.FC<ViewportPreviewProps> = ({
       onDeleteScreenshot(id);
       setLocalScreenshots(prev => prev.filter(s => s.id !== id));
     }
+  };
+  
+  // Open annotation editor
+  const handleOpenAnnotator = (screenshot?: Screenshot) => {
+    if (screenshot) {
+      setSelectedScreenshot(screenshot);
+    }
+    setShowModal(false);
+    setShowAnnotator(true);
+  };
+  
+  // Close annotation editor
+  const handleCloseAnnotator = () => {
+    setShowAnnotator(false);
+  };
+  
+  // Save annotated screenshot
+  const handleSaveAnnotated = (annotatedData: string, _annotations: any[]) => {
+    if (selectedScreenshot && onSaveAnnotated) {
+      onSaveAnnotated(selectedScreenshot.id, annotatedData);
+    }
+  };
+  
+  // Get image URL for selected screenshot
+  const getSelectedImageUrl = () => {
+    if (!selectedScreenshot) return '';
+    return selectedScreenshot.base64_data 
+      ? `data:image/png;base64,${selectedScreenshot.base64_data}`
+      : selectedScreenshot.file_path;
   };
   
   return (
@@ -860,6 +923,7 @@ export const ViewportPreview: React.FC<ViewportPreviewProps> = ({
                     setShowModal(true);
                   }}
                   onDelete={onDeleteScreenshot ? () => handleDeleteFromThumbnail(screenshot.id) : undefined}
+                  onEdit={() => handleOpenAnnotator(screenshot)}
                   isSelected={selectedScreenshot?.id === screenshot.id}
                 />
               ))}
@@ -954,6 +1018,7 @@ export const ViewportPreview: React.FC<ViewportPreviewProps> = ({
         hasPrevious={currentIndex > 0}
         hasNext={currentIndex < localScreenshots.length - 1}
         onDelete={onDeleteScreenshot ? handleDeleteFromModal : undefined}
+        onEdit={() => handleOpenAnnotator()}
       />
       
       {/* Before/After Comparison */}
@@ -961,6 +1026,16 @@ export const ViewportPreview: React.FC<ViewportPreviewProps> = ({
         <BeforeAfterSlider
           pair={selectedPair}
           onClose={handleCloseComparison}
+        />
+      )}
+      
+      {/* Screenshot Annotator */}
+      {showAnnotator && selectedScreenshot && (
+        <ScreenshotAnnotator
+          imageUrl={getSelectedImageUrl()}
+          imageName={selectedScreenshot.filename}
+          onClose={handleCloseAnnotator}
+          onSave={handleSaveAnnotated}
         />
       )}
     </div>
