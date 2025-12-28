@@ -34,9 +34,9 @@ export interface MCPToolCategory {
 export const MCP_TOOLS: MCPTool[] = [
   // ==================== ACTOR MANAGEMENT (19 tools) ====================
   {
-    name: 'get_actors_in_level',
-    displayName: 'Get Actors in Level',
-    description: 'Get all actors currently in the level with optional filtering',
+    name: 'get_actor_list',
+    displayName: 'Get Actor List',
+    description: 'Get list of all actors in the level',
     category: 'actor',
     parameters: [
       { name: 'class_filter', type: 'string', description: 'Filter by actor class', required: false },
@@ -75,29 +75,24 @@ export const MCP_TOOLS: MCPTool[] = [
     tags: ['delete', 'remove', 'actor']
   },
   {
-    name: 'set_actor_transform',
-    displayName: 'Set Actor Transform',
-    description: 'Set the location, rotation, and scale of an actor',
+    name: 'set_actor_property',
+    displayName: 'Set Actor Property',
+    description: 'Set actor location, rotation, or scale',
     category: 'actor',
     parameters: [
       { name: 'actor_name', type: 'string', description: 'Name of the actor', required: true },
-      { name: 'location_x', type: 'number', description: 'X coordinate', required: false },
-      { name: 'location_y', type: 'number', description: 'Y coordinate', required: false },
-      { name: 'location_z', type: 'number', description: 'Z coordinate', required: false },
-      { name: 'rotation_pitch', type: 'number', description: 'Pitch rotation', required: false },
-      { name: 'rotation_yaw', type: 'number', description: 'Yaw rotation', required: false },
-      { name: 'rotation_roll', type: 'number', description: 'Roll rotation', required: false },
-      { name: 'scale_x', type: 'number', description: 'X scale', required: false },
-      { name: 'scale_y', type: 'number', description: 'Y scale', required: false },
-      { name: 'scale_z', type: 'number', description: 'Z scale', required: false }
+      { name: 'property', type: 'string', description: 'Property: location, rotation, scale', required: true },
+      { name: 'x', type: 'number', description: 'X value', required: true },
+      { name: 'y', type: 'number', description: 'Y value', required: true },
+      { name: 'z', type: 'number', description: 'Z value', required: true }
     ],
     returnType: 'boolean',
-    tags: ['transform', 'move', 'rotate', 'scale']
+    tags: ['transform', 'move', 'rotate', 'scale', 'property']
   },
   {
-    name: 'get_actor_transform',
-    displayName: 'Get Actor Transform',
-    description: 'Get the current transform of an actor',
+    name: 'get_actor_properties',
+    displayName: 'Get Actor Properties',
+    description: 'Get actor location, rotation, scale',
     category: 'actor',
     parameters: [
       { name: 'actor_name', type: 'string', description: 'Name of the actor', required: true }
@@ -457,19 +452,17 @@ export const MCP_TOOLS: MCPTool[] = [
 
   // ==================== PLAY IN EDITOR (2 tools) ====================
   {
-    name: 'play_in_editor',
-    displayName: 'Play in Editor',
+    name: 'start_pie',
+    displayName: 'Start PIE',
     description: 'Start Play in Editor (PIE) session',
     category: 'pie',
-    parameters: [
-      { name: 'mode', type: 'string', description: 'PIE mode', required: false, enum: ['SelectedViewport', 'NewWindow', 'MobilePreview', 'VRPreview'], default: 'SelectedViewport' }
-    ],
+    parameters: [],
     returnType: 'boolean',
-    tags: ['play', 'pie', 'test']
+    tags: ['play', 'pie', 'test', 'start']
   },
   {
-    name: 'stop_play_in_editor',
-    displayName: 'Stop Play in Editor',
+    name: 'stop_pie',
+    displayName: 'Stop PIE',
     description: 'Stop the current PIE session',
     category: 'pie',
     parameters: [],
@@ -1346,15 +1339,15 @@ export const QUICK_ACTIONS = [
     id: 'play_game',
     name: 'Play Game',
     description: 'Start Play in Editor',
-    tool: 'play_in_editor',
-    params: { mode: 'SelectedViewport' },
+    tool: 'start_pie',
+    params: {},
     icon: 'Play'
   },
   {
     id: 'stop_game',
     name: 'Stop Game',
     description: 'Stop Play in Editor',
-    tool: 'stop_play_in_editor',
+    tool: 'stop_pie',
     params: {},
     icon: 'Square'
   },
