@@ -556,8 +556,6 @@ export default function UE5Connection() {
   });
 
   const executeTool = async (toolName: string, params: Record<string, any> = {}) => {
-    console.log('executeTool called:', toolName, params);
-    
     if (!agentStatus.mcp_connected) {
       alert('MCP is not connected. Please ensure UE5 is running with the MCP plugin.');
       return;
@@ -567,7 +565,6 @@ export default function UE5Connection() {
     const startTime = Date.now();
 
     try {
-      console.log('Sending request to /api/agent/execute');
       const response = await fetch('/api/agent/execute', {
         method: 'POST',
         headers: {
@@ -582,7 +579,6 @@ export default function UE5Connection() {
       });
 
       const data = await response.json();
-      console.log('Response received:', data);
       const duration = Date.now() - startTime;
 
       const result: ExecutionResult = {
@@ -596,11 +592,7 @@ export default function UE5Connection() {
         duration
       };
 
-      console.log('Adding to execution history:', result);
-      setExecutionHistory(prev => {
-        console.log('Previous history length:', prev.length);
-        return [result, ...prev.slice(0, 49)];
-      });
+      setExecutionHistory(prev => [result, ...prev.slice(0, 49)]);
     } catch (error: any) {
       const result: ExecutionResult = {
         id: crypto.randomUUID(),
@@ -806,6 +798,85 @@ export default function UE5Connection() {
           ))}
         </div>
       </GlassCard>
+
+      {/* Execution Results - Show in Overview tab */}
+      {executionHistory.length > 0 && (
+        <GlassCard className="p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center">
+                <History className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="font-medium text-white">Execution Results</h4>
+            </div>
+            <button
+              onClick={() => setExecutionHistory([])}
+              className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+            >
+              Clear All
+            </button>
+          </div>
+          <div className="space-y-3 max-h-[400px] overflow-y-auto">
+            {executionHistory.slice(0, 10).map((exec) => (
+              <div
+                key={exec.id}
+                className={`rounded-xl border overflow-hidden ${
+                  exec.success
+                    ? 'bg-green-500/5 border-green-500/20'
+                    : 'bg-red-500/5 border-red-500/20'
+                }`}
+              >
+                {/* Header */}
+                <div className={`px-4 py-2 flex items-center justify-between ${
+                  exec.success ? 'bg-green-500/10' : 'bg-red-500/10'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    {exec.success ? (
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-red-400" />
+                    )}
+                    <span className="font-medium text-white text-sm">{exec.tool}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-gray-400">
+                      {exec.timestamp.toLocaleTimeString()}
+                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      exec.success ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                    }`}>
+                      {exec.duration}ms
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Response */}
+                <div className="px-4 py-3">
+                  {exec.error ? (
+                    <div>
+                      <div className="text-xs text-red-400 mb-1">Error:</div>
+                      <pre className="text-xs text-red-300 font-mono bg-red-500/10 rounded-lg p-2 overflow-x-auto whitespace-pre-wrap">
+                        {exec.error}
+                      </pre>
+                    </div>
+                  ) : exec.result ? (
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Response:</div>
+                      <pre className="text-xs text-green-300 font-mono bg-black/30 rounded-lg p-3 overflow-x-auto max-h-32 overflow-y-auto">
+                        {typeof exec.result === 'string' 
+                          ? exec.result 
+                          : JSON.stringify(exec.result, null, 2)}
+                      </pre>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-500 italic">No response data</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+      )}
 
       {/* Getting Started (when not connected) */}
       {!agentStatus.connected && (

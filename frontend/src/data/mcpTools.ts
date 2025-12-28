@@ -1355,31 +1355,31 @@ export const QUICK_ACTIONS = [
     id: 'save_level',
     name: 'Save Level',
     description: 'Save the current level',
-    tool: 'save_current_level',
+    tool: 'save_level',
     params: {},
     icon: 'Save'
   },
   {
-    id: 'undo',
-    name: 'Undo',
-    description: 'Undo last action',
-    tool: 'undo',
+    id: 'get_project_info',
+    name: 'Project Info',
+    description: 'Get project information',
+    tool: 'get_project_info',
     params: {},
-    icon: 'Undo'
+    icon: 'Info'
   },
   {
-    id: 'redo',
-    name: 'Redo',
-    description: 'Redo last action',
-    tool: 'redo',
+    id: 'get_selected',
+    name: 'Get Selected',
+    description: 'Get selected actors',
+    tool: 'get_selected_actors',
     params: {},
-    icon: 'Redo'
+    icon: 'MousePointer'
   },
   {
     id: 'deselect',
     name: 'Deselect All',
     description: 'Clear selection',
-    tool: 'deselect_all',
+    tool: 'clear_selection',
     params: {},
     icon: 'X'
   }
