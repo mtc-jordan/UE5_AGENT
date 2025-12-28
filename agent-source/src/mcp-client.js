@@ -160,7 +160,113 @@ class MCPClient extends EventEmitter {
       arguments: parameters
     });
 
+    // Special handling for take_screenshot - read file and convert to base64
+    if (toolName === 'take_screenshot') {
+      return await this.processScreenshotResult(response);
+    }
+
     return response;
+  }
+
+  /**
+   * Process screenshot result - read file from disk and convert to base64
+   * The UE5 screenshot is saved locally, so we can read it directly
+   */
+  async processScreenshotResult(response) {
+    const fs = require('fs').promises;
+    const path = require('path');
+    
+    try {
+      // Check if response already has base64 data
+      if (response && response.base64) {
+        return response;
+      }
+      
+      // Extract file path from response
+      let filePath = null;
+      
+      if (typeof response === 'string') {
+        // Parse "Screenshot requested: path" format
+        const match = response.match(/Screenshot requested:\s*(.+?)(?:\s*$)/);
+        if (match) {
+          filePath = match[1].trim();
+        } else {
+          filePath = response;
+        }
+      } else if (response && response.content && Array.isArray(response.content)) {
+        // MCP format with content array
+        const textContent = response.content.find(c => c.type === 'text');
+        if (textContent && textContent.text) {
+          const match = textContent.text.match(/Screenshot requested:\s*(.+?)(?:\s*$)/);
+          if (match) {
+            filePath = match[1].trim();
+          }
+        }
+      } else if (response && response.file_path) {
+        filePath = response.file_path;
+      }
+      
+      if (!filePath) {
+        console.log('Could not extract file path from screenshot response:', response);
+        return response;
+      }
+      
+      // Normalize path
+      filePath = filePath.replace(/\\/g, '/');
+      if (!filePath.toLowerCase().endsWith('.png')) {
+        filePath = filePath + '.png';
+      }
+      
+      console.log(`Waiting for screenshot file: ${filePath}`);
+      
+      // Wait for file to be written (async operation in UE5)
+      const maxWait = 5000; // 5 seconds
+      const checkInterval = 200; // 200ms
+      let waited = 0;
+      let lastSize = -1;
+      let stableCount = 0;
+      
+      while (waited < maxWait) {
+        try {
+          const stats = await fs.stat(filePath);
+          if (stats.size > 0) {
+            if (stats.size === lastSize) {
+              stableCount++;
+              if (stableCount >= 2) {
+                // File size stable, read it
+                const imageBuffer = await fs.readFile(filePath);
+                const base64Data = imageBuffer.toString('base64');
+                
+                console.log(`Screenshot read successfully: ${imageBuffer.length} bytes`);
+                
+                return {
+                  success: true,
+                  file_path: filePath,
+                  base64: base64Data,
+                  width: 1280,
+                  height: 720
+                };
+              }
+            } else {
+              stableCount = 0;
+            }
+            lastSize = stats.size;
+          }
+        } catch (err) {
+          // File doesn't exist yet, keep waiting
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, checkInterval));
+        waited += checkInterval;
+      }
+      
+      console.log(`Timeout waiting for screenshot file: ${filePath}`);
+      return response;
+      
+    } catch (error) {
+      console.error('Error processing screenshot:', error);
+      return response;
+    }
   }
 
   /**

@@ -5,6 +5,7 @@ Supports auto-capture after tool execution and before/after comparison.
 """
 
 import os
+import re
 import uuid
 import base64
 import asyncio
@@ -101,6 +102,10 @@ class ViewportPreviewService:
         """
         Capture a screenshot from the UE5 viewport via the agent.
         
+        The UE5 take_screenshot tool is asynchronous - it requests a screenshot
+        and returns immediately. We need to wait for the file to be written
+        and then read it.
+        
         Args:
             user_id: The user ID to capture for
             agent_relay_service: The agent relay service for tool execution
@@ -117,9 +122,10 @@ class ViewportPreviewService:
             # Generate unique filename
             screenshot_id = str(uuid.uuid4())[:8]
             timestamp = datetime.now()
-            filename = f"viewport_{user_id}_{screenshot_id}_{timestamp.strftime('%Y%m%d_%H%M%S')}.png"
+            filename = f"viewport_{user_id}_{screenshot_id}_{timestamp.strftime('%Y%m%d_%H%M%S')}"
             
             # Execute take_screenshot tool
+            # Note: This tool is async in UE5 - it requests a screenshot and returns immediately
             result = await agent_relay_service.execute_tool(
                 user_id,
                 'take_screenshot',
@@ -131,10 +137,30 @@ class ViewportPreviewService:
             )
             
             if not result:
+                print(f"Screenshot capture returned no result")
                 return None
             
-            # Parse the result to get the file path or base64 data
+            # Parse the result to get the file path and/or base64 data
             screenshot_data = self._parse_screenshot_result(result)
+            file_path = screenshot_data.get('file_path', '')
+            base64_data = screenshot_data.get('base64_data')
+            
+            print(f"Screenshot result type: {type(result)}")
+            print(f"Parsed file path: {file_path}")
+            print(f"Has base64 data: {bool(base64_data)}")
+            
+            # If we already have base64 data from the agent, use it directly
+            # The updated agent reads the file locally and returns base64
+            if not base64_data:
+                print("No base64 data in result, attempting to read from file...")
+                # Wait for the screenshot file to be written (async operation in UE5)
+                # Note: This only works if the backend can access the same filesystem
+                base64_data = await self._wait_and_read_screenshot(file_path, max_wait=5.0)
+            
+            if not base64_data:
+                print(f"Warning: No screenshot data available. File: {file_path}")
+                # Return a placeholder or error indicator
+                base64_data = None
             
             # Create screenshot object
             screenshot = ViewportScreenshot(
@@ -144,8 +170,8 @@ class ViewportPreviewService:
                 timestamp=timestamp,
                 width=resolution_x,
                 height=resolution_y,
-                file_path=screenshot_data.get('file_path', ''),
-                base64_data=screenshot_data.get('base64_data'),
+                file_path=file_path,
+                base64_data=base64_data,
                 context=context,
                 tool_name=tool_name,
                 is_before=is_before
@@ -167,20 +193,94 @@ class ViewportPreviewService:
             
         except Exception as e:
             print(f"Error capturing screenshot: {e}")
+            import traceback
+            traceback.print_exc()
             return None
+    
+    async def _wait_and_read_screenshot(self, file_path: str, max_wait: float = 5.0) -> Optional[str]:
+        """
+        Wait for the screenshot file to be written and read it as base64.
+        
+        UE5's FScreenshotRequest::RequestScreenshot is async, so we need to poll
+        for the file to appear and be fully written.
+        
+        Args:
+            file_path: Path to the screenshot file (from UE5)
+            max_wait: Maximum time to wait in seconds
+            
+        Returns:
+            Base64 encoded image data or None if failed
+        """
+        if not file_path:
+            return None
+        
+        # Extract just the filename if it's a full message
+        # e.g., "Screenshot requested: C:/Project/Saved/Screenshots/file.png"
+        if "Screenshot requested:" in file_path:
+            match = re.search(r'Screenshot requested:\s*(.+?)(?:\s*$)', file_path)
+            if match:
+                file_path = match.group(1).strip()
+        
+        # Normalize path
+        file_path = file_path.replace('\\', '/')
+        
+        # If the path doesn't end with .png, add it
+        if not file_path.lower().endswith('.png'):
+            file_path = file_path + '.png'
+        
+        print(f"Waiting for screenshot file: {file_path}")
+        
+        # Poll for file existence and size stability
+        start_time = asyncio.get_event_loop().time()
+        last_size = -1
+        stable_count = 0
+        
+        while (asyncio.get_event_loop().time() - start_time) < max_wait:
+            try:
+                if os.path.exists(file_path):
+                    current_size = os.path.getsize(file_path)
+                    
+                    # Check if file size is stable (not still being written)
+                    if current_size > 0 and current_size == last_size:
+                        stable_count += 1
+                        if stable_count >= 2:  # File size stable for 2 checks
+                            # Read and encode the file
+                            with open(file_path, 'rb') as f:
+                                image_data = f.read()
+                            
+                            if len(image_data) > 0:
+                                base64_data = base64.b64encode(image_data).decode('utf-8')
+                                print(f"Successfully read screenshot: {len(image_data)} bytes")
+                                return base64_data
+                    else:
+                        stable_count = 0
+                    
+                    last_size = current_size
+                
+            except Exception as e:
+                print(f"Error checking file: {e}")
+            
+            await asyncio.sleep(0.2)  # Check every 200ms
+        
+        print(f"Timeout waiting for screenshot file: {file_path}")
+        return None
     
     def _parse_screenshot_result(self, result: Any) -> Dict[str, Any]:
         """Parse the screenshot tool result to extract file path or base64 data"""
+        print(f"Parsing screenshot result: {type(result)} - {str(result)[:200]}")
+        
         if isinstance(result, dict):
-            # Check for various possible response formats
+            # Check for base64 data first (preferred - from updated agent)
+            if 'base64' in result and result['base64']:
+                print(f"Found base64 data in result: {len(result['base64'])} chars")
+                return {'base64_data': result['base64'], 'file_path': result.get('file_path', '')}
+            if 'data' in result and result['data']:
+                return {'base64_data': result['data'], 'file_path': result.get('file_path', '')}
+            # Check for file path
             if 'file_path' in result:
                 return {'file_path': result['file_path']}
             if 'path' in result:
                 return {'file_path': result['path']}
-            if 'base64' in result:
-                return {'base64_data': result['base64']}
-            if 'data' in result:
-                return {'base64_data': result['data']}
             if 'content' in result:
                 # MCP format with content array
                 content = result['content']
@@ -192,10 +292,15 @@ class ViewportPreviewService:
                         if item.get('type') == 'text':
                             # File path returned as text
                             return {'file_path': item.get('text', '')}
-            # Return the whole result as context
+            # Check if there's a text message with the path
+            if 'text' in result:
+                return {'file_path': result['text']}
+            if 'message' in result:
+                return {'file_path': result['message']}
+            # Return the whole result as string
             return {'file_path': str(result)}
         elif isinstance(result, str):
-            # Assume it's a file path
+            # Assume it's a file path or message containing path
             return {'file_path': result}
         return {}
     
