@@ -1,8 +1,9 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useChatStore, useSettingsStore } from '../lib/store'
 import { chatsApi, aiApi, projectsApi, preferencesApi } from '../lib/api'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import {
@@ -24,6 +25,25 @@ import {
   GitBranch,
   Info,
   MessageCircle,
+  Copy,
+  CheckCheck,
+  RefreshCw,
+  Edit3,
+  Trash2,
+  ThumbsUp,
+  ThumbsDown,
+  Paperclip,
+  Image as ImageIcon,
+  X,
+  Maximize2,
+  Minimize2,
+  Download,
+  MoreHorizontal,
+  Clock,
+  Zap,
+  Sparkles,
+  AlertCircle,
+  Keyboard,
 } from 'lucide-react'
 import { cn, agentColors } from '../lib/utils'
 
@@ -35,6 +55,10 @@ interface Message {
   agent_color?: string
   content: string
   created_at: string
+  isEditing?: boolean
+  feedback?: 'positive' | 'negative' | null
+  tokens?: number
+  responseTime?: number
 }
 
 interface Project {
@@ -43,6 +67,15 @@ interface Project {
   description: string
   ue_version: string
   project_path: string
+}
+
+interface Attachment {
+  id: string
+  name: string
+  type: 'file' | 'image'
+  size: number
+  url?: string
+  file?: File
 }
 
 const agentIcons: Record<string, any> = {
@@ -79,6 +112,14 @@ const models = [
 
 const allAgents = ['architect', 'developer', 'blueprint', 'qa', 'devops', 'artist']
 
+// Keyboard shortcuts
+const SHORTCUTS = {
+  send: { key: 'Enter', description: 'Send message' },
+  newLine: { key: 'Shift+Enter', description: 'New line' },
+  stop: { key: 'Escape', description: 'Stop generation' },
+  newChat: { key: 'Ctrl+N', description: 'New chat' },
+}
+
 export default function Chat() {
   const { chatId } = useParams()
   const navigate = useNavigate()
@@ -104,16 +145,27 @@ export default function Chat() {
   const [isLoadingChat, setIsLoadingChat] = useState(false)
   const [project, setProject] = useState<Project | null>(null)
   const [showProjectInfo, setShowProjectInfo] = useState(false)
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null)
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [editContent, setEditContent] = useState('')
+  const [attachments, setAttachments] = useState<Attachment[]>([])
+  const [showShortcuts, setShowShortcuts] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [showMessageActions, setShowMessageActions] = useState<string | null>(null)
+  const [streamStartTime, setStreamStartTime] = useState<number | null>(null)
+  const [tokenCount, setTokenCount] = useState(0)
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const isStreamingRef = useRef(false)
   const currentChatIdRef = useRef<number | null>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Handle chat switching
   useEffect(() => {
     const newChatId = chatId ? parseInt(chatId) : null
     
-    // If switching to a different chat, cancel any ongoing streaming
     if (currentChatIdRef.current !== newChatId) {
       if (isStreamingRef.current) {
         isStreamingRef.current = false
@@ -129,7 +181,6 @@ export default function Chat() {
       if (newChatId) {
         loadChat(newChatId)
       } else {
-        // New chat - clear everything
         setCurrentChat(null)
         clearMessages()
         setStreamingMessages(new Map())
@@ -141,13 +192,36 @@ export default function Chat() {
     scrollToBottom()
   }, [messages, streamingMessages])
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Stop generation with Escape
+      if (e.key === 'Escape' && isLoading) {
+        handleStop()
+      }
+      // New chat with Ctrl+N
+      if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault()
+        navigate('/chat')
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isLoading, navigate])
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto'
+      inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 200) + 'px'
+    }
+  }, [input])
+
   const loadChat = async (id: number) => {
-    // Check if we're still on the same chat
     if (currentChatIdRef.current !== id) return
     
     setIsLoadingChat(true)
-    
-    // Clear current messages immediately to prevent showing old chat
     clearMessages()
     setStreamingMessages(new Map())
     
@@ -157,12 +231,10 @@ export default function Chat() {
         chatsApi.messages(id),
       ])
       
-      // Check again if we're still on the same chat (user might have switched)
       if (currentChatIdRef.current !== id) return
       
       setCurrentChat(chatRes.data)
       
-      // Load project if linked
       if (chatRes.data.project_id) {
         try {
           const projectRes = await projectsApi.get(chatRes.data.project_id)
@@ -181,13 +253,8 @@ export default function Chat() {
       
       setMessages(loadedMessages)
       cacheMessages(id, loadedMessages)
-      
-      // Note: We no longer override user's current settings when loading a chat
-      // The user's selected model/mode in the UI should be used for the next message
-      // The chat's stored settings are just historical record of what was used
     } catch (error) {
       console.error('Failed to load chat:', error)
-      // Only navigate away if we're still on this chat
       if (currentChatIdRef.current === id) {
         navigate('/chat')
       }
@@ -200,31 +267,25 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [])
 
-  // Auto-generate chat title based on first message
   const generateChatTitle = async (chatId: number, firstMessage: string) => {
     try {
-      // Check user preferences for auto-title generation
       const prefsRes = await preferencesApi.get()
       if (!prefsRes.data.auto_generate_title) return
 
-      // Generate title using AI
       const titleRes = await preferencesApi.generateTitle(
         firstMessage,
         project?.name
       )
       
       if (titleRes.data.title) {
-        // Update the chat title
         await chatsApi.update(chatId, { title: titleRes.data.title })
         
-        // Update local state
         if (currentChat && currentChat.id === chatId) {
           setCurrentChat({ ...currentChat, title: titleRes.data.title })
         }
       }
     } catch (error) {
       console.error('Failed to generate chat title:', error)
-      // Silently fail - the default title will remain
     }
   }
 
@@ -241,18 +302,20 @@ export default function Chat() {
 
     const messageContent = input.trim()
     setInput('')
+    setAttachments([])
     setLoading(true)
     setCurrentPhase('')
     setStreamingMessages(new Map())
+    setStreamStartTime(Date.now())
+    setTokenCount(0)
     isStreamingRef.current = true
 
-    // Create chat if needed
     let activeChatId = currentChat?.id
     let isNewChat = false
     if (!activeChatId) {
       try {
         const response = await chatsApi.create({
-          title: 'New Conversation', // Temporary title
+          title: 'New Conversation',
           mode,
           model,
           active_agents: activeAgents,
@@ -260,16 +323,11 @@ export default function Chat() {
         })
         activeChatId = response.data.id
         currentChatIdRef.current = activeChatId
-        // Important: Set current chat which also sets currentChatId in store
-        // This ensures addMessage will cache messages for this chat
         setCurrentChat(response.data)
         isNewChat = true
         navigate(`/chat/${activeChatId}`, { replace: true })
         
-        // Now add the user message AFTER the chat is created and currentChatId is set
         addMessage(userMessage)
-        
-        // Auto-generate title in background
         generateChatTitle(activeChatId, messageContent)
       } catch (error) {
         console.error('Failed to create chat:', error)
@@ -278,14 +336,11 @@ export default function Chat() {
         return
       }
     } else {
-      // Existing chat - add message immediately
       addMessage(userMessage)
     }
 
-    // Store the chat ID we're streaming for
     const streamingForChatId = activeChatId
 
-    // Stream AI response
     try {
       abortControllerRef.current = new AbortController()
       
@@ -299,13 +354,15 @@ export default function Chat() {
         solo_agent: soloAgent,
         model,
       })) {
-        // Check if streaming was cancelled or chat changed
         if (!isStreamingRef.current || currentChatIdRef.current !== streamingForChatId) break
         
         if (chunk.type === 'phase') {
           setCurrentPhase(chunk.phase || chunk.message || '')
         } else if (chunk.type === 'chunk') {
           const agent = chunk.agent || 'assistant'
+          
+          // Count tokens (rough estimate)
+          setTokenCount(prev => prev + (chunk.content?.split(/\s+/).length || 0))
           
           if (!assistantMessages.has(agent)) {
             const newMessage: Message = {
@@ -323,16 +380,14 @@ export default function Chat() {
           const msg = assistantMessages.get(agent)!
           msg.content += chunk.content || ''
           
-          // Update streaming messages state - create new Map to trigger re-render
           setStreamingMessages(new Map(assistantMessages))
         } else if (chunk.type === 'complete') {
-          // Message complete for this agent - move to permanent messages
           const agent = chunk.agent || 'assistant'
           const completedMsg = assistantMessages.get(agent)
           if (completedMsg) {
-            // Update with final content
             completedMsg.content = chunk.content || completedMsg.content
-            // Only add if we're still on the same chat
+            completedMsg.responseTime = streamStartTime ? Date.now() - streamStartTime : undefined
+            completedMsg.tokens = tokenCount
             if (currentChatIdRef.current === streamingForChatId) {
               addMessage({ ...completedMsg })
             }
@@ -344,18 +399,16 @@ export default function Chat() {
             const errorMessage: Message = {
               id: Date.now().toString(),
               role: 'assistant',
-              content: `Error: ${chunk.message}`,
+              content: `⚠️ **Error:** ${chunk.message}`,
               created_at: new Date().toISOString(),
             }
             addMessage(errorMessage)
           }
         } else if (chunk.type === 'cancelled') {
-          // Stream was cancelled
           break
         }
       }
       
-      // Move any remaining streaming messages to permanent messages
       if (currentChatIdRef.current === streamingForChatId) {
         assistantMessages.forEach((msg) => {
           if (msg.content) {
@@ -372,7 +425,7 @@ export default function Chat() {
           const errorMessage: Message = {
             id: Date.now().toString(),
             role: 'assistant',
-            content: `Error: ${error.message || 'Failed to get response'}`,
+            content: `⚠️ **Error:** ${error.message || 'Failed to get response'}`,
             created_at: new Date().toISOString(),
           }
           addMessage(errorMessage)
@@ -384,6 +437,7 @@ export default function Chat() {
       setStreamingMessages(new Map())
       abortControllerRef.current = null
       isStreamingRef.current = false
+      setStreamStartTime(null)
     }
   }
 
@@ -393,13 +447,96 @@ export default function Chat() {
     setLoading(false)
     setCurrentPhase('')
     
-    // Move any streaming messages to permanent messages
     streamingMessages.forEach((msg) => {
       if (msg.content) {
         addMessage({ ...msg })
       }
     })
     setStreamingMessages(new Map())
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSubmit(e)
+    }
+  }
+
+  const copyToClipboard = async (content: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(content)
+      setCopiedMessageId(messageId)
+      setTimeout(() => setCopiedMessageId(null), 2000)
+    } catch (error) {
+      console.error('Failed to copy:', error)
+    }
+  }
+
+  const handleRegenerate = async (messageIndex: number) => {
+    // Find the last user message before this assistant message
+    const userMessages = messages.slice(0, messageIndex).filter(m => m.role === 'user')
+    if (userMessages.length === 0) return
+    
+    const lastUserMessage = userMessages[userMessages.length - 1]
+    
+    // Remove messages from this point onwards
+    const newMessages = messages.slice(0, messageIndex)
+    setMessages(newMessages)
+    
+    // Re-submit the last user message
+    setInput(lastUserMessage.content)
+  }
+
+  const handleEditMessage = (message: Message) => {
+    setEditingMessageId(message.id)
+    setEditContent(message.content)
+  }
+
+  const handleSaveEdit = async (messageId: string) => {
+    // Update the message content
+    const updatedMessages = messages.map(m => 
+      m.id === messageId ? { ...m, content: editContent } : m
+    )
+    setMessages(updatedMessages)
+    setEditingMessageId(null)
+    setEditContent('')
+    
+    // If it's a user message, we could optionally regenerate the response
+  }
+
+  const handleDeleteMessage = (messageId: string) => {
+    const updatedMessages = messages.filter(m => m.id !== messageId)
+    setMessages(updatedMessages)
+  }
+
+  const handleFeedback = (messageId: string, feedback: 'positive' | 'negative') => {
+    const updatedMessages = messages.map(m => 
+      m.id === messageId ? { ...m, feedback: m.feedback === feedback ? null : feedback } : m
+    )
+    setMessages(updatedMessages)
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files) return
+    
+    const newAttachments: Attachment[] = Array.from(files).map(file => ({
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      name: file.name,
+      type: file.type.startsWith('image/') ? 'image' : 'file',
+      size: file.size,
+      file,
+      url: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+    }))
+    
+    setAttachments(prev => [...prev, ...newAttachments])
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const removeAttachment = (id: string) => {
+    setAttachments(prev => prev.filter(a => a.id !== id))
   }
 
   const toggleAgent = (agent: string) => {
@@ -412,22 +549,84 @@ export default function Chat() {
     }
   }
 
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B'
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  }
+
+  const formatTime = (ms: number) => {
+    if (ms < 1000) return ms + 'ms'
+    return (ms / 1000).toFixed(1) + 's'
+  }
+
   // Combine permanent messages with streaming messages for display
-  const displayMessages = [...messages]
-  streamingMessages.forEach((msg) => {
-    displayMessages.push(msg)
-  })
+  const displayMessages = useMemo(() => {
+    const combined = [...messages]
+    streamingMessages.forEach((msg) => {
+      combined.push(msg)
+    })
+    return combined
+  }, [messages, streamingMessages])
+
+  // Code block component with copy button
+  const CodeBlock = ({ language, children }: { language: string; children: string }) => {
+    const [copied, setCopied] = useState(false)
+    
+    const handleCopy = async () => {
+      await navigator.clipboard.writeText(children)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+    
+    return (
+      <div className="relative group my-3">
+        <div className="absolute right-2 top-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="text-xs text-ue-muted bg-ue-bg px-2 py-1 rounded">{language}</span>
+          <button
+            onClick={handleCopy}
+            className="p-1.5 rounded bg-ue-bg hover:bg-ue-border transition-colors"
+            title="Copy code"
+          >
+            {copied ? (
+              <CheckCheck className="w-4 h-4 text-green-500" />
+            ) : (
+              <Copy className="w-4 h-4 text-ue-muted" />
+            )}
+          </button>
+        </div>
+        <SyntaxHighlighter
+          style={oneDark}
+          language={language || 'text'}
+          PreTag="div"
+          className="rounded-lg !bg-[#1a1b26] !my-0 !text-sm"
+          showLineNumbers
+          wrapLines
+        >
+          {children}
+        </SyntaxHighlighter>
+      </div>
+    )
+  }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className={cn(
+      "h-full flex flex-col",
+      isFullscreen && "fixed inset-0 z-50 bg-ue-bg"
+    )}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-ue-border bg-ue-surface">
         <div className="flex items-center gap-4">
           <div>
-            <h1 className="font-semibold">
+            <h1 className="font-semibold flex items-center gap-2">
               {currentChat?.title || 'New Conversation'}
+              {isLoading && (
+                <span className="flex items-center gap-1 text-xs text-ue-accent">
+                  <Sparkles className="w-3 h-3 animate-pulse" />
+                  Generating...
+                </span>
+              )}
             </h1>
-            {/* Project Badge */}
             {project && (
               <Link 
                 to="/projects"
@@ -447,8 +646,8 @@ export default function Chat() {
             <button
               onClick={() => setMode('solo')}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors',
-                mode === 'solo' ? 'bg-ue-surface text-ue-text' : 'text-ue-muted hover:text-ue-text'
+                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all',
+                mode === 'solo' ? 'bg-ue-surface text-ue-text shadow-sm' : 'text-ue-muted hover:text-ue-text'
               )}
               title="Single agent responds"
             >
@@ -458,8 +657,8 @@ export default function Chat() {
             <button
               onClick={() => setMode('team')}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors',
-                mode === 'team' ? 'bg-ue-surface text-ue-text' : 'text-ue-muted hover:text-ue-text'
+                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all',
+                mode === 'team' ? 'bg-ue-surface text-ue-text shadow-sm' : 'text-ue-muted hover:text-ue-text'
               )}
               title="Agents respond sequentially"
             >
@@ -469,10 +668,10 @@ export default function Chat() {
             <button
               onClick={() => setMode('roundtable')}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors',
+                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all',
                 mode === 'roundtable' ? 'bg-ue-accent/20 text-ue-accent border border-ue-accent/30' : 'text-ue-muted hover:text-ue-text'
               )}
-              title="Agents discuss together and synthesize a recommendation"
+              title="Agents discuss together"
             >
               <MessageCircle className="w-4 h-4" />
               Round Table
@@ -481,6 +680,42 @@ export default function Chat() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Fullscreen Toggle */}
+          <button
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="btn btn-secondary p-2"
+            title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          >
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
+
+          {/* Keyboard Shortcuts */}
+          <div className="relative">
+            <button
+              onClick={() => setShowShortcuts(!showShortcuts)}
+              className="btn btn-secondary p-2"
+              title="Keyboard shortcuts"
+            >
+              <Keyboard className="w-4 h-4" />
+            </button>
+            
+            {showShortcuts && (
+              <div className="absolute right-0 top-full mt-2 w-64 bg-ue-surface border border-ue-border rounded-lg shadow-xl z-50 p-3">
+                <div className="text-xs font-medium text-ue-muted uppercase tracking-wider mb-2">
+                  Keyboard Shortcuts
+                </div>
+                <div className="space-y-2">
+                  {Object.entries(SHORTCUTS).map(([key, value]) => (
+                    <div key={key} className="flex items-center justify-between text-sm">
+                      <span className="text-ue-muted">{value.description}</span>
+                      <kbd className="px-2 py-1 bg-ue-bg rounded text-xs font-mono">{value.key}</kbd>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Project Info Button */}
           {project && (
             <div className="relative">
@@ -526,7 +761,7 @@ export default function Chat() {
                     )}
                   </div>
                   <p className="mt-3 text-xs text-ue-muted border-t border-ue-border pt-3">
-                    This context is automatically included in AI responses for version-appropriate advice.
+                    This context is automatically included in AI responses.
                   </p>
                 </div>
               )}
@@ -560,7 +795,7 @@ export default function Chat() {
                         setShowSettings(false)
                       }}
                       className={cn(
-                        'w-full flex items-center justify-between px-2 py-2 rounded-md text-sm',
+                        'w-full flex items-center justify-between px-2 py-2 rounded-md text-sm transition-colors',
                         model === m.id ? 'bg-ue-accent/10 text-ue-accent' : 'hover:bg-ue-bg'
                       )}
                     >
@@ -585,7 +820,7 @@ export default function Chat() {
                         setShowSettings(false)
                       }}
                       className={cn(
-                        'w-full flex items-center justify-between px-2 py-2 rounded-md text-sm',
+                        'w-full flex items-center justify-between px-2 py-2 rounded-md text-sm transition-colors',
                         model === m.id ? 'bg-ue-accent/10 text-ue-accent' : 'hover:bg-ue-bg'
                       )}
                     >
@@ -610,7 +845,7 @@ export default function Chat() {
                         setShowSettings(false)
                       }}
                       className={cn(
-                        'w-full flex items-center justify-between px-2 py-2 rounded-md text-sm',
+                        'w-full flex items-center justify-between px-2 py-2 rounded-md text-sm transition-colors',
                         model === m.id ? 'bg-ue-accent/10 text-ue-accent' : 'hover:bg-ue-bg'
                       )}
                     >
@@ -655,7 +890,7 @@ export default function Chat() {
                               setShowAgentSelector(false)
                             }}
                             className={cn(
-                              'w-full flex items-center gap-3 px-2 py-2 rounded-md text-sm',
+                              'w-full flex items-center gap-3 px-2 py-2 rounded-md text-sm transition-colors',
                               soloAgent === agent ? 'bg-ue-accent/10 text-ue-accent' : 'hover:bg-ue-bg'
                             )}
                           >
@@ -686,7 +921,7 @@ export default function Chat() {
                             key={agent}
                             onClick={() => toggleAgent(agent)}
                             className={cn(
-                              'w-full flex items-center gap-3 px-2 py-2 rounded-md text-sm',
+                              'w-full flex items-center gap-3 px-2 py-2 rounded-md text-sm transition-colors',
                               isActive ? 'bg-ue-accent/10' : 'hover:bg-ue-bg'
                             )}
                           >
@@ -727,42 +962,63 @@ export default function Chat() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {isLoadingChat ? (
           <div className="h-full flex items-center justify-center">
-            <div className="flex items-center gap-3 text-ue-muted">
-              <Loader2 className="w-6 h-6 animate-spin" />
-              <span>Loading chat...</span>
+            <div className="flex flex-col items-center gap-3 text-ue-muted">
+              <Loader2 className="w-8 h-8 animate-spin text-ue-accent" />
+              <span>Loading conversation...</span>
             </div>
           </div>
         ) : displayMessages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
-            <div className="text-center max-w-md">
-              <div className="w-16 h-16 rounded-2xl bg-ue-accent/20 flex items-center justify-center mx-auto mb-4">
-                <Cpu className="w-8 h-8 text-ue-accent" />
+            <div className="text-center max-w-lg">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-ue-accent/20 to-ue-accent/5 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <Cpu className="w-10 h-10 text-ue-accent" />
               </div>
-              <h2 className="text-xl font-semibold mb-2">UE5 AI Studio</h2>
-              <p className="text-ue-muted">
+              <h2 className="text-2xl font-bold mb-3">UE5 AI Studio</h2>
+              <p className="text-ue-muted mb-6">
                 {project ? (
-                  <>Start a conversation about <strong>{project.name}</strong> (UE {project.ue_version}). The AI will provide version-specific advice.</>
+                  <>Start a conversation about <strong className="text-ue-text">{project.name}</strong> (UE {project.ue_version}). The AI will provide version-specific advice.</>
                 ) : (
                   <>Start a conversation with our AI agents to get help with your Unreal Engine 5 project. Choose Solo mode for focused assistance or Team mode for collaborative problem-solving.</>
                 )}
               </p>
+              
+              {/* Quick prompts */}
+              <div className="grid grid-cols-2 gap-3 mt-6">
+                {[
+                  { icon: Code, text: 'Help me with C++ code' },
+                  { icon: Workflow, text: 'Create a Blueprint system' },
+                  { icon: Palette, text: 'Material & shader help' },
+                  { icon: Shield, text: 'Debug my project' },
+                ].map((prompt, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setInput(prompt.text)}
+                    className="flex items-center gap-2 p-3 rounded-lg bg-ue-surface border border-ue-border hover:border-ue-accent/50 transition-colors text-left text-sm"
+                  >
+                    <prompt.icon className="w-4 h-4 text-ue-accent" />
+                    <span>{prompt.text}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         ) : (
-          displayMessages.map((message) => (
+          displayMessages.map((message, index) => (
             <div
               key={message.id}
               className={cn(
-                'flex gap-3',
+                'flex gap-4 group',
                 message.role === 'user' ? 'justify-end' : 'justify-start'
               )}
+              onMouseEnter={() => setShowMessageActions(message.id)}
+              onMouseLeave={() => setShowMessageActions(null)}
             >
               {message.role === 'assistant' && (
                 <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm"
                   style={{
                     backgroundColor: message.agent_color
                       ? `${message.agent_color}20`
@@ -785,51 +1041,207 @@ export default function Chat() {
                 </div>
               )}
 
-              <div
-                className={cn(
-                  'max-w-[80%] rounded-lg px-4 py-3',
-                  message.role === 'user'
-                    ? 'bg-ue-accent text-white'
-                    : 'bg-ue-surface border border-ue-border'
-                )}
-              >
-                {message.role === 'assistant' && message.agent_name && (
-                  <div
-                    className="text-xs font-medium mb-1"
-                    style={{ color: message.agent_color || '#3b82f6' }}
-                  >
-                    {message.agent_name}
+              <div className={cn(
+                'max-w-[80%] relative',
+                message.role === 'user' && 'order-first'
+              )}>
+                {/* Message header */}
+                {message.role === 'assistant' && (
+                  <div className="flex items-center gap-2 mb-1">
+                    {message.agent_name && (
+                      <span
+                        className="text-sm font-medium"
+                        style={{ color: message.agent_color || '#3b82f6' }}
+                      >
+                        {message.agent_name}
+                      </span>
+                    )}
+                    {message.responseTime && (
+                      <span className="text-xs text-ue-muted flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {formatTime(message.responseTime)}
+                      </span>
+                    )}
                   </div>
                 )}
-                <ReactMarkdown
-                  className="prose prose-invert prose-sm max-w-none"
-                  components={{
-                    code({ node, className, children, ...props }) {
-                      const match = /language-(\w+)/.exec(className || '')
-                      const isInline = !match && !className
-                      return !isInline ? (
-                        <SyntaxHighlighter
-                          style={oneDark}
-                          language={match?.[1] || 'text'}
-                          PreTag="div"
-                          className="rounded-md !bg-ue-bg !my-2"
-                        >
-                          {String(children).replace(/\n$/, '')}
-                        </SyntaxHighlighter>
-                      ) : (
-                        <code className="bg-ue-bg px-1 py-0.5 rounded text-ue-accent" {...props}>
-                          {children}
-                        </code>
-                      )
-                    },
-                  }}
+
+                {/* Message content */}
+                <div
+                  className={cn(
+                    'rounded-2xl px-4 py-3 shadow-sm',
+                    message.role === 'user'
+                      ? 'bg-ue-accent text-white rounded-tr-sm'
+                      : 'bg-ue-surface border border-ue-border rounded-tl-sm'
+                  )}
                 >
-                  {message.content || ''}
-                </ReactMarkdown>
+                  {editingMessageId === message.id ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        className="w-full bg-ue-bg border border-ue-border rounded-lg p-2 text-sm resize-none"
+                        rows={4}
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          onClick={() => setEditingMessageId(null)}
+                          className="px-3 py-1 text-sm text-ue-muted hover:text-ue-text"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleSaveEdit(message.id)}
+                          className="px-3 py-1 text-sm bg-ue-accent text-white rounded-md hover:bg-ue-accent/90"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <ReactMarkdown
+                      className={cn(
+                        'prose prose-sm max-w-none',
+                        message.role === 'user' ? 'prose-invert' : 'prose-invert'
+                      )}
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        code({ node, className, children, ...props }) {
+                          const match = /language-(\w+)/.exec(className || '')
+                          const isInline = !match && !className
+                          const content = String(children).replace(/\n$/, '')
+                          
+                          return !isInline ? (
+                            <CodeBlock language={match?.[1] || 'text'}>
+                              {content}
+                            </CodeBlock>
+                          ) : (
+                            <code className="bg-ue-bg/50 px-1.5 py-0.5 rounded text-ue-accent font-mono text-sm" {...props}>
+                              {children}
+                            </code>
+                          )
+                        },
+                        table({ children }) {
+                          return (
+                            <div className="overflow-x-auto my-3">
+                              <table className="min-w-full border border-ue-border rounded-lg overflow-hidden">
+                                {children}
+                              </table>
+                            </div>
+                          )
+                        },
+                        th({ children }) {
+                          return (
+                            <th className="bg-ue-bg px-3 py-2 text-left text-sm font-medium border-b border-ue-border">
+                              {children}
+                            </th>
+                          )
+                        },
+                        td({ children }) {
+                          return (
+                            <td className="px-3 py-2 text-sm border-b border-ue-border">
+                              {children}
+                            </td>
+                          )
+                        },
+                        a({ href, children }) {
+                          return (
+                            <a
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-ue-accent hover:underline"
+                            >
+                              {children}
+                            </a>
+                          )
+                        },
+                        blockquote({ children }) {
+                          return (
+                            <blockquote className="border-l-4 border-ue-accent/50 pl-4 my-3 italic text-ue-muted">
+                              {children}
+                            </blockquote>
+                          )
+                        },
+                      }}
+                    >
+                      {message.content || ''}
+                    </ReactMarkdown>
+                  )}
+                </div>
+
+                {/* Message actions */}
+                {showMessageActions === message.id && !editingMessageId && (
+                  <div className={cn(
+                    'absolute flex items-center gap-1 mt-1',
+                    message.role === 'user' ? 'right-0' : 'left-0'
+                  )}>
+                    <button
+                      onClick={() => copyToClipboard(message.content, message.id)}
+                      className="p-1.5 rounded-md hover:bg-ue-surface border border-transparent hover:border-ue-border transition-colors"
+                      title="Copy message"
+                    >
+                      {copiedMessageId === message.id ? (
+                        <CheckCheck className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <Copy className="w-4 h-4 text-ue-muted" />
+                      )}
+                    </button>
+                    
+                    {message.role === 'assistant' && (
+                      <>
+                        <button
+                          onClick={() => handleRegenerate(index)}
+                          className="p-1.5 rounded-md hover:bg-ue-surface border border-transparent hover:border-ue-border transition-colors"
+                          title="Regenerate response"
+                        >
+                          <RefreshCw className="w-4 h-4 text-ue-muted" />
+                        </button>
+                        <button
+                          onClick={() => handleFeedback(message.id, 'positive')}
+                          className={cn(
+                            'p-1.5 rounded-md hover:bg-ue-surface border border-transparent hover:border-ue-border transition-colors',
+                            message.feedback === 'positive' && 'text-green-500'
+                          )}
+                          title="Good response"
+                        >
+                          <ThumbsUp className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleFeedback(message.id, 'negative')}
+                          className={cn(
+                            'p-1.5 rounded-md hover:bg-ue-surface border border-transparent hover:border-ue-border transition-colors',
+                            message.feedback === 'negative' && 'text-red-500'
+                          )}
+                          title="Poor response"
+                        >
+                          <ThumbsDown className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
+                    
+                    {message.role === 'user' && (
+                      <button
+                        onClick={() => handleEditMessage(message)}
+                        className="p-1.5 rounded-md hover:bg-ue-surface border border-transparent hover:border-ue-border transition-colors"
+                        title="Edit message"
+                      >
+                        <Edit3 className="w-4 h-4 text-ue-muted" />
+                      </button>
+                    )}
+                    
+                    <button
+                      onClick={() => handleDeleteMessage(message.id)}
+                      className="p-1.5 rounded-md hover:bg-red-500/10 border border-transparent hover:border-red-500/30 transition-colors"
+                      title="Delete message"
+                    >
+                      <Trash2 className="w-4 h-4 text-ue-muted hover:text-red-500" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {message.role === 'user' && (
-                <div className="w-10 h-10 rounded-lg bg-ue-accent/20 flex items-center justify-center flex-shrink-0 text-ue-accent font-medium">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-ue-accent to-ue-accent/70 flex items-center justify-center flex-shrink-0 text-white font-medium shadow-sm">
                   U
                 </div>
               )}
@@ -837,34 +1249,96 @@ export default function Chat() {
           ))
         )}
 
-        {/* Loading indicator */}
+        {/* Streaming indicator */}
         {isLoading && streamingMessages.size === 0 && (
-          <div className="flex items-center gap-3 text-ue-muted">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span>{currentPhase || 'Thinking...'}</span>
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-ue-accent/20 flex items-center justify-center">
+              <Loader2 className="w-5 h-5 animate-spin text-ue-accent" />
+            </div>
+            <div className="bg-ue-surface border border-ue-border rounded-2xl rounded-tl-sm px-4 py-3">
+              <div className="flex items-center gap-2 text-ue-muted">
+                <Sparkles className="w-4 h-4 animate-pulse text-ue-accent" />
+                <span>{currentPhase || 'Thinking...'}</span>
+              </div>
+            </div>
           </div>
         )}
 
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Attachments Preview */}
+      {attachments.length > 0 && (
+        <div className="px-4 py-2 border-t border-ue-border bg-ue-surface/50">
+          <div className="flex flex-wrap gap-2">
+            {attachments.map((attachment) => (
+              <div
+                key={attachment.id}
+                className="flex items-center gap-2 bg-ue-bg rounded-lg px-3 py-2 text-sm"
+              >
+                {attachment.type === 'image' ? (
+                  <ImageIcon className="w-4 h-4 text-ue-accent" />
+                ) : (
+                  <Paperclip className="w-4 h-4 text-ue-muted" />
+                )}
+                <span className="max-w-[150px] truncate">{attachment.name}</span>
+                <span className="text-xs text-ue-muted">{formatFileSize(attachment.size)}</span>
+                <button
+                  onClick={() => removeAttachment(attachment.id)}
+                  className="p-0.5 hover:bg-ue-border rounded"
+                >
+                  <X className="w-3 h-3 text-ue-muted" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="p-4 border-t border-ue-border bg-ue-surface">
-        <form onSubmit={handleSubmit} className="flex gap-3">
+        <form onSubmit={handleSubmit} className="flex gap-3 items-end">
+          {/* File upload button */}
           <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={project ? `Ask about ${project.name}...` : "Ask about UE5 development..."}
-            className="input flex-1"
-            disabled={isLoading || isLoadingChat}
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            className="hidden"
+            multiple
+            accept="image/*,.pdf,.txt,.md,.cpp,.h,.py,.js,.ts,.json"
           />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="btn btn-secondary p-2.5 flex-shrink-0"
+            title="Attach files"
+          >
+            <Paperclip className="w-5 h-5" />
+          </button>
+
+          {/* Text input */}
+          <div className="flex-1 relative">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={project ? `Ask about ${project.name}...` : "Ask about UE5 development... (Shift+Enter for new line)"}
+              className="input w-full resize-none min-h-[44px] max-h-[200px] py-3 pr-12"
+              disabled={isLoading || isLoadingChat}
+              rows={1}
+            />
+            <div className="absolute right-3 bottom-3 text-xs text-ue-muted">
+              {input.length > 0 && `${input.length}`}
+            </div>
+          </div>
           
+          {/* Send/Stop button */}
           {isLoading ? (
             <button
               type="button"
               onClick={handleStop}
-              className="btn btn-secondary flex items-center gap-2"
+              className="btn bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 flex items-center gap-2 px-4 py-2.5"
             >
               <StopCircle className="w-5 h-5" />
               Stop
@@ -873,13 +1347,32 @@ export default function Chat() {
             <button
               type="submit"
               disabled={!input.trim() || isLoadingChat}
-              className="btn btn-primary flex items-center gap-2"
+              className="btn btn-primary flex items-center gap-2 px-4 py-2.5"
             >
               <Send className="w-5 h-5" />
               Send
             </button>
           )}
         </form>
+        
+        {/* Input hints */}
+        <div className="flex items-center justify-between mt-2 text-xs text-ue-muted">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1">
+              <Zap className="w-3 h-3" />
+              {models.find(m => m.id === model)?.name}
+            </span>
+            <span>•</span>
+            <span>{mode === 'solo' ? agentNames[soloAgent] : `${activeAgents.length} agents`}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <kbd className="px-1.5 py-0.5 bg-ue-bg rounded text-[10px]">Enter</kbd>
+            <span>to send</span>
+            <span className="mx-1">•</span>
+            <kbd className="px-1.5 py-0.5 bg-ue-bg rounded text-[10px]">Shift+Enter</kbd>
+            <span>for new line</span>
+          </div>
+        </div>
       </div>
     </div>
   )
