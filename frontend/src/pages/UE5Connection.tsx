@@ -361,15 +361,17 @@ export default function UE5Connection() {
 
   // AI Assistant state
   const [aiCommand, setAiCommand] = useState('');
-  const [aiSuggestions] = useState<string[]>([
-    'Spawn 10 cubes in a circle pattern',
-    'Delete all static mesh actors',
-    'Set the sun position to sunset',
-    'Create a rotating platform blueprint',
-    'Add point lights around selected actor'
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([
+    'Create a cube at position 0, 0, 100',
+    'Take a screenshot of the viewport',
+    'Start playing the game',
+    'Get all actors in the current level',
+    'Save the current level'
   ]);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [aiToolCalls, setAiToolCalls] = useState<Array<{id: string; name: string; arguments: any}>>([]);
+  const [chatHistory, setChatHistory] = useState<Array<{role: string; content: string; toolCalls?: any[]; toolResults?: any[]}>>([]);
 
   // UI state
   const [activeTab, setActiveTab] = useState<TabId>('overview');
@@ -615,40 +617,118 @@ export default function UE5Connection() {
 
     setIsAiProcessing(true);
     setAiResponse(null);
+    setAiToolCalls([]);
+
+    // Add user message to chat history
+    const userMessage = { role: 'user', content: aiCommand };
+    setChatHistory(prev => [...prev, userMessage]);
 
     try {
-      const response = await fetch('/api/mcp/ai-command', {
+      const response = await fetch('/api/ue5-ai/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`
         },
-        body: JSON.stringify({ command: aiCommand })
+        body: JSON.stringify({
+          messages: [...chatHistory, userMessage].map(m => ({
+            role: m.role,
+            content: m.content
+          })),
+          execute_tools: true
+        })
       });
 
-      const data = await response.json();
-      setAiResponse(data.response || 'Command processed successfully');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+        throw new Error(errorData.detail || response.statusText);
+      }
 
-      if (data.tools_executed) {
-        data.tools_executed.forEach((exec: any) => {
+      const data = await response.json();
+      
+      // Set AI response text
+      setAiResponse(data.content || 'Command processed successfully');
+
+      // Track tool calls
+      if (data.tool_calls && data.tool_calls.length > 0) {
+        setAiToolCalls(data.tool_calls.map((tc: any) => ({
+          id: tc.id,
+          name: tc.function?.name || tc.name,
+          arguments: tc.function?.arguments ? JSON.parse(tc.function.arguments) : tc.arguments
+        })));
+      }
+
+      // Add tool results to execution history
+      if (data.tool_results && data.tool_results.length > 0) {
+        const startTime = Date.now();
+        data.tool_results.forEach((tr: any, index: number) => {
           setExecutionHistory(prev => [{
             id: crypto.randomUUID(),
-            tool: exec.tool,
-            params: exec.params,
-            result: exec.result,
-            success: exec.success,
-            error: exec.error,
+            tool: tr.tool_name,
+            params: data.tool_calls?.[index]?.function?.arguments 
+              ? JSON.parse(data.tool_calls[index].function.arguments) 
+              : {},
+            result: tr.result,
+            success: tr.success,
+            error: tr.error,
             timestamp: new Date(),
-            duration: exec.duration || 0
+            duration: Date.now() - startTime
           }, ...prev.slice(0, 49)]);
         });
       }
+
+      // Add assistant message to chat history
+      setChatHistory(prev => [...prev, {
+        role: 'assistant',
+        content: data.content || '',
+        toolCalls: data.tool_calls,
+        toolResults: data.tool_results
+      }]);
+
+      // Clear input after successful execution
+      setAiCommand('');
+
     } catch (error: any) {
       setAiResponse(`Error: ${error.message}`);
+      setChatHistory(prev => [...prev, {
+        role: 'assistant',
+        content: `Error: ${error.message}`
+      }]);
     } finally {
       setIsAiProcessing(false);
     }
   };
+
+  // Fetch AI suggestions based on input
+  const fetchAiSuggestions = useCallback(async (query: string) => {
+    if (!query.trim() || query.length < 3) return;
+    
+    try {
+      const response = await fetch(`/api/ue5-ai/suggestions?query=${encodeURIComponent(query)}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.suggestions && data.suggestions.length > 0) {
+          setAiSuggestions(data.suggestions);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch suggestions:', error);
+    }
+  }, [authToken]);
+
+  // Debounced suggestion fetching
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (aiCommand.trim().length >= 3) {
+        fetchAiSuggestions(aiCommand);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [aiCommand, fetchAiSuggestions]);
 
   const toggleFavorite = (toolName: string) => {
     setFavorites(prev =>
@@ -1528,14 +1608,99 @@ export default function UE5Connection() {
         </div>
       </GlassCard>
 
-      {/* AI Response */}
-      {aiResponse && (
+      {/* Chat History */}
+      {chatHistory.length > 0 && (
+        <GlassCard className="p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
+                <History className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="font-medium text-white">Conversation</h4>
+            </div>
+            <button
+              onClick={() => setChatHistory([])}
+              className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+            >
+              Clear Chat
+            </button>
+          </div>
+          <div className="space-y-4 max-h-[400px] overflow-y-auto">
+            {chatHistory.map((msg, index) => (
+              <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                  msg.role === 'user' 
+                    ? 'bg-gradient-to-r from-violet-500 to-purple-500 text-white' 
+                    : 'bg-white/10 text-gray-300'
+                }`}>
+                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  
+                  {/* Show tool calls */}
+                  {msg.toolCalls && msg.toolCalls.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-white/10">
+                      <div className="text-xs text-gray-400 mb-2">Tools executed:</div>
+                      <div className="space-y-2">
+                        {msg.toolCalls.map((tc: any, tcIndex: number) => (
+                          <div key={tcIndex} className="flex items-center gap-2 text-xs">
+                            <Wrench className="w-3 h-3 text-cyan-400" />
+                            <span className="text-cyan-400 font-mono">{tc.function?.name || tc.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Show tool results summary */}
+                  {msg.toolResults && msg.toolResults.length > 0 && (
+                    <div className="mt-2">
+                      {msg.toolResults.map((tr: any, trIndex: number) => (
+                        <div key={trIndex} className={`text-xs flex items-center gap-1 ${
+                          tr.success ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                          {tr.success ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                          <span>{tr.tool_name}: {tr.success ? 'Success' : tr.error}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+      )}
+
+      {/* AI Response (Current) */}
+      {aiResponse && !chatHistory.length && (
         <GlassCard className="p-5 border-green-500/20">
           <div className="flex items-center gap-2 text-green-400 mb-2">
             <CheckCircle className="w-5 h-5" />
             <span className="font-medium">Response</span>
           </div>
           <p className="text-gray-300">{aiResponse}</p>
+        </GlassCard>
+      )}
+
+      {/* Tool Calls in Progress */}
+      {aiToolCalls.length > 0 && isAiProcessing && (
+        <GlassCard className="p-5 border-cyan-500/20">
+          <div className="flex items-center gap-2 text-cyan-400 mb-3">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span className="font-medium">Executing Tools...</span>
+          </div>
+          <div className="space-y-2">
+            {aiToolCalls.map((tc) => (
+              <div key={tc.id} className="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
+                <Wrench className="w-4 h-4 text-cyan-400" />
+                <div>
+                  <span className="text-white font-mono text-sm">{tc.name}</span>
+                  <pre className="text-xs text-gray-500 mt-1">
+                    {JSON.stringify(tc.arguments, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            ))}
+          </div>
         </GlassCard>
       )}
 

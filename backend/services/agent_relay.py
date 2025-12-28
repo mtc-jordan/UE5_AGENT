@@ -685,6 +685,17 @@ class AgentRelayService:
         """Get an agent connection by user ID."""
         return self._connections.get(user_id)
     
+    def is_agent_connected(self, user_id: int) -> bool:
+        """Check if an agent is connected for the given user."""
+        return user_id in self._connections
+    
+    def is_mcp_connected(self, user_id: int) -> bool:
+        """Check if MCP is connected for the given user's agent."""
+        connection = self._connections.get(user_id)
+        if not connection:
+            return False
+        return connection.mcp_connected
+    
     def get_connection_status(self, user_id: int) -> Dict[str, Any]:
         """Get the connection status for a user."""
         connection = self._connections.get(user_id)
@@ -773,3 +784,8 @@ class AgentRelayService:
 
 # Global instance
 agent_relay = AgentRelayService()
+
+
+def get_agent_relay() -> AgentRelayService:
+    """Get the global agent relay service instance."""
+    return agent_relay

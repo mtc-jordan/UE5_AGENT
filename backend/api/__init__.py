@@ -21,6 +21,7 @@ from api.analytics import router as analytics_router
 from api.mcp_ai import router as mcp_ai_router
 from api.downloads import router as downloads_router
 from api.agent import router as agent_router
+from api.ai_chat import router as ai_chat_router
 
 api_router = APIRouter(prefix="/api")
 
@@ -46,5 +47,6 @@ api_router.include_router(analytics_router)
 api_router.include_router(mcp_ai_router)
 api_router.include_router(downloads_router)
 api_router.include_router(agent_router)
+api_router.include_router(ai_chat_router)
 
 __all__ = ["api_router"]
