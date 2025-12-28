@@ -24,10 +24,11 @@ DOWNLOADS = {
     "UE5MCPBridge-v3.3.1-complete.zip": {
         "name": "UE5 MCP Bridge Plugin",
         "version": "3.3.1",
-        "description": "Unreal Engine 5 plugin that exposes 101 editor tools via MCP protocol",
+        "description": "Unreal Engine 5 plugin that exposes 101 editor tools via MCP protocol. Supports UE5.1 through UE5.7.",
         "size": "40 KB",
         "category": "plugin",
         "platform": ["Windows", "macOS", "Linux"],
+        "ue_versions": ["5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7"],
     },
 }
 
