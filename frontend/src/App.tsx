@@ -11,6 +11,8 @@ import Projects from './pages/Projects'
 import Settings from './pages/Settings'
 import UE5Connection from './pages/UE5Connection'
 import Workspace from './pages/Workspace'
+import Plugins from './pages/Plugins'
+import PluginEditor from './pages/PluginEditor'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -67,6 +69,10 @@ function App() {
           <Route path="chat/:chatId" element={<Chat />} />
           <Route path="projects" element={<Projects />} />
           <Route path="workspace" element={<Workspace />} />
+          <Route path="plugins" element={<Plugins />} />
+          <Route path="plugins/new" element={<PluginEditor />} />
+          <Route path="plugins/:id/edit" element={<PluginEditor />} />
+          <Route path="plugins/:id/run" element={<PluginEditor />} />
           <Route path="ue5" element={<UE5Connection />} />
           <Route path="settings" element={<Settings />} />
         </Route>

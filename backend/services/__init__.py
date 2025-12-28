@@ -14,6 +14,13 @@ from services.auth import (
 from services.ai import AIService, AgentOrchestrator, ai_service, orchestrator
 from services.mcp import MCPClient, MCPConnectionManager, mcp_manager
 from services.workspace import WorkspaceService, get_workspace_service
+from services.plugin import PluginService
+from services.plugin_executor import PluginExecutor, ExecutionContext, execute_plugin
+from services.plugin_ai import (
+    PluginAIService,
+    enhance_ai_prompt_with_plugins,
+    process_ai_response_for_plugins
+)
 
 __all__ = [
     # Auth
@@ -39,5 +46,13 @@ __all__ = [
     "mcp_manager",
     # Workspace
     "WorkspaceService",
-    "get_workspace_service"
+    "get_workspace_service",
+    # Plugins
+    "PluginService",
+    "PluginExecutor",
+    "ExecutionContext",
+    "execute_plugin",
+    "PluginAIService",
+    "enhance_ai_prompt_with_plugins",
+    "process_ai_response_for_plugins"
 ]

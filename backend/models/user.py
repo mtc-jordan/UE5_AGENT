@@ -23,6 +23,8 @@ class User(Base):
     mcp_connections = relationship("MCPConnection", back_populates="user", cascade="all, delete-orphan")
     preferences = relationship("UserPreferences", back_populates="user", uselist=False, cascade="all, delete-orphan")
     workspace_files = relationship("WorkspaceFile", back_populates="user", cascade="all, delete-orphan")
+    plugins = relationship("Plugin", back_populates="author", cascade="all, delete-orphan")
+    installed_plugins = relationship("PluginInstallation", back_populates="user", cascade="all, delete-orphan")
 
 
 class UserPreferences(Base):
@@ -51,6 +53,10 @@ class UserPreferences(Base):
     default_workspace_view = Column(String(32), default="tree")  # tree, list, grid
     auto_save_interval = Column(Integer, default=30)  # seconds, 0 = disabled
     show_hidden_files = Column(Boolean, default=False)
+    
+    # Plugin preferences
+    auto_enable_installed_plugins = Column(Boolean, default=True)
+    plugin_execution_timeout = Column(Integer, default=30)  # seconds
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

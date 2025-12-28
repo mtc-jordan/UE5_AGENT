@@ -14,6 +14,16 @@ from models.workspace import (
     detect_language,
     detect_mime_type
 )
+from models.plugin import (
+    Plugin,
+    PluginExecution,
+    PluginInstallation,
+    PluginTemplate,
+    PluginCategory,
+    PluginStatus,
+    PluginVisibility,
+    DEFAULT_PLUGIN_TEMPLATES
+)
 
 __all__ = [
     # User
@@ -44,5 +54,14 @@ __all__ = [
     "WorkspaceFileType",
     "FileStatus",
     "detect_language",
-    "detect_mime_type"
+    "detect_mime_type",
+    # Plugin
+    "Plugin",
+    "PluginExecution",
+    "PluginInstallation",
+    "PluginTemplate",
+    "PluginCategory",
+    "PluginStatus",
+    "PluginVisibility",
+    "DEFAULT_PLUGIN_TEMPLATES"
 ]

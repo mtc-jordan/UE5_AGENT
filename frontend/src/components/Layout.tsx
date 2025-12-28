@@ -25,6 +25,7 @@ import {
   Search,
   X,
   Files,
+  Package,
 } from 'lucide-react'
 import { cn, truncate } from '../lib/utils'
 
@@ -229,6 +230,7 @@ export default function Layout() {
     { path: '/chat', icon: MessageSquare, label: 'Chat' },
     { path: '/projects', icon: FolderKanban, label: 'Projects' },
     { path: '/workspace', icon: Files, label: 'Workspace' },
+    { path: '/plugins', icon: Package, label: 'Plugins' },
     { path: '/ue5', icon: Plug, label: 'UE Connection' },
     { path: '/settings', icon: Settings, label: 'Settings' },
   ]
