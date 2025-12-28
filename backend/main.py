@@ -7,8 +7,9 @@ AI-powered development assistant for Unreal Engine 5 with:
 - MCP (Model Context Protocol) integration
 - Project and chat management
 - Real-time streaming responses
+- Real-time collaboration with WebSocket
 
-Version: 2.0.0
+Version: 2.1.0
 """
 
 from fastapi import FastAPI
@@ -36,6 +37,9 @@ from core.database import init_db, engine, async_session
 from api import api_router
 from models.agent import Agent, DEFAULT_AGENTS
 from services.mcp import mcp_manager
+from services.presence import presence_service
+from services.realtime_chat import realtime_chat
+from services.realtime_workspace import realtime_workspace
 
 
 async def seed_default_agents():
@@ -72,10 +76,11 @@ async def lifespan(app: FastAPI):
     Handles:
     - Database initialization
     - Default data seeding
+    - Real-time services startup
     - MCP connection cleanup on shutdown
     """
     # Startup
-    logger.info(f"Starting {settings.APP_NAME} v2.0.0...")
+    logger.info(f"Starting {settings.APP_NAME} v2.1.0...")
     
     # Initialize database
     await init_db()
@@ -84,12 +89,24 @@ async def lifespan(app: FastAPI):
     # Seed default data
     await seed_default_agents()
     
+    # Start real-time services
+    await presence_service.start()
+    await realtime_chat.start()
+    await realtime_workspace.start()
+    logger.info("Real-time services started")
+    
     logger.info(f"{settings.APP_NAME} is ready!")
     
     yield
     
     # Shutdown
     logger.info("Shutting down...")
+    
+    # Stop real-time services
+    await realtime_workspace.stop()
+    await realtime_chat.stop()
+    await presence_service.stop()
+    logger.info("Real-time services stopped")
     
     # Gracefully close all MCP connections
     await mcp_manager.shutdown()
@@ -105,7 +122,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     description="AI-powered development assistant for Unreal Engine 5",
-    version="2.0.0",
+    version="2.1.0",
     lifespan=lifespan,
     docs_url="/api/docs",
     redoc_url="/api/redoc",
@@ -132,10 +149,14 @@ async def health_check():
     
     Returns basic application health status.
     """
+    from services.websocket import connection_manager
+    
     return {
         "status": "healthy",
         "app": settings.APP_NAME,
-        "version": "2.0.0"
+        "version": "2.1.0",
+        "websocket_connections": connection_manager.connection_count,
+        "online_users": len(presence_service.get_online_users())
     }
 
 
@@ -148,17 +169,21 @@ async def app_info():
     """
     return {
         "name": settings.APP_NAME,
-        "version": "2.0.0",
+        "version": "2.1.0",
         "description": "AI-powered development assistant for Unreal Engine 5",
         "features": [
             "Multi-agent AI chat (Solo, Team, Roundtable modes)",
             "MCP integration with 101 UE5 editor tools",
             "Project and chat management",
             "Agent memory for context persistence",
-            "Real-time streaming responses"
+            "Real-time streaming responses",
+            "Real-time collaboration with WebSocket",
+            "Persistent file workspace",
+            "Plugin system with custom Python tools",
+            "Multi-provider AI support (DeepSeek, Claude, Gemini)"
         ],
         "mcp_tools_count": 101,
-        "supported_ai_providers": ["DeepSeek", "Anthropic Claude"]
+        "supported_ai_providers": ["DeepSeek", "Anthropic Claude", "Google Gemini"]
     }
 
 

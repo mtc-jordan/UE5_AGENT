@@ -2,6 +2,8 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore, useChatStore } from '../lib/store'
 import { chatsApi, projectsApi } from '../lib/api'
 import { useEffect, useState, useRef } from 'react'
+import { useWebSocketConnection } from '../hooks/useRealtime'
+import ConnectionStatus from './ConnectionStatus'
 import {
   LayoutDashboard,
   MessageSquare,
@@ -50,6 +52,9 @@ export default function Layout() {
   const { user, logout } = useAuthStore()
   const { chats, setChats, setCurrentChat, updateChat, removeChat } = useChatStore()
   const [collapsed, setCollapsed] = useState(false)
+  
+  // Initialize WebSocket connection
+  const { connected: wsConnected } = useWebSocketConnection()
   const [projects, setProjects] = useState<Project[]>([])
   const [expandedProjects, setExpandedProjects] = useState<Set<number>>(new Set())
   const [showArchived, setShowArchived] = useState(false)
@@ -309,6 +314,13 @@ export default function Layout() {
             <span className="font-semibold text-lg">UE5 AI Studio</span>
           )}
         </div>
+
+        {/* Connection Status */}
+        {!collapsed && (
+          <div className="px-3 py-2 border-b border-ue-border">
+            <ConnectionStatus showLabel={true} />
+          </div>
+        )}
 
         {/* New Chat Button */}
         <div className="p-3 space-y-2">

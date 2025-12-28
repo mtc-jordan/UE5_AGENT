@@ -21,6 +21,27 @@ from services.plugin_ai import (
     enhance_ai_prompt_with_plugins,
     process_ai_response_for_plugins
 )
+from services.websocket import (
+    ConnectionManager,
+    Connection,
+    WebSocketMessage,
+    EventType,
+    connection_manager
+)
+from services.presence import (
+    PresenceService,
+    UserPresence,
+    UserStatus,
+    presence_service
+)
+from services.realtime_chat import (
+    RealtimeChatService,
+    realtime_chat
+)
+from services.realtime_workspace import (
+    RealtimeWorkspaceService,
+    realtime_workspace
+)
 
 __all__ = [
     # Auth
@@ -54,5 +75,22 @@ __all__ = [
     "execute_plugin",
     "PluginAIService",
     "enhance_ai_prompt_with_plugins",
-    "process_ai_response_for_plugins"
+    "process_ai_response_for_plugins",
+    # WebSocket
+    "ConnectionManager",
+    "Connection",
+    "WebSocketMessage",
+    "EventType",
+    "connection_manager",
+    # Presence
+    "PresenceService",
+    "UserPresence",
+    "UserStatus",
+    "presence_service",
+    # Real-time Chat
+    "RealtimeChatService",
+    "realtime_chat",
+    # Real-time Workspace
+    "RealtimeWorkspaceService",
+    "realtime_workspace"
 ]
