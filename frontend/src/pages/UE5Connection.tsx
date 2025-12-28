@@ -440,15 +440,25 @@ export default function UE5Connection() {
   };
 
   const createToken = async () => {
-    if (!newTokenName.trim()) return;
+    if (!newTokenName.trim()) {
+      alert('Please enter a token name');
+      return;
+    }
 
     try {
       setIsCreatingToken(true);
+      const authToken = localStorage.getItem('token');
+      
+      if (!authToken) {
+        alert('You must be logged in to create tokens. Please log in first.');
+        return;
+      }
+      
       const response = await fetch('/api/agent/tokens', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({
           name: newTokenName,
@@ -463,10 +473,15 @@ export default function UE5Connection() {
         setNewTokenName('');
         setNewTokenDescription('');
         setNewTokenExpiresDays(null);
+        setShowCreateToken(false);
         loadTokens();
+      } else {
+        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+        alert(`Failed to create token: ${errorData.detail || response.statusText}`);
       }
     } catch (error) {
       console.error('Failed to create token:', error);
+      alert(`Failed to create token: ${error instanceof Error ? error.message : 'Network error'}`);
     } finally {
       setIsCreatingToken(false);
     }
