@@ -799,6 +799,7 @@ class UE5AIChatService:
     async def chat(
         self,
         messages: List[Dict[str, Any]],
+        model: Optional[str] = None,
         execute_tools: bool = True,
         tool_executor: Optional[callable] = None
     ) -> Dict[str, Any]:
@@ -807,12 +808,16 @@ class UE5AIChatService:
         
         Args:
             messages: List of chat messages (user, assistant, tool)
+            model: Optional model override (uses default if not specified)
             execute_tools: Whether to automatically execute tool calls
             tool_executor: Async function to execute MCP tools
             
         Returns:
             Dict with response content, tool_calls, and execution results
         """
+        # Determine which model to use
+        model_to_use = model or self.model
+        
         # Prepare messages with system prompt
         full_messages = [
             {"role": "system", "content": self.system_prompt}
@@ -821,7 +826,7 @@ class UE5AIChatService:
         try:
             # Call the AI model with tools
             response = await self.client.chat.completions.create(
-                model=self.model,
+                model=model_to_use,
                 messages=full_messages,
                 tools=self.tools,
                 tool_choice="auto",

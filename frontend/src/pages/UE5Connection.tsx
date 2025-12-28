@@ -34,6 +34,7 @@ import SceneBuilder from '../components/SceneBuilder';
 import ActionTimeline from '../components/ActionTimeline';
 import BlueprintMaterialAssistant from '../components/BlueprintMaterialAssistant';
 import TextureGenerator from '../components/TextureGenerator';
+import ModelSelector from '../components/ModelSelector';
 
 // ==================== TYPES ====================
 
@@ -405,7 +406,11 @@ export default function UE5Connection() {
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [aiToolCalls, setAiToolCalls] = useState<Array<{id: string; name: string; arguments: any}>>([]);
-  const [chatHistory, setChatHistory] = useState<Array<{role: string; content: string; toolCalls?: any[]; toolResults?: any[]; screenshot?: Screenshot; beforeAfter?: BeforeAfterPair}>>([])
+  const [chatHistory, setChatHistory] = useState<Array<{role: string; content: string; toolCalls?: any[]; toolResults?: any[]; screenshot?: Screenshot; beforeAfter?: BeforeAfterPair; modelUsed?: {id: string; name: string; provider: string}}>>([]);
+  
+  // AI Model selection state
+  const [selectedModel, setSelectedModel] = useState('gpt-4.1-mini');
+  const [autoSelectModel, setAutoSelectModel] = useState(false);
 
   // Viewport Preview state
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
@@ -675,6 +680,8 @@ export default function UE5Connection() {
             role: m.role,
             content: m.content
           })),
+          model: autoSelectModel ? null : selectedModel,
+          auto_select_model: autoSelectModel,
           execute_tools: true,
           auto_capture: autoCapture
         })
@@ -741,7 +748,8 @@ export default function UE5Connection() {
         toolCalls: data.tool_calls,
         toolResults: data.tool_results,
         screenshot: data.screenshot,
-        beforeAfter: data.before_after
+        beforeAfter: data.before_after,
+        modelUsed: data.model_used
       }]);
 
       // Clear input after successful execution
@@ -1708,14 +1716,25 @@ export default function UE5Connection() {
       <GlassCard className="p-6 relative overflow-hidden" hover={false} glow glowColor="purple">
         <AnimatedBackground />
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
-              <Sparkles className="w-6 h-6 text-white" />
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">AI Command Interface</h3>
+                <p className="text-gray-400">Describe what you want to do in natural language</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-xl font-bold text-white">AI Command Interface</h3>
-              <p className="text-gray-400">Describe what you want to do in natural language</p>
-            </div>
+            {/* Model Selector */}
+            <ModelSelector
+              selectedModel={selectedModel}
+              onModelChange={setSelectedModel}
+              autoSelect={autoSelectModel}
+              onAutoSelectChange={setAutoSelectModel}
+              disabled={isAiProcessing}
+              compact={true}
+            />
           </div>
 
           <div className="relative">
@@ -1769,6 +1788,18 @@ export default function UE5Connection() {
                     ? 'bg-gradient-to-r from-violet-500 to-purple-500 text-white' 
                     : 'bg-white/10 text-gray-300'
                 }`}>
+                  {/* Model badge for assistant messages */}
+                  {msg.role === 'assistant' && msg.modelUsed && (
+                    <div className="flex items-center gap-1.5 mb-2 pb-2 border-b border-white/10">
+                      <span className="text-xs">
+                        {msg.modelUsed.provider === 'openai' ? '🤖' : 
+                         msg.modelUsed.provider === 'anthropic' ? '🧠' :
+                         msg.modelUsed.provider === 'google' ? '🔮' :
+                         msg.modelUsed.provider === 'deepseek' ? '🔍' : '🤖'}
+                      </span>
+                      <span className="text-xs text-gray-400">{msg.modelUsed.name}</span>
+                    </div>
+                  )}
                   <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                   
                   {/* Show tool calls */}

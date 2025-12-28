@@ -21,6 +21,7 @@ from services.ue5_ai_chat import get_ue5_ai_chat_service, UE5AIChatService
 from services.agent_relay import get_agent_relay
 from services.auth import get_current_user
 from services.viewport_preview import get_viewport_preview_service, ViewportPreviewService
+from services.multi_model_ai import get_multi_model_service, MODEL_REGISTRY, TASK_RECOMMENDATIONS, TaskType, AIProvider
 from models.user import User
 
 router = APIRouter(prefix="/ue5-ai", tags=["UE5 AI Chat"])
@@ -37,6 +38,8 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     """Request body for chat endpoint"""
     messages: List[ChatMessage]
+    model: Optional[str] = None  # AI model to use (e.g., 'gpt-4.1-mini', 'claude-3-5-sonnet', 'deepseek-v3')
+    auto_select_model: bool = False  # Whether to auto-select best model for the task
     execute_tools: bool = True  # Whether to automatically execute MCP tools
     auto_capture: bool = True  # Whether to auto-capture screenshots after visual changes
     context: Optional[Dict[str, Any]] = None  # Additional context (e.g., selected actors)
@@ -71,9 +74,17 @@ class BeforeAfterInfo(BaseModel):
     tool_name: str
 
 
+class ModelUsedInfo(BaseModel):
+    """Information about the model used"""
+    id: str
+    name: str
+    provider: str
+
+
 class ChatResponse(BaseModel):
     """Response from chat endpoint"""
     content: str
+    model_used: Optional[ModelUsedInfo] = None
     tool_calls: List[Dict[str, Any]] = []
     tool_results: List[ToolCallResult] = []
     suggestions: List[str] = []
@@ -166,6 +177,31 @@ async def chat(
     ai_service = get_ue5_ai_chat_service()
     viewport_service = get_viewport_preview_service()
     agent_relay = get_agent_relay()
+    multi_model_service = get_multi_model_service()
+    
+    # Determine which model to use
+    model_to_use = request.model
+    if request.auto_select_model and request.messages:
+        # Auto-detect task type and select best model
+        last_user_message = next(
+            (m.content for m in reversed(request.messages) if m.role == "user"),
+            ""
+        )
+        task_type = multi_model_service.detect_task_type(last_user_message)
+        recommended = multi_model_service.recommend_model(task_type)
+        model_to_use = recommended[0] if recommended else multi_model_service.default_model
+    elif not model_to_use:
+        model_to_use = multi_model_service.default_model
+    
+    # Get model info for response
+    model_info = multi_model_service.get_model_info(model_to_use)
+    model_used_info = None
+    if model_info:
+        model_used_info = ModelUsedInfo(
+            id=model_info.id,
+            name=model_info.name,
+            provider=model_info.provider.value
+        )
     
     # Convert messages to dict format
     messages = [
@@ -205,6 +241,7 @@ async def chat(
     # Get AI response with tool execution
     result = await ai_service.chat(
         messages=messages,
+        model=model_to_use,
         execute_tools=request.execute_tools,
         tool_executor=tool_executor if request.execute_tools else None
     )
@@ -297,6 +334,7 @@ async def chat(
     
     return ChatResponse(
         content=result.get("content", ""),
+        model_used=model_used_info,
         tool_calls=result.get("tool_calls", []),
         tool_results=tool_results,
         suggestions=[],
@@ -475,4 +513,168 @@ async def execute_tool_directly(
         "arguments": arguments,
         "result": result,
         "success": True
+    }
+
+
+# ==================== AI MODEL ENDPOINTS ====================
+
+@router.get("/models")
+async def get_available_models(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get all available AI models with their information.
+    
+    Returns models grouped by provider with details about capabilities,
+    strengths, and recommended use cases.
+    """
+    multi_model_service = get_multi_model_service()
+    models = multi_model_service.get_available_models()
+    
+    # Group by provider
+    by_provider = {}
+    for model in models:
+        provider = model["provider"]
+        if provider not in by_provider:
+            by_provider[provider] = []
+        by_provider[provider].append(model)
+    
+    return {
+        "models": models,
+        "by_provider": by_provider,
+        "default_model": multi_model_service.default_model,
+        "total_count": len(models)
+    }
+
+
+@router.get("/models/providers")
+async def get_providers(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get list of available AI providers.
+    """
+    return {
+        "providers": [
+            {
+                "id": "openai",
+                "name": "OpenAI",
+                "description": "GPT-4 and GPT-4o models",
+                "icon": "🤖"
+            },
+            {
+                "id": "anthropic",
+                "name": "Anthropic",
+                "description": "Claude 3 family models",
+                "icon": "🧠"
+            },
+            {
+                "id": "google",
+                "name": "Google",
+                "description": "Gemini models with large context",
+                "icon": "🔮"
+            },
+            {
+                "id": "deepseek",
+                "name": "DeepSeek",
+                "description": "Cost-effective coding models",
+                "icon": "🔍"
+            }
+        ]
+    }
+
+
+@router.get("/models/recommend")
+async def recommend_model(
+    task: str = "general_chat",
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get recommended models for a specific task type.
+    
+    Task types:
+    - general_chat: General conversation
+    - code_generation: Writing code
+    - blueprint_creation: UE5 Blueprint creation
+    - material_design: Material/shader design
+    - scene_building: Scene construction
+    - technical_analysis: Technical explanations
+    - creative_writing: Creative content
+    - asset_generation: Asset creation prompts
+    """
+    multi_model_service = get_multi_model_service()
+    
+    try:
+        task_type = TaskType(task)
+    except ValueError:
+        task_type = TaskType.GENERAL_CHAT
+    
+    recommended = multi_model_service.recommend_model(task_type)
+    
+    # Get full model info for recommended models
+    models_info = []
+    for model_id in recommended:
+        info = multi_model_service.get_model_info(model_id)
+        if info:
+            models_info.append({
+                "id": info.id,
+                "name": info.name,
+                "provider": info.provider.value,
+                "description": info.description,
+                "cost_tier": info.cost_tier
+            })
+    
+    return {
+        "task": task,
+        "recommended_models": models_info,
+        "primary_recommendation": recommended[0] if recommended else multi_model_service.default_model
+    }
+
+
+@router.post("/models/detect-task")
+async def detect_task_type(
+    prompt: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Detect the task type from a prompt and recommend the best model.
+    """
+    multi_model_service = get_multi_model_service()
+    
+    task_type = multi_model_service.detect_task_type(prompt)
+    recommended = multi_model_service.recommend_model(task_type)
+    
+    return {
+        "prompt": prompt[:100] + "..." if len(prompt) > 100 else prompt,
+        "detected_task": task_type.value,
+        "recommended_models": recommended,
+        "primary_recommendation": recommended[0] if recommended else multi_model_service.default_model
+    }
+
+
+@router.get("/models/{model_id}")
+async def get_model_info(
+    model_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get detailed information about a specific model.
+    """
+    multi_model_service = get_multi_model_service()
+    info = multi_model_service.get_model_info(model_id)
+    
+    if not info:
+        raise HTTPException(status_code=404, detail=f"Model not found: {model_id}")
+    
+    return {
+        "id": info.id,
+        "name": info.name,
+        "provider": info.provider.value,
+        "description": info.description,
+        "context_window": info.context_window,
+        "strengths": info.strengths,
+        "best_for": [t.value for t in info.best_for],
+        "cost_tier": info.cost_tier,
+        "supports_vision": info.supports_vision,
+        "supports_streaming": info.supports_streaming
     }
