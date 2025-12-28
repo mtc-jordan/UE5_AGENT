@@ -784,7 +784,7 @@ export default function UE5Connection() {
           {QUICK_ACTIONS.slice(0, 8).map((action) => (
             <button
               key={action.name}
-              onClick={() => executeTool(action.name, action.params || {})}
+              onClick={() => executeTool(action.tool, action.params || {})}
               disabled={!agentStatus.mcp_connected || isExecuting}
               className={`p-4 rounded-xl text-left transition-all group ${
                 agentStatus.mcp_connected
@@ -792,7 +792,7 @@ export default function UE5Connection() {
                   : 'bg-gray-900/50 border border-gray-800 opacity-50 cursor-not-allowed'
               }`}
             >
-              <h4 className="font-medium text-white text-sm group-hover:text-blue-400 transition-colors">{action.displayName}</h4>
+              <h4 className="font-medium text-white text-sm group-hover:text-blue-400 transition-colors">{action.name}</h4>
               <p className="text-xs text-gray-500 mt-1 line-clamp-1">{action.description}</p>
             </button>
           ))}
