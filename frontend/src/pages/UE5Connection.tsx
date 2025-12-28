@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useAuthStore } from '../lib/store';
 import {
   Wifi, WifiOff, RefreshCw, Settings, Play, Square, Search,
   ChevronRight, ChevronDown, Box, Camera, Map, FolderOpen,
@@ -318,6 +319,9 @@ function Step({ number, title, children, isLast = false }: { number: number; tit
 // ==================== MAIN COMPONENT ====================
 
 export default function UE5Connection() {
+  // Auth state from zustand store
+  const { token: authToken } = useAuthStore();
+
   // Agent connection state
   const [agentStatus, setAgentStatus] = useState<AgentStatus>({
     connected: false,
@@ -406,7 +410,7 @@ export default function UE5Connection() {
     try {
       const response = await fetch('/api/agent/status', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${authToken}`
         }
       });
       if (response.ok) {
@@ -425,7 +429,7 @@ export default function UE5Connection() {
       setIsLoadingTokens(true);
       const response = await fetch('/api/agent/tokens', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${authToken}`
         }
       });
       if (response.ok) {
@@ -447,7 +451,6 @@ export default function UE5Connection() {
 
     try {
       setIsCreatingToken(true);
-      const authToken = localStorage.getItem('token');
       
       if (!authToken) {
         alert('You must be logged in to create tokens. Please log in first.');
@@ -496,7 +499,7 @@ export default function UE5Connection() {
       const response = await fetch(`/api/agent/tokens/${tokenId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${authToken}`
         }
       });
 
@@ -566,7 +569,7 @@ export default function UE5Connection() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({
           tool_name: toolName,
@@ -618,7 +621,7 @@ export default function UE5Connection() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({ command: aiCommand })
       });
