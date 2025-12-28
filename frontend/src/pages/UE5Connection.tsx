@@ -555,9 +555,11 @@ export default function UE5Connection() {
     return matchesSearch && matchesCategory;
   });
 
-  const executeTool = async (toolName: string, params: Record<string, any>) => {
-    if (!agentStatus.connected || !agentStatus.mcp_connected) {
-      alert('Agent must be connected to UE5 to execute tools');
+  const executeTool = async (toolName: string, params: Record<string, any> = {}) => {
+    console.log('executeTool called:', toolName, params);
+    
+    if (!agentStatus.mcp_connected) {
+      alert('MCP is not connected. Please ensure UE5 is running with the MCP plugin.');
       return;
     }
 
@@ -565,6 +567,7 @@ export default function UE5Connection() {
     const startTime = Date.now();
 
     try {
+      console.log('Sending request to /api/agent/execute');
       const response = await fetch('/api/agent/execute', {
         method: 'POST',
         headers: {
@@ -579,6 +582,7 @@ export default function UE5Connection() {
       });
 
       const data = await response.json();
+      console.log('Response received:', data);
       const duration = Date.now() - startTime;
 
       const result: ExecutionResult = {
@@ -586,13 +590,17 @@ export default function UE5Connection() {
         tool: toolName,
         params,
         result: data.result,
-        success: data.success,
+        success: data.success !== false,
         error: data.error,
         timestamp: new Date(),
         duration
       };
 
-      setExecutionHistory(prev => [result, ...prev.slice(0, 49)]);
+      console.log('Adding to execution history:', result);
+      setExecutionHistory(prev => {
+        console.log('Previous history length:', prev.length);
+        return [result, ...prev.slice(0, 49)];
+      });
     } catch (error: any) {
       const result: ExecutionResult = {
         id: crypto.randomUUID(),
