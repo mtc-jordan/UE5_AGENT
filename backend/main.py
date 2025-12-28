@@ -41,6 +41,7 @@ from services.presence import presence_service
 from services.realtime_chat import realtime_chat
 from services.realtime_workspace import realtime_workspace
 from services.agent_relay import agent_relay
+from api.viewport import set_agent_relay_service
 
 
 async def seed_default_agents():
@@ -95,6 +96,7 @@ async def lifespan(app: FastAPI):
     await realtime_chat.start()
     await realtime_workspace.start()
     await agent_relay.start()
+    set_agent_relay_service(agent_relay)
     logger.info("Real-time services started")
     
     logger.info(f"{settings.APP_NAME} is ready!")

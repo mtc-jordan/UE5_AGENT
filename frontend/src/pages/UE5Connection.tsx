@@ -14,21 +14,22 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuthStore } from '../lib/store';
 import {
-  Wifi, WifiOff, RefreshCw, Settings, Play, Square, Search,
-  ChevronRight, ChevronDown, Box, Camera, Map, FolderOpen,
+  WifiOff, RefreshCw, Settings, Play, Square, Search,
+  ChevronDown, Box, Camera, Map, FolderOpen,
   GitBranch, Palette, Zap, Film, Volume2, Mountain, Puzzle,
   MousePointer, Terminal, Star, StarOff, CheckCircle,
-  XCircle, AlertCircle, Send, Loader2, Copy,
+  XCircle, AlertCircle, Loader2, Copy,
   LayoutGrid, List, Key, Trash2, Plus, Eye, EyeOff,
-  Activity, Monitor, Save, Undo, Redo, X, Clock,
+  Monitor, Save, Undo, Redo, X,
   ArrowRight, Sparkles, History, BookOpen, Command,
   Download, Package, Plug, Shield, ExternalLink, Check,
-  FileCode, HelpCircle, AlertTriangle, Server, Link2,
-  Globe, Power, PowerOff, Cloud, CloudOff, Cpu,
-  Gauge, Layers, Wrench, Target, Crosshair, Radio,
-  CircleDot, Workflow, Cable, Rocket, Gamepad2
+  HelpCircle,
+  Globe, Cloud, CloudOff, Cpu,
+  Gauge, Layers, Wrench, Target, Crosshair,
+  Rocket, Gamepad2
 } from 'lucide-react';
 import { MCP_TOOLS, MCP_CATEGORIES, QUICK_ACTIONS, MCPTool } from '../data/mcpTools';
+import ViewportPreview from '../components/ViewportPreview';
 
 // ==================== TYPES ====================
 
@@ -84,6 +85,29 @@ interface DownloadItem {
   download_url: string | null;
 }
 
+interface Screenshot {
+  id: string;
+  filename: string;
+  timestamp: string;
+  width: number;
+  height: number;
+  file_path: string;
+  base64_data?: string;
+  context?: string;
+  tool_name?: string;
+  is_before: boolean;
+  paired_screenshot_id?: string;
+}
+
+interface BeforeAfterPair {
+  id: string;
+  before: Screenshot;
+  after: Screenshot;
+  tool_name: string;
+  tool_params: Record<string, any>;
+  created_at: string;
+}
+
 // ==================== CONSTANTS ====================
 
 const UE5_VERSIONS = ['5.1', '5.2', '5.3', '5.4', '5.5', '5.6', '5.7'];
@@ -100,11 +124,13 @@ const TABS = [
 
 type TabId = typeof TABS[number]['id'];
 
-const iconMap: Record<string, React.FC<any>> = {
+// Icon map for dynamic icon rendering (used in MCP tool categories)
+const _iconMap: Record<string, React.FC<any>> = {
   Box, Camera, Map, FolderOpen, GitBranch, Palette, Zap, Film,
   Volume2, Mountain, Puzzle, MousePointer, Play, Settings, Save,
   Undo, Redo, X, Square, Layers, Target, Crosshair
 };
+void _iconMap; // Suppress unused variable warning
 
 // ==================== ANIMATED COMPONENTS ====================
 
@@ -196,7 +222,7 @@ const StatCard = ({
   value, 
   subtext,
   gradient,
-  delay = 0
+  delay: _delay = 0
 }: { 
   icon: React.ElementType; 
   label: string; 
@@ -204,7 +230,9 @@ const StatCard = ({
   subtext?: string;
   gradient: string;
   delay?: number;
-}) => (
+}) => {
+  void _delay; // Reserved for future animation delay
+  return (
   <GlassCard className="p-5 group" hover>
     <div className="flex items-start justify-between">
       <div>
@@ -217,7 +245,8 @@ const StatCard = ({
       </div>
     </div>
   </GlassCard>
-);
+  );
+};
 
 // Copy to clipboard hook
 function useCopyToClipboard() {
@@ -344,7 +373,8 @@ export default function UE5Connection() {
 
   // Downloads state
   const [downloads, setDownloads] = useState<DownloadItem[]>([]);
-  const [loadingDownloads, setLoadingDownloads] = useState(true);
+  const [_loadingDownloads, setLoadingDownloads] = useState(true);
+  void _loadingDownloads; // Used for loading state display
   const [downloading, setDownloading] = useState<string | null>(null);
 
   // Tool browser state
@@ -371,13 +401,19 @@ export default function UE5Connection() {
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [aiToolCalls, setAiToolCalls] = useState<Array<{id: string; name: string; arguments: any}>>([]);
-  const [chatHistory, setChatHistory] = useState<Array<{role: string; content: string; toolCalls?: any[]; toolResults?: any[]}>>([]);
+  const [chatHistory, setChatHistory] = useState<Array<{role: string; content: string; toolCalls?: any[]; toolResults?: any[]; screenshot?: Screenshot; beforeAfter?: BeforeAfterPair}>>([])
+
+  // Viewport Preview state
+  const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
+  const [beforeAfterPairs, setBeforeAfterPairs] = useState<BeforeAfterPair[]>([]);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [autoCapture, setAutoCapture] = useState(true);;
 
   // UI state
   const [activeTab, setActiveTab] = useState<TabId>('overview');
 
   const resultRef = useRef<HTMLDivElement>(null);
-  const statusPollRef = useRef<NodeJS.Timeout | null>(null);
+  const statusPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ==================== EFFECTS ====================
 
@@ -635,7 +671,8 @@ export default function UE5Connection() {
             role: m.role,
             content: m.content
           })),
-          execute_tools: true
+          execute_tools: true,
+          auto_capture: autoCapture
         })
       });
 
@@ -677,12 +714,30 @@ export default function UE5Connection() {
         });
       }
 
-      // Add assistant message to chat history
+      // Handle screenshot from response
+      if (data.screenshot) {
+        setScreenshots(prev => [data.screenshot, ...prev.slice(0, 49)]);
+      }
+
+      // Handle before/after pair from response
+      if (data.before_after) {
+        setBeforeAfterPairs(prev => [data.before_after, ...prev.slice(0, 19)]);
+        // Also add individual screenshots
+        setScreenshots(prev => [
+          data.before_after.after,
+          data.before_after.before,
+          ...prev.slice(0, 47)
+        ]);
+      }
+
+      // Add assistant message to chat history with screenshot info
       setChatHistory(prev => [...prev, {
         role: 'assistant',
         content: data.content || '',
         toolCalls: data.tool_calls,
-        toolResults: data.tool_results
+        toolResults: data.tool_results,
+        screenshot: data.screenshot,
+        beforeAfter: data.before_after
       }]);
 
       // Clear input after successful execution
@@ -696,6 +751,62 @@ export default function UE5Connection() {
       }]);
     } finally {
       setIsAiProcessing(false);
+    }
+  };
+
+  // Manual screenshot capture
+  const captureScreenshot = async () => {
+    if (!agentStatus.mcp_connected) return;
+    
+    setIsCapturing(true);
+    try {
+      const response = await fetch('/api/viewport/capture', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          context: 'Manual capture',
+          resolution_x: 1280,
+          resolution_y: 720
+        })
+      });
+
+      if (response.ok) {
+        const screenshot = await response.json();
+        setScreenshots(prev => [screenshot, ...prev.slice(0, 49)]);
+      }
+    } catch (error) {
+      console.error('Failed to capture screenshot:', error);
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
+  // Load existing screenshots
+  const loadScreenshots = async () => {
+    try {
+      const [screenshotsRes, pairsRes] = await Promise.all([
+        fetch('/api/viewport/screenshots?limit=20', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        }),
+        fetch('/api/viewport/pairs?limit=10', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        })
+      ]);
+
+      if (screenshotsRes.ok) {
+        const data = await screenshotsRes.json();
+        setScreenshots(data);
+      }
+
+      if (pairsRes.ok) {
+        const data = await pairsRes.json();
+        setBeforeAfterPairs(data);
+      }
+    } catch (error) {
+      console.error('Failed to load screenshots:', error);
     }
   };
 
@@ -1663,6 +1774,58 @@ export default function UE5Connection() {
                       ))}
                     </div>
                   )}
+                  
+                  {/* Show screenshot thumbnail */}
+                  {msg.screenshot && (
+                    <div className="mt-3 pt-3 border-t border-white/10">
+                      <div className="text-xs text-gray-400 mb-2 flex items-center gap-1">
+                        <Camera className="w-3 h-3" />
+                        Viewport Capture
+                      </div>
+                      <img
+                        src={msg.screenshot.base64_data 
+                          ? `data:image/png;base64,${msg.screenshot.base64_data}`
+                          : msg.screenshot.file_path}
+                        alt="Viewport screenshot"
+                        className="w-full max-w-[200px] rounded-lg border border-white/10 cursor-pointer hover:border-purple-500/50 transition-colors"
+                        onClick={() => {
+                          // Could open a modal here
+                        }}
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Show before/after comparison */}
+                  {msg.beforeAfter && (
+                    <div className="mt-3 pt-3 border-t border-white/10">
+                      <div className="text-xs text-gray-400 mb-2 flex items-center gap-1">
+                        <Layers className="w-3 h-3" />
+                        Before / After: {msg.beforeAfter.tool_name}
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="relative">
+                          <img
+                            src={msg.beforeAfter.before.base64_data 
+                              ? `data:image/png;base64,${msg.beforeAfter.before.base64_data}`
+                              : msg.beforeAfter.before.file_path}
+                            alt="Before"
+                            className="w-24 h-14 object-cover rounded border border-white/10"
+                          />
+                          <span className="absolute bottom-0 left-0 bg-orange-500 text-white text-[10px] px-1 rounded-tr">Before</span>
+                        </div>
+                        <div className="relative">
+                          <img
+                            src={msg.beforeAfter.after.base64_data 
+                              ? `data:image/png;base64,${msg.beforeAfter.after.base64_data}`
+                              : msg.beforeAfter.after.file_path}
+                            alt="After"
+                            className="w-24 h-14 object-cover rounded border border-white/10"
+                          />
+                          <span className="absolute bottom-0 left-0 bg-green-500 text-white text-[10px] px-1 rounded-tr">After</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -1724,6 +1887,19 @@ export default function UE5Connection() {
           ))}
         </div>
       </GlassCard>
+
+      {/* Viewport Preview */}
+      {agentStatus.mcp_connected && (
+        <ViewportPreview
+          screenshots={screenshots}
+          pairs={beforeAfterPairs}
+          onCapture={captureScreenshot}
+          onRefresh={loadScreenshots}
+          isCapturing={isCapturing}
+          autoCapture={autoCapture}
+          onToggleAutoCapture={setAutoCapture}
+        />
+      )}
 
       {/* Execution History */}
       {executionHistory.length > 0 && (

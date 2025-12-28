@@ -20,6 +20,7 @@ import asyncio
 from services.ue5_ai_chat import get_ue5_ai_chat_service, UE5AIChatService
 from services.agent_relay import get_agent_relay
 from services.auth import get_current_user
+from services.viewport_preview import get_viewport_preview_service, ViewportPreviewService
 from models.user import User
 
 router = APIRouter(prefix="/ue5-ai", tags=["UE5 AI Chat"])
@@ -37,6 +38,7 @@ class ChatRequest(BaseModel):
     """Request body for chat endpoint"""
     messages: List[ChatMessage]
     execute_tools: bool = True  # Whether to automatically execute MCP tools
+    auto_capture: bool = True  # Whether to auto-capture screenshots after visual changes
     context: Optional[Dict[str, Any]] = None  # Additional context (e.g., selected actors)
 
 
@@ -49,6 +51,26 @@ class ToolCallResult(BaseModel):
     success: bool
 
 
+class ScreenshotInfo(BaseModel):
+    """Screenshot information"""
+    id: str
+    filename: str
+    timestamp: str
+    width: int
+    height: int
+    base64_data: Optional[str] = None
+    context: Optional[str] = None
+    is_before: bool = False
+
+
+class BeforeAfterInfo(BaseModel):
+    """Before/after comparison info"""
+    id: str
+    before: ScreenshotInfo
+    after: ScreenshotInfo
+    tool_name: str
+
+
 class ChatResponse(BaseModel):
     """Response from chat endpoint"""
     content: str
@@ -56,6 +78,8 @@ class ChatResponse(BaseModel):
     tool_results: List[ToolCallResult] = []
     suggestions: List[str] = []
     error: Optional[str] = None
+    screenshot: Optional[ScreenshotInfo] = None
+    before_after: Optional[BeforeAfterInfo] = None
 
 
 class SuggestionRequest(BaseModel):
@@ -124,17 +148,24 @@ async def chat(
     The AI will analyze the message, determine if any MCP tools should be called,
     and optionally execute them on the connected UE5 instance.
     
+    Features:
+    - Auto-capture: Automatically captures viewport screenshots after visual-changing operations
+    - Before/After: For transformation tools, captures before and after screenshots for comparison
+    
     Example request:
     ```json
     {
         "messages": [
             {"role": "user", "content": "Create a cube at position 0, 0, 100"}
         ],
-        "execute_tools": true
+        "execute_tools": true,
+        "auto_capture": true
     }
     ```
     """
     ai_service = get_ue5_ai_chat_service()
+    viewport_service = get_viewport_preview_service()
+    agent_relay = get_agent_relay()
     
     # Convert messages to dict format
     messages = [
@@ -142,9 +173,34 @@ async def chat(
         for msg in request.messages
     ]
     
+    # Track tools that were executed for auto-capture
+    executed_tools: List[Dict[str, Any]] = []
+    
     # Create tool executor that uses the agent relay
     async def tool_executor(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
-        return await execute_mcp_tool(tool_name, arguments, current_user.id)
+        # Capture "before" screenshot if this is a transform tool and auto-capture is enabled
+        if request.auto_capture and viewport_service.should_capture_before_after(tool_name):
+            try:
+                await viewport_service.capture_before(
+                    user_id=current_user.id,
+                    agent_relay_service=agent_relay,
+                    tool_name=tool_name
+                )
+            except Exception as e:
+                # Don't fail the tool execution if screenshot capture fails
+                pass
+        
+        # Execute the tool
+        result = await execute_mcp_tool(tool_name, arguments, current_user.id)
+        
+        # Track executed tool for post-execution screenshot
+        executed_tools.append({
+            "name": tool_name,
+            "arguments": arguments,
+            "result": result
+        })
+        
+        return result
     
     # Get AI response with tool execution
     result = await ai_service.chat(
@@ -165,12 +221,88 @@ async def chat(
         for tr in result.get("tool_results", [])
     ]
     
+    # Auto-capture screenshot after tool execution
+    screenshot_info = None
+    before_after_info = None
+    
+    if request.auto_capture and executed_tools and agent_relay.is_mcp_connected(current_user.id):
+        # Check if any executed tool is a transform tool (for before/after)
+        transform_tool = None
+        for tool in executed_tools:
+            if viewport_service.should_capture_before_after(tool["name"]):
+                transform_tool = tool
+                break
+        
+        if transform_tool:
+            # Capture "after" screenshot and create before/after pair
+            try:
+                pair = await viewport_service.capture_after(
+                    user_id=current_user.id,
+                    agent_relay_service=agent_relay,
+                    tool_name=transform_tool["name"],
+                    tool_params=transform_tool["arguments"]
+                )
+                if pair:
+                    before_after_info = BeforeAfterInfo(
+                        id=pair.id,
+                        before=ScreenshotInfo(
+                            id=pair.before.id,
+                            filename=pair.before.filename,
+                            timestamp=pair.before.timestamp.isoformat(),
+                            width=pair.before.width,
+                            height=pair.before.height,
+                            base64_data=pair.before.base64_data,
+                            context=pair.before.context,
+                            is_before=True
+                        ),
+                        after=ScreenshotInfo(
+                            id=pair.after.id,
+                            filename=pair.after.filename,
+                            timestamp=pair.after.timestamp.isoformat(),
+                            width=pair.after.width,
+                            height=pair.after.height,
+                            base64_data=pair.after.base64_data,
+                            context=pair.after.context,
+                            is_before=False
+                        ),
+                        tool_name=pair.tool_name
+                    )
+            except Exception as e:
+                # Don't fail the response if screenshot capture fails
+                pass
+        else:
+            # Just capture a single screenshot for non-transform tools
+            try:
+                last_tool = executed_tools[-1]
+                screenshot = await viewport_service.capture_screenshot(
+                    user_id=current_user.id,
+                    agent_relay_service=agent_relay,
+                    context=f"After {last_tool['name']}",
+                    tool_name=last_tool["name"]
+                )
+                if screenshot:
+                    screenshot_info = ScreenshotInfo(
+                        id=screenshot.id,
+                        filename=screenshot.filename,
+                        timestamp=screenshot.timestamp.isoformat(),
+                        width=screenshot.width,
+                        height=screenshot.height,
+                        base64_data=screenshot.base64_data,
+                        context=screenshot.context,
+                        is_before=False
+                    )
+            except Exception as e:
+                # Don't fail the response if screenshot capture fails
+                pass
+    
     return ChatResponse(
         content=result.get("content", ""),
         tool_calls=result.get("tool_calls", []),
         tool_results=tool_results,
         suggestions=[],
-        error=result.get("error")
+        error=result.get("error"),
+        screenshot=screenshot_info,
+        before_after=before_after_info
     )
 
 
