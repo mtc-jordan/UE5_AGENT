@@ -18,6 +18,7 @@ import AdminRoles from './pages/AdminRoles'
 import AdminDashboard from './pages/AdminDashboard'
 import Pricing from './pages/Pricing'
 import SubscriptionSettings from './pages/SubscriptionSettings'
+import Downloads from './pages/Downloads'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -85,6 +86,7 @@ function App() {
           <Route path="pricing" element={<Pricing />} />
           <Route path="admin/roles" element={<AdminRoles />} />
           <Route path="admin/dashboard" element={<AdminDashboard />} />
+          <Route path="downloads" element={<Downloads />} />
         </Route>
       </Routes>
     </PreferencesLoader>

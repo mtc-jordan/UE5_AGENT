@@ -19,6 +19,7 @@ from api.rate_limit import router as rate_limit_router
 from api.sso import router as sso_router
 from api.analytics import router as analytics_router
 from api.mcp_ai import router as mcp_ai_router
+from api.downloads import router as downloads_router
 
 api_router = APIRouter(prefix="/api")
 
@@ -42,5 +43,6 @@ api_router.include_router(rate_limit_router)
 api_router.include_router(sso_router)
 api_router.include_router(analytics_router)
 api_router.include_router(mcp_ai_router)
+api_router.include_router(downloads_router)
 
 __all__ = ["api_router"]
