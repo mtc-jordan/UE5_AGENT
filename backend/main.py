@@ -43,6 +43,8 @@ from services.realtime_workspace import realtime_workspace
 from services.agent_relay import agent_relay
 from api.viewport import set_agent_relay_service
 from api.scene_builder import set_agent_relay_service as set_scene_builder_relay
+from api.action_history import set_agent_relay_service as set_action_history_relay
+from api.blueprint_material import set_agent_relay_service as set_blueprint_material_relay
 
 
 async def seed_default_agents():
@@ -99,6 +101,8 @@ async def lifespan(app: FastAPI):
     await agent_relay.start()
     set_agent_relay_service(agent_relay)
     set_scene_builder_relay(agent_relay)
+    set_action_history_relay(agent_relay)
+    set_blueprint_material_relay(agent_relay)
     logger.info("Real-time services started")
     
     logger.info(f"{settings.APP_NAME} is ready!")

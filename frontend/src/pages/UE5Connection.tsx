@@ -31,6 +31,8 @@ import {
 import { MCP_TOOLS, MCP_CATEGORIES, QUICK_ACTIONS, MCPTool } from '../data/mcpTools';
 import ViewportPreview from '../components/ViewportPreview';
 import SceneBuilder from '../components/SceneBuilder';
+import ActionTimeline from '../components/ActionTimeline';
+import BlueprintMaterialAssistant from '../components/BlueprintMaterialAssistant';
 
 // ==================== TYPES ====================
 
@@ -1935,6 +1937,48 @@ export default function UE5Connection() {
           setChatHistory(prev => [...prev, {
             role: 'assistant',
             content: `Scene built successfully! Created ${plan.objects.length} objects: ${plan.objects.map(o => o.name).join(', ')}`,
+            timestamp: new Date().toISOString()
+          }]);
+        }}
+      />
+
+      {/* Blueprint & Material Assistant */}
+      <BlueprintMaterialAssistant
+        authToken={authToken}
+        isConnected={agentStatus.mcp_connected}
+        onAssetCreated={(asset) => {
+          // Refresh screenshots after asset is created
+          loadScreenshots();
+          // Add to chat history
+          setChatHistory(prev => [...prev, {
+            role: 'assistant',
+            content: `Created ${asset.graph.asset_type}: ${asset.graph.name}`,
+            timestamp: new Date().toISOString()
+          }]);
+        }}
+      />
+
+      {/* Action Timeline (Undo/Redo) */}
+      <ActionTimeline
+        authToken={authToken}
+        isConnected={agentStatus.mcp_connected}
+        onActionUndone={(action) => {
+          // Refresh screenshots after undo
+          loadScreenshots();
+          // Add to chat history
+          setChatHistory(prev => [...prev, {
+            role: 'assistant',
+            content: `Undone: ${action.description}`,
+            timestamp: new Date().toISOString()
+          }]);
+        }}
+        onActionRedone={(action) => {
+          // Refresh screenshots after redo
+          loadScreenshots();
+          // Add to chat history
+          setChatHistory(prev => [...prev, {
+            role: 'assistant',
+            content: `Redone: ${action.description}`,
             timestamp: new Date().toISOString()
           }]);
         }}

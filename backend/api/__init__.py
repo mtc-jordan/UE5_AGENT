@@ -24,6 +24,8 @@ from api.agent import router as agent_router
 from api.ai_chat import router as ai_chat_router
 from api.viewport import router as viewport_router
 from api.scene_builder import router as scene_builder_router
+from api.action_history import router as action_history_router
+from api.blueprint_material import router as blueprint_material_router
 
 api_router = APIRouter(prefix="/api")
 
@@ -52,5 +54,7 @@ api_router.include_router(agent_router)
 api_router.include_router(ai_chat_router)
 api_router.include_router(viewport_router)
 api_router.include_router(scene_builder_router)
+api_router.include_router(action_history_router)
+api_router.include_router(blueprint_material_router)
 
 __all__ = ["api_router"]
