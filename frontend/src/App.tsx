@@ -15,6 +15,7 @@ import Plugins from './pages/Plugins'
 import PluginEditor from './pages/PluginEditor'
 import ModelComparison from './pages/ModelComparison'
 import AdminRoles from './pages/AdminRoles'
+import AdminDashboard from './pages/AdminDashboard'
 import Pricing from './pages/Pricing'
 import SubscriptionSettings from './pages/SubscriptionSettings'
 
@@ -83,6 +84,7 @@ function App() {
           <Route path="settings/subscription" element={<SubscriptionSettings />} />
           <Route path="pricing" element={<Pricing />} />
           <Route path="admin/roles" element={<AdminRoles />} />
+          <Route path="admin/dashboard" element={<AdminDashboard />} />
         </Route>
       </Routes>
     </PreferencesLoader>

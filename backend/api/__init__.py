@@ -17,6 +17,7 @@ from api.subscription import router as subscription_router
 from api.team import router as team_router
 from api.rate_limit import router as rate_limit_router
 from api.sso import router as sso_router
+from api.analytics import router as analytics_router
 
 api_router = APIRouter(prefix="/api")
 
@@ -38,5 +39,6 @@ api_router.include_router(subscription_router)
 api_router.include_router(team_router)
 api_router.include_router(rate_limit_router)
 api_router.include_router(sso_router)
+api_router.include_router(analytics_router)
 
 __all__ = ["api_router"]

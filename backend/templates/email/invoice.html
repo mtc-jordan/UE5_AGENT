@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Invoice #{{ invoice_number }}{% endblock %}
+
+{% block content %}
+<h1>Invoice #{{ invoice_number }}</h1>
+
+<p>Hi {{ username }},</p>
+
+<p>Thank you for your payment. Here's your invoice for your records.</p>
+
+<div class="info-box">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+        <tr>
+            <td style="color: #888;">Invoice Number:</td>
+            <td style="text-align: right; color: #fff; font-weight: bold;">#{{ invoice_number }}</td>
+        </tr>
+        <tr>
+            <td style="color: #888; padding-top: 10px;">Date:</td>
+            <td style="text-align: right; color: #fff;">{{ now|date }}</td>
+        </tr>
+        <tr>
+            <td style="color: #888; padding-top: 10px;">Status:</td>
+            <td style="text-align: right;"><span style="color: #10b981; font-weight: bold;">✓ Paid</span></td>
+        </tr>
+    </table>
+</div>
+
+<div class="divider"></div>
+
+<h2>Invoice Details</h2>
+
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #0f3460; border-radius: 8px; overflow: hidden;">
+    <thead>
+        <tr style="background-color: #1a2744;">
+            <th style="padding: 15px; text-align: left; color: #888; font-weight: normal;">Description</th>
+            <th style="padding: 15px; text-align: right; color: #888; font-weight: normal;">Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if items %}
+        {% for item in items %}
+        <tr>
+            <td style="padding: 15px; border-top: 1px solid #1a2744;">
+                <strong style="color: #fff;">{{ item.name }}</strong>
+                {% if item.description %}
+                <br><span style="color: #888; font-size: 13px;">{{ item.description }}</span>
+                {% endif %}
+            </td>
+            <td style="padding: 15px; text-align: right; border-top: 1px solid #1a2744; color: #fff;">
+                {{ item.amount|currency(currency) }}
+            </td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr>
+            <td style="padding: 15px; border-top: 1px solid #1a2744;">
+                <strong style="color: #fff;">{{ app_name }} Subscription</strong>
+            </td>
+            <td style="padding: 15px; text-align: right; border-top: 1px solid #1a2744; color: #fff;">
+                {{ amount|currency(currency) }}
+            </td>
+        </tr>
+        {% endif %}
+    </tbody>
+    <tfoot>
+        <tr style="background-color: #1a2744;">
+            <td style="padding: 15px; font-weight: bold; color: #fff;">Total</td>
+            <td style="padding: 15px; text-align: right; font-weight: bold; color: #10b981; font-size: 18px;">
+                {{ amount|currency(currency) }}
+            </td>
+        </tr>
+    </tfoot>
+</table>
+
+{% if invoice_link %}
+<p style="text-align: center; margin-top: 30px;">
+    <a href="{{ invoice_link }}" class="button button-secondary">View Invoice Online</a>
+</p>
+{% endif %}
+
+<div class="divider"></div>
+
+<p style="font-size: 13px; color: #888;">
+    This invoice was automatically generated. If you have any questions about this charge, please contact our support team at <a href="mailto:{{ support_email }}" style="color: #3b82f6;">{{ support_email }}</a>.
+</p>
+
+<p>
+    Thank you for your business!<br>
+    <strong>The {{ app_name }} Team</strong>
+</p>
+{% endblock %}

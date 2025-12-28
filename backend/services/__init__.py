@@ -59,6 +59,18 @@ from services.stripe_service import (
     StripeService,
     stripe_service
 )
+from services.analytics import (
+    AnalyticsService,
+    get_analytics_service
+)
+from services.email import (
+    EmailService,
+    EmailMessage,
+    EmailAddress,
+    EmailResult,
+    email_service,
+    get_email_service
+)
 
 __all__ = [
     # Auth
@@ -121,5 +133,15 @@ __all__ = [
     "SubscriptionService",
     "subscription_service",
     "StripeService",
-    "stripe_service"
+    "stripe_service",
+    # Analytics
+    "AnalyticsService",
+    "get_analytics_service",
+    # Email
+    "EmailService",
+    "EmailMessage",
+    "EmailAddress",
+    "EmailResult",
+    "email_service",
+    "get_email_service"
 ]

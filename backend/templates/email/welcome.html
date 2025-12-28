@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1>Welcome to {{ app_name }}! 🎉</h1>
+
+<p>Hi {{ username }},</p>
+
+<p>Thank you for joining {{ app_name }}! We're thrilled to have you on board. You've just taken the first step toward revolutionizing your Unreal Engine 5 development workflow with AI-powered assistance.</p>
+
+<div class="success-box">
+    <strong>🚀 Your account is ready!</strong>
+    <p style="margin-bottom: 0; margin-top: 10px;">Start exploring the platform and discover how AI can accelerate your game development.</p>
+</div>
+
+{% if verification_link %}
+<p>Please verify your email address to unlock all features:</p>
+
+<p style="text-align: center;">
+    <a href="{{ verification_link }}" class="button">Verify Email Address</a>
+</p>
+
+<p style="font-size: 12px; color: #888;">
+    If the button doesn't work, copy and paste this link into your browser:<br>
+    <a href="{{ verification_link }}" style="color: #3b82f6;">{{ verification_link }}</a>
+</p>
+{% endif %}
+
+<div class="divider"></div>
+
+<h2>Getting Started</h2>
+
+<p>Here are some things you can do right away:</p>
+
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+    <tr>
+        <td style="padding: 15px; background-color: #0f3460; border-radius: 8px; margin-bottom: 10px;">
+            <strong style="color: #3b82f6;">💬 Start a Chat</strong>
+            <p style="margin: 10px 0 0 0; font-size: 14px;">Ask the AI to help with Blueprint logic, C++ code, or level design ideas.</p>
+        </td>
+    </tr>
+    <tr><td style="height: 10px;"></td></tr>
+    <tr>
+        <td style="padding: 15px; background-color: #0f3460; border-radius: 8px; margin-bottom: 10px;">
+            <strong style="color: #10b981;">🔌 Connect UE5</strong>
+            <p style="margin: 10px 0 0 0; font-size: 14px;">Install the MCP Bridge plugin to enable direct editor control.</p>
+        </td>
+    </tr>
+    <tr><td style="height: 10px;"></td></tr>
+    <tr>
+        <td style="padding: 15px; background-color: #0f3460; border-radius: 8px;">
+            <strong style="color: #e94560;">🧩 Explore Plugins</strong>
+            <p style="margin: 10px 0 0 0; font-size: 14px;">Browse the marketplace for community-created tools and extensions.</p>
+        </td>
+    </tr>
+</table>
+
+<div class="divider"></div>
+
+<p>Need help getting started? Check out our <a href="{{ app_url }}/docs" style="color: #3b82f6;">documentation</a> or reach out to our support team at <a href="mailto:{{ support_email }}" style="color: #3b82f6;">{{ support_email }}</a>.</p>
+
+<p>Happy building! 🎮</p>
+
+<p>
+    Best regards,<br>
+    <strong>The {{ app_name }} Team</strong>
+</p>
+{% endblock %}

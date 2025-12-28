@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}You're invited to join {{ team_name }}{% endblock %}
+
+{% block content %}
+<h1>You're Invited! 🎉</h1>
+
+<p>Hi there,</p>
+
+<p><strong>{{ inviter_name }}</strong> has invited you to join <strong>{{ team_name }}</strong> on {{ app_name }}.</p>
+
+<div class="info-box">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+        <tr>
+            <td style="color: #888;">Team:</td>
+            <td style="text-align: right; color: #fff; font-weight: bold;">{{ team_name }}</td>
+        </tr>
+        <tr>
+            <td style="color: #888; padding-top: 10px;">Your Role:</td>
+            <td style="text-align: right; color: #3b82f6; font-weight: bold;">{{ role }}</td>
+        </tr>
+        <tr>
+            <td style="color: #888; padding-top: 10px;">Invited By:</td>
+            <td style="text-align: right; color: #fff;">{{ inviter_name }}</td>
+        </tr>
+    </table>
+</div>
+
+<p style="text-align: center;">
+    <a href="{{ invite_link }}" class="button">Accept Invitation</a>
+</p>
+
+<p style="font-size: 12px; color: #888; text-align: center;">
+    If the button doesn't work, copy and paste this link into your browser:<br>
+    <a href="{{ invite_link }}" style="color: #3b82f6;">{{ invite_link }}</a>
+</p>
+
+<div class="divider"></div>
+
+<h2>What You'll Get Access To</h2>
+
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+    <tr>
+        <td style="padding: 15px; background-color: #0f3460; border-radius: 8px; margin-bottom: 10px;">
+            <strong style="color: #3b82f6;">📁 Shared Projects</strong>
+            <p style="margin: 10px 0 0 0; font-size: 14px;">Collaborate on UE5 projects with your team members in real-time.</p>
+        </td>
+    </tr>
+    <tr><td style="height: 10px;"></td></tr>
+    <tr>
+        <td style="padding: 15px; background-color: #0f3460; border-radius: 8px; margin-bottom: 10px;">
+            <strong style="color: #10b981;">💬 Team Chat</strong>
+            <p style="margin: 10px 0 0 0; font-size: 14px;">Share AI conversations and insights with your teammates.</p>
+        </td>
+    </tr>
+    <tr><td style="height: 10px;"></td></tr>
+    <tr>
+        <td style="padding: 15px; background-color: #0f3460; border-radius: 8px;">
+            <strong style="color: #e94560;">🔧 Shared Plugins</strong>
+            <p style="margin: 10px 0 0 0; font-size: 14px;">Access team-specific plugins and custom tools.</p>
+        </td>
+    </tr>
+</table>
+
+<div class="divider"></div>
+
+<div class="warning-box">
+    <strong>⏰ This invitation expires in 7 days</strong>
+    <p style="margin-bottom: 0; margin-top: 10px;">Please accept the invitation before it expires. If you need a new invitation, contact {{ inviter_name }}.</p>
+</div>
+
+<p style="font-size: 13px; color: #888;">
+    If you weren't expecting this invitation or don't want to join this team, you can safely ignore this email.
+</p>
+
+<p>
+    See you on the team!<br>
+    <strong>The {{ app_name }} Team</strong>
+</p>
+{% endblock %}

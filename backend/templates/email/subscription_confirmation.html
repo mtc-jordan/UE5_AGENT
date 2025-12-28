@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Subscription Confirmed: {{ plan_name }}{% endblock %}
+
+{% block content %}
+<h1>Subscription Confirmed! 🎉</h1>
+
+<p>Hi {{ username }},</p>
+
+<p>Thank you for subscribing to <strong>{{ plan_name }}</strong>! Your subscription is now active and you have access to all the features included in your plan.</p>
+
+<div class="success-box">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+        <tr>
+            <td style="color: #888;">Plan:</td>
+            <td style="text-align: right; color: #10b981; font-weight: bold;">{{ plan_name }}</td>
+        </tr>
+        <tr>
+            <td style="color: #888; padding-top: 10px;">Amount:</td>
+            <td style="text-align: right; color: #fff; font-weight: bold;">{{ amount|currency("USD") }}/{{ billing_period }}</td>
+        </tr>
+        {% if next_billing_date %}
+        <tr>
+            <td style="color: #888; padding-top: 10px;">Next Billing:</td>
+            <td style="text-align: right; color: #fff;">{{ next_billing_date|date }}</td>
+        </tr>
+        {% endif %}
+        <tr>
+            <td style="color: #888; padding-top: 10px;">Status:</td>
+            <td style="text-align: right;"><span style="color: #10b981; font-weight: bold;">✓ Active</span></td>
+        </tr>
+    </table>
+</div>
+
+<div class="divider"></div>
+
+<h2>What's Included in {{ plan_name }}</h2>
+
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+    <tr>
+        <td style="padding: 12px 15px; background-color: #0f3460; border-radius: 8px 8px 0 0;">
+            <span style="color: #10b981; margin-right: 10px;">✓</span>
+            <span style="color: #fff;">Unlimited AI Chat Sessions</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 12px 15px; background-color: #0f3460;">
+            <span style="color: #10b981; margin-right: 10px;">✓</span>
+            <span style="color: #fff;">Access to All AI Models (GPT-4, Claude, Gemini)</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 12px 15px; background-color: #0f3460;">
+            <span style="color: #10b981; margin-right: 10px;">✓</span>
+            <span style="color: #fff;">Full MCP Bridge Integration</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 12px 15px; background-color: #0f3460;">
+            <span style="color: #10b981; margin-right: 10px;">✓</span>
+            <span style="color: #fff;">Plugin Marketplace Access</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 12px 15px; background-color: #0f3460;">
+            <span style="color: #10b981; margin-right: 10px;">✓</span>
+            <span style="color: #fff;">File Workspace (10GB Storage)</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 12px 15px; background-color: #0f3460; border-radius: 0 0 8px 8px;">
+            <span style="color: #10b981; margin-right: 10px;">✓</span>
+            <span style="color: #fff;">Priority Support</span>
+        </td>
+    </tr>
+</table>
+
+<p style="text-align: center; margin-top: 30px;">
+    <a href="{{ app_url }}/dashboard" class="button">Go to Dashboard</a>
+</p>
+
+<div class="divider"></div>
+
+<h2>Manage Your Subscription</h2>
+
+<p>You can manage your subscription at any time from your account settings:</p>
+
+<ul style="color: #e0e0e0; padding-left: 20px;">
+    <li style="margin-bottom: 10px;"><a href="{{ app_url }}/settings/subscription" style="color: #3b82f6;">View subscription details</a></li>
+    <li style="margin-bottom: 10px;"><a href="{{ app_url }}/settings/billing" style="color: #3b82f6;">Update payment method</a></li>
+    <li><a href="{{ app_url }}/settings/invoices" style="color: #3b82f6;">View billing history</a></li>
+</ul>
+
+<div class="divider"></div>
+
+<p style="font-size: 13px; color: #888;">
+    Questions about your subscription? Contact our support team at <a href="mailto:{{ support_email }}" style="color: #3b82f6;">{{ support_email }}</a>.
+</p>
+
+<p>
+    Thank you for choosing {{ app_name }}!<br>
+    <strong>The {{ app_name }} Team</strong>
+</p>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Failed - Action Required{% endblock %}
+
+{% block content %}
+<h1>Payment Failed ⚠️</h1>
+
+<p>Hi {{ username }},</p>
+
+<p>We were unable to process your payment of <strong>{{ amount|currency("USD") }}</strong> for your {{ app_name }} subscription.</p>
+
+<div class="warning-box">
+    <strong>Action Required</strong>
+    <p style="margin-bottom: 0; margin-top: 10px;">Please update your payment method to avoid any interruption to your service.</p>
+</div>
+
+{% if reason %}
+<div class="info-box">
+    <strong>Reason:</strong>
+    <p style="margin-bottom: 0; margin-top: 10px;">{{ reason }}</p>
+</div>
+{% endif %}
+
+<p style="text-align: center;">
+    <a href="{{ retry_link }}" class="button">Update Payment Method</a>
+</p>
+
+<div class="divider"></div>
+
+<h2>Common Reasons for Failed Payments</h2>
+
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+    <tr>
+        <td style="padding: 12px 15px; background-color: #0f3460; border-radius: 8px 8px 0 0;">
+            <strong style="color: #f59e0b;">💳 Expired Card</strong>
+            <p style="margin: 5px 0 0 0; font-size: 13px; color: #888;">Your card may have expired. Please update with a new card.</p>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 12px 15px; background-color: #0f3460;">
+            <strong style="color: #f59e0b;">💰 Insufficient Funds</strong>
+            <p style="margin: 5px 0 0 0; font-size: 13px; color: #888;">Ensure your account has sufficient funds for the payment.</p>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 12px 15px; background-color: #0f3460;">
+            <strong style="color: #f59e0b;">🔒 Bank Declined</strong>
+            <p style="margin: 5px 0 0 0; font-size: 13px; color: #888;">Your bank may have blocked the transaction. Contact them to authorize it.</p>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 12px 15px; background-color: #0f3460; border-radius: 0 0 8px 8px;">
+            <strong style="color: #f59e0b;">📍 Address Mismatch</strong>
+            <p style="margin: 5px 0 0 0; font-size: 13px; color: #888;">Verify your billing address matches your card's registered address.</p>
+        </td>
+    </tr>
+</table>
+
+<div class="divider"></div>
+
+<div class="info-box">
+    <strong>What happens next?</strong>
+    <p style="margin-top: 10px; margin-bottom: 0;">We'll automatically retry the payment in a few days. To avoid any service interruption, please update your payment method as soon as possible.</p>
+</div>
+
+<p style="font-size: 13px; color: #888;">
+    If you believe this is an error or need assistance, please contact our support team at <a href="mailto:{{ support_email }}" style="color: #3b82f6;">{{ support_email }}</a>.
+</p>
+
+<p>
+    We're here to help,<br>
+    <strong>The {{ app_name }} Team</strong>
+</p>
+{% endblock %}
