@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     # AI Services - Read from system environment
     DEEPSEEK_API_KEY: Optional[str] = Field(default=None)
     ANTHROPIC_API_KEY: Optional[str] = Field(default=None)
+    GOOGLE_API_KEY: Optional[str] = Field(default=None)  # Google Gemini API Key
     
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000", "*"]

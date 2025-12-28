@@ -380,35 +380,10 @@ async def chat(
 
 @router.get("/models")
 async def list_models():
-    """List available AI models."""
+    """List available AI models with availability status."""
     return {
-        "models": [
-            {
-                "id": "deepseek-chat",
-                "name": "DeepSeek V3",
-                "provider": "deepseek",
-                "description": "Fast and efficient code generation",
-                "default": True
-            },
-            {
-                "id": "deepseek-reasoner",
-                "name": "DeepSeek R1",
-                "provider": "deepseek",
-                "description": "Advanced reasoning for complex tasks"
-            },
-            {
-                "id": "claude-3-5-sonnet",
-                "name": "Claude 3.5 Sonnet",
-                "provider": "anthropic",
-                "description": "Balanced performance and quality"
-            },
-            {
-                "id": "claude-3-opus",
-                "name": "Claude 3 Opus",
-                "provider": "anthropic",
-                "description": "Highest quality responses"
-            }
-        ]
+        "models": ai_service.get_available_models(),
+        "providers": ai_service.get_provider_status()
     }
 
 

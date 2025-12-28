@@ -64,10 +64,17 @@ const agentNames: Record<string, string> = {
 }
 
 const models = [
-  { id: 'deepseek-chat', name: 'DeepSeek V3', description: 'Fast & efficient' },
-  { id: 'deepseek-reasoner', name: 'DeepSeek R1', description: 'Advanced reasoning' },
-  { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', description: 'Balanced' },
-  { id: 'claude-3-opus', name: 'Claude 3 Opus', description: 'Highest quality' },
+  // DeepSeek Models
+  { id: 'deepseek-chat', name: 'DeepSeek V3', description: 'Fast & efficient', provider: 'deepseek' },
+  { id: 'deepseek-reasoner', name: 'DeepSeek R1', description: 'Advanced reasoning', provider: 'deepseek' },
+  // Anthropic Claude Models
+  { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', description: 'Balanced', provider: 'anthropic' },
+  { id: 'claude-3-opus', name: 'Claude 3 Opus', description: 'Highest quality', provider: 'anthropic' },
+  // Google Gemini Models
+  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Fast & balanced', provider: 'google' },
+  { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite', description: 'Fastest', provider: 'google' },
+  { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', description: 'Best reasoning', provider: 'google' },
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', description: 'Previous gen', provider: 'google' },
 ]
 
 const allAgents = ['architect', 'developer', 'blueprint', 'qa', 'devops', 'artist']
@@ -538,12 +545,64 @@ export default function Chat() {
             </button>
             
             {showSettings && (
-              <div className="absolute right-0 top-full mt-2 w-64 bg-ue-surface border border-ue-border rounded-lg shadow-xl z-50">
+              <div className="absolute right-0 top-full mt-2 w-72 bg-ue-surface border border-ue-border rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
                 <div className="p-2">
-                  <div className="text-xs font-medium text-ue-muted uppercase tracking-wider px-2 py-1">
-                    Model
+                  {/* DeepSeek Models */}
+                  <div className="text-xs font-medium text-ue-muted uppercase tracking-wider px-2 py-1 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                    DeepSeek
                   </div>
-                  {models.map((m) => (
+                  {models.filter(m => m.provider === 'deepseek').map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => {
+                        setModel(m.id)
+                        setShowSettings(false)
+                      }}
+                      className={cn(
+                        'w-full flex items-center justify-between px-2 py-2 rounded-md text-sm',
+                        model === m.id ? 'bg-ue-accent/10 text-ue-accent' : 'hover:bg-ue-bg'
+                      )}
+                    >
+                      <div>
+                        <div className="font-medium">{m.name}</div>
+                        <div className="text-xs text-ue-muted">{m.description}</div>
+                      </div>
+                      {model === m.id && <Check className="w-4 h-4" />}
+                    </button>
+                  ))}
+                  
+                  {/* Anthropic Claude Models */}
+                  <div className="text-xs font-medium text-ue-muted uppercase tracking-wider px-2 py-1 mt-2 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                    Anthropic
+                  </div>
+                  {models.filter(m => m.provider === 'anthropic').map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => {
+                        setModel(m.id)
+                        setShowSettings(false)
+                      }}
+                      className={cn(
+                        'w-full flex items-center justify-between px-2 py-2 rounded-md text-sm',
+                        model === m.id ? 'bg-ue-accent/10 text-ue-accent' : 'hover:bg-ue-bg'
+                      )}
+                    >
+                      <div>
+                        <div className="font-medium">{m.name}</div>
+                        <div className="text-xs text-ue-muted">{m.description}</div>
+                      </div>
+                      {model === m.id && <Check className="w-4 h-4" />}
+                    </button>
+                  ))}
+                  
+                  {/* Google Gemini Models */}
+                  <div className="text-xs font-medium text-ue-muted uppercase tracking-wider px-2 py-1 mt-2 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                    Google Gemini
+                  </div>
+                  {models.filter(m => m.provider === 'google').map((m) => (
                     <button
                       key={m.id}
                       onClick={() => {

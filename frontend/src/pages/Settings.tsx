@@ -287,14 +287,34 @@ export default function Settings() {
                     value={model}
                     onChange={(e) => {
                       setModel(e.target.value)
-                      toast.success(`Model changed to ${e.target.value === 'deepseek-chat' ? 'DeepSeek V3' : e.target.value === 'deepseek-reasoner' ? 'DeepSeek R1' : e.target.value === 'claude-3-5-sonnet' ? 'Claude 3.5 Sonnet' : 'Claude 3 Opus'}`)
+                      const modelNames: Record<string, string> = {
+                        'deepseek-chat': 'DeepSeek V3',
+                        'deepseek-reasoner': 'DeepSeek R1',
+                        'claude-3-5-sonnet': 'Claude 3.5 Sonnet',
+                        'claude-3-opus': 'Claude 3 Opus',
+                        'gemini-2.5-flash': 'Gemini 2.5 Flash',
+                        'gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
+                        'gemini-2.5-pro': 'Gemini 2.5 Pro',
+                        'gemini-2.0-flash': 'Gemini 2.0 Flash'
+                      }
+                      toast.success(`Model changed to ${modelNames[e.target.value] || e.target.value}`)
                     }}
                     className="input"
                   >
-                    <option value="deepseek-chat">DeepSeek V3 (Fast)</option>
-                    <option value="deepseek-reasoner">DeepSeek R1 (Reasoning)</option>
-                    <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
-                    <option value="claude-3-opus">Claude 3 Opus</option>
+                    <optgroup label="DeepSeek">
+                      <option value="deepseek-chat">DeepSeek V3 (Fast)</option>
+                      <option value="deepseek-reasoner">DeepSeek R1 (Reasoning)</option>
+                    </optgroup>
+                    <optgroup label="Anthropic">
+                      <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
+                      <option value="claude-3-opus">Claude 3 Opus</option>
+                    </optgroup>
+                    <optgroup label="Google Gemini">
+                      <option value="gemini-2.5-flash">Gemini 2.5 Flash (Balanced)</option>
+                      <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite (Fastest)</option>
+                      <option value="gemini-2.5-pro">Gemini 2.5 Pro (Best Reasoning)</option>
+                      <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                    </optgroup>
                   </select>
                 </div>
                 <div>
@@ -323,6 +343,61 @@ export default function Settings() {
               </div>
               <p className="text-xs text-ue-muted mt-4">
                 These settings are saved in your browser. For server-side persistent defaults, use the "Chat Defaults" tab.
+              </p>
+            </div>
+
+            {/* API Keys Configuration */}
+            <div className="card">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+                </svg>
+                API Keys Configuration
+              </h2>
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
+                <p className="text-sm text-yellow-500">
+                  ⚠️ API keys are configured via environment variables on the server. Contact your administrator to update them.
+                </p>
+              </div>
+              <div className="space-y-4">
+                {/* DeepSeek */}
+                <div className="flex items-center justify-between p-3 bg-ue-bg rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+                    <div>
+                      <div className="font-medium">DeepSeek</div>
+                      <div className="text-xs text-ue-muted">DEEPSEEK_API_KEY</div>
+                    </div>
+                  </div>
+                  <span className="px-2 py-1 text-xs rounded bg-green-500/20 text-green-400">Configured</span>
+                </div>
+                
+                {/* Anthropic */}
+                <div className="flex items-center justify-between p-3 bg-ue-bg rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <span className="w-3 h-3 rounded-full bg-orange-500"></span>
+                    <div>
+                      <div className="font-medium">Anthropic (Claude)</div>
+                      <div className="text-xs text-ue-muted">ANTHROPIC_API_KEY</div>
+                    </div>
+                  </div>
+                  <span className="px-2 py-1 text-xs rounded bg-yellow-500/20 text-yellow-400">Optional</span>
+                </div>
+                
+                {/* Google Gemini */}
+                <div className="flex items-center justify-between p-3 bg-ue-bg rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <span className="w-3 h-3 rounded-full bg-green-500"></span>
+                    <div>
+                      <div className="font-medium">Google Gemini</div>
+                      <div className="text-xs text-ue-muted">GOOGLE_API_KEY</div>
+                    </div>
+                  </div>
+                  <span className="px-2 py-1 text-xs rounded bg-yellow-500/20 text-yellow-400">Optional</span>
+                </div>
+              </div>
+              <p className="text-xs text-ue-muted mt-4">
+                To add or update API keys, set the environment variables in your .env file or server configuration.
               </p>
             </div>
           </div>
@@ -404,10 +479,20 @@ export default function Settings() {
                         onChange={(e) => handlePrefsChange('default_model', e.target.value)}
                         className="input"
                       >
-                        <option value="deepseek-chat">DeepSeek V3 (Fast & Efficient)</option>
-                        <option value="deepseek-reasoner">DeepSeek R1 (Advanced Reasoning)</option>
-                        <option value="claude-3-5-sonnet">Claude 3.5 Sonnet (Balanced)</option>
-                        <option value="claude-3-opus">Claude 3 Opus (Highest Quality)</option>
+                        <optgroup label="DeepSeek">
+                          <option value="deepseek-chat">DeepSeek V3 (Fast & Efficient)</option>
+                          <option value="deepseek-reasoner">DeepSeek R1 (Advanced Reasoning)</option>
+                        </optgroup>
+                        <optgroup label="Anthropic">
+                          <option value="claude-3-5-sonnet">Claude 3.5 Sonnet (Balanced)</option>
+                          <option value="claude-3-opus">Claude 3 Opus (Highest Quality)</option>
+                        </optgroup>
+                        <optgroup label="Google Gemini">
+                          <option value="gemini-2.5-flash">Gemini 2.5 Flash (Balanced)</option>
+                          <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite (Fastest)</option>
+                          <option value="gemini-2.5-pro">Gemini 2.5 Pro (Best Reasoning)</option>
+                          <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                        </optgroup>
                       </select>
                     </div>
 
