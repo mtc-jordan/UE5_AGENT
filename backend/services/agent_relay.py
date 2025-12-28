@@ -272,7 +272,7 @@ class AgentRelayService:
         """
         expire = datetime.utcnow() + timedelta(hours=expires_hours)
         payload = {
-            "sub": user_id,
+            "sub": str(user_id),  # Must be string for JWT standard
             "token_id": token_id,
             "type": "agent",
             "exp": expire,
@@ -291,15 +291,21 @@ class AgentRelayService:
             Token payload if valid, None otherwise
         """
         try:
+            # Decode without subject validation since we use numeric user IDs
             payload = jwt.decode(
                 token,
                 settings.JWT_SECRET,
-                algorithms=[settings.JWT_ALGORITHM]
+                algorithms=[settings.JWT_ALGORITHM],
+                options={"verify_sub": False}  # Skip subject string validation
             )
             
             # Verify it's an agent token
             if payload.get("type") != "agent":
                 return None
+            
+            # Convert sub back to int if it's a string
+            if "sub" in payload and isinstance(payload["sub"], str):
+                payload["sub"] = int(payload["sub"])
             
             return payload
         except JWTError as e:
