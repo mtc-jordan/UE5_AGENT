@@ -7,6 +7,8 @@ from api.mcp import router as mcp_router
 from api.ai import router as ai_router
 from api.preferences import router as preferences_router
 from api.memory import router as memory_router
+from api.workspace import router as workspace_router
+from api.workspace_ai import router as workspace_ai_router
 
 api_router = APIRouter(prefix="/api")
 
@@ -18,5 +20,7 @@ api_router.include_router(mcp_router)
 api_router.include_router(ai_router)
 api_router.include_router(preferences_router)
 api_router.include_router(memory_router)
+api_router.include_router(workspace_router)
+api_router.include_router(workspace_ai_router)
 
 __all__ = ["api_router"]

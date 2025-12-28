@@ -22,6 +22,7 @@ class User(Base):
     agents = relationship("Agent", back_populates="user", cascade="all, delete-orphan")
     mcp_connections = relationship("MCPConnection", back_populates="user", cascade="all, delete-orphan")
     preferences = relationship("UserPreferences", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    workspace_files = relationship("WorkspaceFile", back_populates="user", cascade="all, delete-orphan")
 
 
 class UserPreferences(Base):
@@ -45,6 +46,11 @@ class UserPreferences(Base):
     # UI preferences
     sidebar_collapsed = Column(Boolean, default=False)
     show_archived_by_default = Column(Boolean, default=False)
+    
+    # Workspace preferences
+    default_workspace_view = Column(String(32), default="tree")  # tree, list, grid
+    auto_save_interval = Column(Integer, default=30)  # seconds, 0 = disabled
+    show_hidden_files = Column(Boolean, default=False)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

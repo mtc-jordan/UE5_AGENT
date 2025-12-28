@@ -21,3 +21,4 @@ class Project(Base):
     chats = relationship("Chat", back_populates="project", cascade="all, delete-orphan")
     mcp_connections = relationship("MCPConnection", back_populates="project")
     generated_files = relationship("GeneratedFile", back_populates="project", cascade="all, delete-orphan")
+    workspace_files = relationship("WorkspaceFile", back_populates="project", cascade="all, delete-orphan")

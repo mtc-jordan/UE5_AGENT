@@ -13,6 +13,7 @@ from services.auth import (
 )
 from services.ai import AIService, AgentOrchestrator, ai_service, orchestrator
 from services.mcp import MCPClient, MCPConnectionManager, mcp_manager
+from services.workspace import WorkspaceService, get_workspace_service
 
 __all__ = [
     # Auth
@@ -35,5 +36,8 @@ __all__ = [
     # MCP
     "MCPClient",
     "MCPConnectionManager",
-    "mcp_manager"
+    "mcp_manager",
+    # Workspace
+    "WorkspaceService",
+    "get_workspace_service"
 ]
