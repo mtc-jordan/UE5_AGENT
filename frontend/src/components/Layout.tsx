@@ -28,6 +28,7 @@ import {
   X,
   Files,
   Package,
+  Scale,
 } from 'lucide-react'
 import { cn, truncate } from '../lib/utils'
 
@@ -233,6 +234,7 @@ export default function Layout() {
   const navItems = [
     { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/chat', icon: MessageSquare, label: 'Chat' },
+    { path: '/compare', icon: Scale, label: 'Compare' },
     { path: '/projects', icon: FolderKanban, label: 'Projects' },
     { path: '/workspace', icon: Files, label: 'Workspace' },
     { path: '/plugins', icon: Package, label: 'Plugins' },

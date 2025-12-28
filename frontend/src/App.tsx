@@ -13,6 +13,7 @@ import UE5Connection from './pages/UE5Connection'
 import Workspace from './pages/Workspace'
 import Plugins from './pages/Plugins'
 import PluginEditor from './pages/PluginEditor'
+import ModelComparison from './pages/ModelComparison'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -73,6 +74,7 @@ function App() {
           <Route path="plugins/new" element={<PluginEditor />} />
           <Route path="plugins/:id/edit" element={<PluginEditor />} />
           <Route path="plugins/:id/run" element={<PluginEditor />} />
+          <Route path="compare" element={<ModelComparison />} />
           <Route path="ue5" element={<UE5Connection />} />
           <Route path="settings" element={<Settings />} />
         </Route>

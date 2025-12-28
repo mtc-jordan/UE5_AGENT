@@ -42,6 +42,10 @@ from services.realtime_workspace import (
     RealtimeWorkspaceService,
     realtime_workspace
 )
+from services.comparison import (
+    ComparisonService,
+    comparison_service
+)
 
 __all__ = [
     # Auth
@@ -92,5 +96,8 @@ __all__ = [
     "realtime_chat",
     # Real-time Workspace
     "RealtimeWorkspaceService",
-    "realtime_workspace"
+    "realtime_workspace",
+    # Comparison
+    "ComparisonService",
+    "comparison_service"
 ]

@@ -24,6 +24,12 @@ from models.plugin import (
     PluginVisibility,
     DEFAULT_PLUGIN_TEMPLATES
 )
+from models.comparison import (
+    ComparisonSession,
+    ComparisonResult,
+    MODEL_INFO,
+    get_model_info
+)
 
 __all__ = [
     # User
@@ -63,5 +69,10 @@ __all__ = [
     "PluginCategory",
     "PluginStatus",
     "PluginVisibility",
-    "DEFAULT_PLUGIN_TEMPLATES"
+    "DEFAULT_PLUGIN_TEMPLATES",
+    # Comparison
+    "ComparisonSession",
+    "ComparisonResult",
+    "MODEL_INFO",
+    "get_model_info"
 ]

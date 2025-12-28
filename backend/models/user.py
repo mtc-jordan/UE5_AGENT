@@ -27,6 +27,7 @@ class User(Base):
     workspace_files = relationship("WorkspaceFile", back_populates="user", cascade="all, delete-orphan")
     plugins = relationship("Plugin", back_populates="author", cascade="all, delete-orphan")
     installed_plugins = relationship("PluginInstallation", back_populates="user", cascade="all, delete-orphan")
+    comparisons = relationship("ComparisonSession", back_populates="user", cascade="all, delete-orphan")
 
 
 class UserPreferences(Base):
