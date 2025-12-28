@@ -810,6 +810,27 @@ export default function UE5Connection() {
     }
   };
 
+  // Delete a screenshot
+  const deleteScreenshot = async (id: string) => {
+    try {
+      const response = await fetch(`/api/viewport/screenshot/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+
+      if (response.ok) {
+        // Remove from local state
+        setScreenshots(prev => prev.filter(s => s.id !== id));
+        // Also remove any pairs that include this screenshot
+        setBeforeAfterPairs(prev => prev.filter(
+          p => p.before.id !== id && p.after.id !== id
+        ));
+      }
+    } catch (error) {
+      console.error('Failed to delete screenshot:', error);
+    }
+  };
+
   // Fetch AI suggestions based on input
   const fetchAiSuggestions = useCallback(async (query: string) => {
     if (!query.trim() || query.length < 3) return;
@@ -1898,6 +1919,7 @@ export default function UE5Connection() {
           isCapturing={isCapturing}
           autoCapture={autoCapture}
           onToggleAutoCapture={setAutoCapture}
+          onDeleteScreenshot={deleteScreenshot}
         />
       )}
 

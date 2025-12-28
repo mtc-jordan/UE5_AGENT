@@ -424,6 +424,43 @@ class ViewportPreviewService:
             'tool_params': pair.tool_params,
             'created_at': pair.created_at.isoformat()
         }
+    
+    def delete_screenshot(self, screenshot_id: str) -> bool:
+        """Delete a screenshot by ID"""
+        try:
+            screenshot = self.screenshots.get(screenshot_id)
+            if not screenshot:
+                return False
+            
+            # Remove from screenshots dict
+            del self.screenshots[screenshot_id]
+            
+            # Remove from user's screenshot list
+            user_id = screenshot.user_id
+            if user_id in self.user_screenshots:
+                if screenshot_id in self.user_screenshots[user_id]:
+                    self.user_screenshots[user_id].remove(screenshot_id)
+            
+            # Remove any pairs that include this screenshot
+            pairs_to_remove = []
+            for pair_id, pair in self.before_after_pairs.items():
+                if pair.before.id == screenshot_id or pair.after.id == screenshot_id:
+                    pairs_to_remove.append(pair_id)
+            
+            for pair_id in pairs_to_remove:
+                del self.before_after_pairs[pair_id]
+            
+            # Update paired screenshot reference
+            if screenshot.paired_screenshot_id:
+                paired = self.screenshots.get(screenshot.paired_screenshot_id)
+                if paired:
+                    paired.paired_screenshot_id = None
+            
+            return True
+            
+        except Exception as e:
+            print(f"Error deleting screenshot: {e}")
+            return False
 
 
 # Global service instance

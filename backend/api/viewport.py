@@ -218,6 +218,29 @@ async def get_before_after_pair(
     return viewport_service.pair_to_dict(pair)
 
 
+@router.delete("/screenshot/{screenshot_id}")
+async def delete_screenshot(
+    screenshot_id: str,
+    current_user: User = Depends(get_current_user),
+    viewport_service: ViewportPreviewService = Depends(get_viewport_preview_service)
+):
+    """Delete a screenshot by ID"""
+    screenshot = viewport_service.get_screenshot(screenshot_id)
+    
+    if not screenshot:
+        raise HTTPException(status_code=404, detail="Screenshot not found")
+    
+    if screenshot.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    success = viewport_service.delete_screenshot(screenshot_id)
+    
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to delete screenshot")
+    
+    return {"success": True, "message": "Screenshot deleted"}
+
+
 @router.get("/transform-tools")
 async def get_transform_tools(
     viewport_service: ViewportPreviewService = Depends(get_viewport_preview_service)
