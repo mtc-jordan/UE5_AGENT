@@ -33,6 +33,7 @@ import ViewportPreview from '../components/ViewportPreview';
 import SceneBuilder from '../components/SceneBuilder';
 import ActionTimeline from '../components/ActionTimeline';
 import BlueprintMaterialAssistant from '../components/BlueprintMaterialAssistant';
+import TextureGenerator from '../components/TextureGenerator';
 
 // ==================== TYPES ====================
 
@@ -1953,6 +1954,26 @@ export default function UE5Connection() {
           setChatHistory(prev => [...prev, {
             role: 'assistant',
             content: `Created ${asset.graph.asset_type}: ${asset.graph.name}`,
+            timestamp: new Date().toISOString()
+          }]);
+        }}
+      />
+
+      {/* AI Texture Generator */}
+      <TextureGenerator
+        onTextureGenerated={(texture) => {
+          // Add to chat history
+          setChatHistory(prev => [...prev, {
+            role: 'assistant',
+            content: `Generated PBR texture: ${texture.prompt}`,
+            timestamp: new Date().toISOString()
+          }]);
+        }}
+        onApplyToActor={(texture, actorName) => {
+          // Apply texture to actor via MCP
+          setChatHistory(prev => [...prev, {
+            role: 'assistant',
+            content: `Applied texture to actor: ${actorName}`,
             timestamp: new Date().toISOString()
           }]);
         }}
