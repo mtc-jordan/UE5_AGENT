@@ -1484,27 +1484,86 @@ export default function UE5Connection() {
       {/* Execution History */}
       {executionHistory.length > 0 && (
         <GlassCard className="p-5">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center">
-              <History className="w-4 h-4 text-white" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center">
+                <History className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="font-medium text-white">Execution Results</h4>
             </div>
-            <h4 className="font-medium text-white">Recent Executions</h4>
+            <button
+              onClick={() => setExecutionHistory([])}
+              className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+            >
+              Clear All
+            </button>
           </div>
-          <div className="space-y-2 max-h-64 overflow-y-auto" ref={resultRef}>
-            {executionHistory.slice(0, 10).map((exec) => (
+          <div className="space-y-3 max-h-[500px] overflow-y-auto" ref={resultRef}>
+            {executionHistory.slice(0, 20).map((exec) => (
               <div
                 key={exec.id}
-                className={`p-3 rounded-xl border ${
+                className={`rounded-xl border overflow-hidden ${
                   exec.success
-                    ? 'bg-green-500/10 border-green-500/20'
-                    : 'bg-red-500/10 border-red-500/20'
+                    ? 'bg-green-500/5 border-green-500/20'
+                    : 'bg-red-500/5 border-red-500/20'
                 }`}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-white text-sm">{exec.tool}</span>
-                  <span className="text-xs text-gray-500">{exec.duration}ms</span>
+                {/* Header */}
+                <div className={`px-4 py-2 flex items-center justify-between ${
+                  exec.success ? 'bg-green-500/10' : 'bg-red-500/10'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    {exec.success ? (
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-red-400" />
+                    )}
+                    <span className="font-medium text-white text-sm">{exec.tool}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-gray-400">
+                      {exec.timestamp.toLocaleTimeString()}
+                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      exec.success ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                    }`}>
+                      {exec.duration}ms
+                    </span>
+                  </div>
                 </div>
-                {exec.error && <p className="text-xs text-red-400">{exec.error}</p>}
+                
+                {/* Parameters (if any) */}
+                {Object.keys(exec.params).length > 0 && (
+                  <div className="px-4 py-2 border-b border-white/5">
+                    <div className="text-xs text-gray-500 mb-1">Parameters:</div>
+                    <pre className="text-xs text-gray-300 font-mono bg-black/20 rounded-lg p-2 overflow-x-auto">
+                      {JSON.stringify(exec.params, null, 2)}
+                    </pre>
+                  </div>
+                )}
+                
+                {/* Response */}
+                <div className="px-4 py-3">
+                  {exec.error ? (
+                    <div>
+                      <div className="text-xs text-red-400 mb-1">Error:</div>
+                      <pre className="text-xs text-red-300 font-mono bg-red-500/10 rounded-lg p-2 overflow-x-auto whitespace-pre-wrap">
+                        {exec.error}
+                      </pre>
+                    </div>
+                  ) : exec.result ? (
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Response:</div>
+                      <pre className="text-xs text-green-300 font-mono bg-black/30 rounded-lg p-3 overflow-x-auto max-h-48 overflow-y-auto">
+                        {typeof exec.result === 'string' 
+                          ? exec.result 
+                          : JSON.stringify(exec.result, null, 2)}
+                      </pre>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-500 italic">No response data</div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
