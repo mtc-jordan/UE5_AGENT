@@ -224,4 +224,5 @@ export const preferencesApi = {
     api.post('/preferences/generate-title', { message, project_name: projectName }),
 }
 
+export { api }
 export default api
