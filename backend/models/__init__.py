@@ -75,6 +75,10 @@ from models.sso import (
     SSOConnectionStatus,
     OAUTH2_PROVIDERS
 )
+from models.agent_token import (
+    AgentToken,
+    AgentConnection as AgentConnectionModel
+)
 
 __all__ = [
     # User
@@ -160,5 +164,8 @@ __all__ = [
     "SAMLAssertion",
     "SSOProvider",
     "SSOConnectionStatus",
-    "OAUTH2_PROVIDERS"
+    "OAUTH2_PROVIDERS",
+    # Agent Token
+    "AgentToken",
+    "AgentConnectionModel"
 ]

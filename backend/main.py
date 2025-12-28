@@ -40,6 +40,7 @@ from services.mcp import mcp_manager
 from services.presence import presence_service
 from services.realtime_chat import realtime_chat
 from services.realtime_workspace import realtime_workspace
+from services.agent_relay import agent_relay
 
 
 async def seed_default_agents():
@@ -93,6 +94,7 @@ async def lifespan(app: FastAPI):
     await presence_service.start()
     await realtime_chat.start()
     await realtime_workspace.start()
+    await agent_relay.start()
     logger.info("Real-time services started")
     
     logger.info(f"{settings.APP_NAME} is ready!")
@@ -103,6 +105,7 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down...")
     
     # Stop real-time services
+    await agent_relay.stop()
     await realtime_workspace.stop()
     await realtime_chat.stop()
     await presence_service.stop()
