@@ -541,17 +541,21 @@ class AgentRelayService:
             
             logger.info(f"Agent MCP disconnected for user {connection.user_id}")
         
-        elif message.type == AgentEventType.TOOL_RESULT:
+        elif message.type == AgentEventType.TOOL_RESULT or message.type == "tool_result":
             # Tool execution result
             request_id = message.request_id
+            logger.info(f"Received tool_result: request_id={request_id}, payload={message.payload}")
             if request_id and request_id in connection.pending_requests:
                 future = connection.pending_requests.pop(request_id)
                 if not future.done():
-                    future.set_result(message.payload)
+                    # Extract result from payload if nested
+                    result = message.payload.get("result", message.payload)
+                    future.set_result(result)
         
-        elif message.type == AgentEventType.TOOL_ERROR:
+        elif message.type == AgentEventType.TOOL_ERROR or message.type == "tool_error":
             # Tool execution error
             request_id = message.request_id
+            logger.info(f"Received tool_error: request_id={request_id}, payload={message.payload}")
             if request_id and request_id in connection.pending_requests:
                 future = connection.pending_requests.pop(request_id)
                 if not future.done():
