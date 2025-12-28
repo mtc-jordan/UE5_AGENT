@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>UE5 AI Studio Agent</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #1a1a2e;
+      --bg-secondary: #16213e;
+      --bg-card: #0f3460;
+      --text-primary: #ffffff;
+      --text-secondary: #a0a0a0;
+      --accent: #e94560;
+      --success: #00d26a;
+      --warning: #ffc107;
+      --error: #ff4757;
+      --border: #2a2a4a;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 100%;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--accent), #ff6b6b);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .header-text h1 {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .header-text p {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 14px;
+    }
+
+    .tab:hover {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    .tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    /* Tab Content */
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Status Cards */
+    .status-grid {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .status-card {
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid var(--border);
+    }
+
+    .status-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .status-card-title {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--error);
+    }
+
+    .status-dot.connected {
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    .status-dot.connecting {
+      background: var(--warning);
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .status-text {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .status-text.connected { color: var(--success); }
+    .status-text.connecting { color: var(--warning); }
+    .status-text.disconnected { color: var(--error); }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #d63850;
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-secondary);
+    }
+
+    .btn-danger {
+      background: var(--error);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #e63946;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    /* Form Elements */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .form-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .form-checkbox input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+    }
+
+    /* Login Section */
+    .login-section {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .login-section h2 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .login-section p {
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+
+    .token-input-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .token-input-group input {
+      flex: 1;
+    }
+
+    /* Error Message */
+    .error-message {
+      background: rgba(255, 71, 87, 0.1);
+      border: 1px solid var(--error);
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--error);
+      font-size: 13px;
+      margin-top: 16px;
+    }
+
+    /* Info Box */
+    .info-box {
+      background: rgba(233, 69, 96, 0.1);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 13px;
+      margin-top: 16px;
+    }
+
+    .info-box a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .info-box a:hover {
+      text-decoration: underline;
+    }
+
+    /* Footer */
+    .footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 12px 20px;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-icon">🎮</div>
+      <div class="header-text">
+        <h1>UE5 AI Studio Agent</h1>
+        <p>Connect your local Unreal Engine to the cloud</p>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="status">Status</button>
+      <button class="tab" data-tab="settings">Settings</button>
+      <button class="tab" data-tab="login">Account</button>
+    </div>
+
+    <!-- Status Tab -->
+    <div id="status-tab" class="tab-content active">
+      <div class="status-grid">
+        <!-- Cloud Connection -->
+        <div class="status-card">
+          <div class="status-card-header">
+            <span class="status-card-title">☁️ Cloud Platform</span>
+            <div class="status-indicator">
+              <span class="status-dot" id="cloud-dot"></span>
+              <span class="status-text" id="cloud-status">Disconnected</span>
+            </div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" id="cloud-connect-btn">Connect</button>
+            <button class="btn btn-secondary" id="cloud-disconnect-btn" style="display: none;">Disconnect</button>
+          </div>
+        </div>
+
+        <!-- UE5 Connection -->
+        <div class="status-card">
+          <div class="status-card-header">
+            <span class="status-card-title">🎮 Unreal Engine 5</span>
+            <div class="status-indicator">
+              <span class="status-dot" id="ue5-dot"></span>
+              <span class="status-text" id="ue5-status">Disconnected</span>
+            </div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" id="ue5-connect-btn">Connect</button>
+            <button class="btn btn-secondary" id="ue5-disconnect-btn" style="display: none;">Disconnect</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error Display -->
+      <div class="error-message" id="error-message" style="display: none;"></div>
+
+      <!-- Info Box -->
+      <div class="info-box">
+        <strong>Quick Start:</strong><br>
+        1. Log in with your UE5 AI Studio account<br>
+        2. Connect to the cloud platform<br>
+        3. Start Unreal Engine with the MCP plugin<br>
+        4. Connect to UE5
+      </div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div id="settings-tab" class="tab-content">
+      <div class="status-card">
+        <h3 style="margin-bottom: 16px;">Connection Settings</h3>
+        
+        <div class="form-group">
+          <label class="form-label">Cloud Server URL</label>
+          <input type="text" class="form-input" id="server-url" placeholder="wss://your-server.com/api/agent/ws">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">MCP Host</label>
+          <input type="text" class="form-input" id="mcp-host" placeholder="127.0.0.1">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">MCP Port</label>
+          <input type="number" class="form-input" id="mcp-port" placeholder="55557">
+        </div>
+
+        <div class="form-group">
+          <label class="form-checkbox">
+            <input type="checkbox" id="auto-connect">
+            <span>Auto-connect on startup</span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="form-checkbox">
+            <input type="checkbox" id="minimize-to-tray">
+            <span>Minimize to system tray</span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="form-checkbox">
+            <input type="checkbox" id="auto-start">
+            <span>Start with system</span>
+          </label>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" id="save-settings-btn">Save Settings</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Login Tab -->
+    <div id="login-tab" class="tab-content">
+      <div class="login-section" id="login-form">
+        <h2>Connect Your Account</h2>
+        <p>Enter your agent token from UE5 AI Studio</p>
+        
+        <div class="token-input-group">
+          <input type="password" class="form-input" id="token-input" placeholder="Paste your agent token here">
+          <button class="btn btn-primary" id="save-token-btn">Save</button>
+        </div>
+
+        <div class="info-box">
+          Get your token from:<br>
+          <a href="#" id="get-token-link">UE5 AI Studio → Settings → Agent Token</a>
+        </div>
+      </div>
+
+      <div class="login-section" id="logged-in" style="display: none;">
+        <h2>✓ Account Connected</h2>
+        <p>Your agent is authenticated with UE5 AI Studio</p>
+        
+        <div class="btn-group" style="justify-content: center;">
+          <button class="btn btn-danger" id="logout-btn">Disconnect Account</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span>UE5 AI Studio Agent v1.0.0</span>
+    <a href="#" id="help-link">Help & Documentation</a>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

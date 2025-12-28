@@ -1,0 +1,28 @@
+# FastAPI Core
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# Database
+sqlalchemy==2.0.36
+asyncpg==0.30.0
+alembic==1.14.0
+
+# Authentication
+python-jose[cryptography]==3.4.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.2.1
+
+# AI Services
+openai==1.82.0
+anthropic==0.52.0
+httpx==0.28.1
+
+# Utilities
+pydantic==2.10.4
+pydantic-settings==2.7.1
+python-dotenv==1.0.1
+aiofiles==24.1.0
+
+# Streaming
+sse-starlette==2.2.1

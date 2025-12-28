@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-ue-border;
+  }
+  
+  body {
+    @apply bg-ue-bg text-ue-text antialiased;
+  }
+  
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-ue-bg;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-ue-border rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-ue-muted;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-primary {
+    @apply bg-ue-accent text-white hover:bg-blue-600 active:bg-blue-700;
+  }
+  
+  .btn-secondary {
+    @apply bg-ue-surface border border-ue-border text-ue-text 
+           hover:bg-ue-border active:bg-ue-muted/20;
+  }
+  
+  .btn-ghost {
+    @apply text-ue-muted hover:text-ue-text hover:bg-ue-surface;
+  }
+  
+  .input {
+    @apply w-full px-4 py-2 bg-ue-surface border border-ue-border rounded-lg
+           text-ue-text placeholder-ue-muted
+           focus:outline-none focus:ring-2 focus:ring-ue-accent focus:border-transparent
+           transition-all duration-200;
+  }
+  
+  .card {
+    @apply bg-ue-surface border border-ue-border rounded-xl p-4;
+  }
+  
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-ue-muted
+           hover:bg-ue-surface hover:text-ue-text transition-colors cursor-pointer;
+  }
+  
+  .sidebar-item.active {
+    @apply bg-ue-accent/10 text-ue-accent;
+  }
+}
+
+/* Code block styling */
+.prose pre {
+  @apply bg-ue-bg border border-ue-border rounded-lg p-4 overflow-x-auto;
+}
+
+.prose code {
+  @apply bg-ue-surface px-1.5 py-0.5 rounded text-sm font-mono;
+}
+
+.prose pre code {
+  @apply bg-transparent p-0;
+}
+
+/* Agent message colors */
+.agent-architect { @apply border-l-4 border-l-agent-architect; }
+.agent-developer { @apply border-l-4 border-l-agent-developer; }
+.agent-blueprint { @apply border-l-4 border-l-agent-blueprint; }
+.agent-qa { @apply border-l-4 border-l-agent-qa; }
+.agent-devops { @apply border-l-4 border-l-agent-devops; }
+.agent-artist { @apply border-l-4 border-l-agent-artist; }

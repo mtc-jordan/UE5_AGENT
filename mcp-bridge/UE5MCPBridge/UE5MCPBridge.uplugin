@@ -1,0 +1,41 @@
+{
+	"FileVersion": 3,
+	"Version": 4,
+	"VersionName": "3.3.0",
+	"FriendlyName": "UE5 MCP Bridge",
+	"Description": "Model Context Protocol (MCP) server for AI-assisted Unreal Engine development. Enables AI tools to interact with the editor. 88 tools for actors, blueprints, materials, assets, physics, components, animation, audio, landscape, foliage, and more. Compatible with UE 5.1-5.7.",
+	"Category": "Editor",
+	"CreatedBy": "UE5 AI Studio",
+	"CreatedByURL": "https://github.com/ue5-ai-studio",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"EngineVersion": "5.7.0",
+	"CanContainContent": false,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"EnabledByDefault": true,
+	"Modules": [
+		{
+			"Name": "UE5MCPBridge",
+			"Type": "Editor",
+			"LoadingPhase": "PostDefault",
+			"PlatformAllowList": [
+				"Win64",
+				"Mac",
+				"Linux"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "EditorScriptingUtilities",
+			"Enabled": true
+		},
+		{
+			"Name": "LevelSequenceEditor",
+			"Enabled": true
+		}
+	]
+}

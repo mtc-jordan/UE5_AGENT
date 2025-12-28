@@ -1,0 +1,68 @@
+{
+  "name": "ue5-ai-studio-agent",
+  "version": "1.1.0",
+  "description": "Local agent for connecting Unreal Engine to UE5 AI Studio cloud platform",
+  "main": "src/main.js",
+  "author": {
+    "name": "UE5 AI Studio",
+    "email": "support@ue5aistudio.com"
+  },
+  "homepage": "https://ue5aistudio.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ue5aistudio/agent"
+  },
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder -mwl"
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.ue5aistudio.agent",
+    "productName": "UE5 AI Studio Agent",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "forceCodeSigning": false,
+    "win": {
+      "target": ["dir", "portable"],
+      "icon": "assets/icon.ico",
+      "signAndEditExecutable": false
+    },
+    "mac": {
+      "target": ["zip"],
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.developer-tools"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "icon": "assets/icon.png",
+      "category": "Development",
+      "maintainer": "UE5 AI Studio <support@ue5aistudio.com>"
+    },
+    "portable": {
+      "artifactName": "UE5-AI-Studio-Agent-${version}-win.exe"
+    },
+    "appImage": {
+      "artifactName": "UE5-AI-Studio-Agent-${version}-linux.AppImage"
+    }
+  }
+}
