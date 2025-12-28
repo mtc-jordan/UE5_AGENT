@@ -23,6 +23,7 @@ from api.downloads import router as downloads_router
 from api.agent import router as agent_router
 from api.ai_chat import router as ai_chat_router
 from api.viewport import router as viewport_router
+from api.scene_builder import router as scene_builder_router
 
 api_router = APIRouter(prefix="/api")
 
@@ -50,5 +51,6 @@ api_router.include_router(downloads_router)
 api_router.include_router(agent_router)
 api_router.include_router(ai_chat_router)
 api_router.include_router(viewport_router)
+api_router.include_router(scene_builder_router)
 
 __all__ = ["api_router"]

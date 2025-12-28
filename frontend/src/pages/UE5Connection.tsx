@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { MCP_TOOLS, MCP_CATEGORIES, QUICK_ACTIONS, MCPTool } from '../data/mcpTools';
 import ViewportPreview from '../components/ViewportPreview';
+import SceneBuilder from '../components/SceneBuilder';
 
 // ==================== TYPES ====================
 
@@ -1922,6 +1923,22 @@ export default function UE5Connection() {
           onDeleteScreenshot={deleteScreenshot}
         />
       )}
+
+      {/* Scene Builder */}
+      <SceneBuilder
+        authToken={authToken}
+        isConnected={agentStatus.mcp_connected}
+        onSceneBuilt={(plan) => {
+          // Refresh screenshots after scene is built
+          loadScreenshots();
+          // Add to chat history
+          setChatHistory(prev => [...prev, {
+            role: 'assistant',
+            content: `Scene built successfully! Created ${plan.objects.length} objects: ${plan.objects.map(o => o.name).join(', ')}`,
+            timestamp: new Date().toISOString()
+          }]);
+        }}
+      />
 
       {/* Execution History */}
       {executionHistory.length > 0 && (
