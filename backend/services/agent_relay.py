@@ -483,6 +483,33 @@ class AgentRelayService:
             # Heartbeat acknowledgment
             pass
         
+        elif message.type == "heartbeat" or message.type == AgentEventType.HEARTBEAT:
+            # Heartbeat from agent - may include UE5 status
+            payload = message.payload
+            ue5_status = payload.get("ue5_status")
+            
+            if ue5_status:
+                was_connected = connection.mcp_connected
+                is_connected = ue5_status == "connected"
+                
+                # Only update if status changed
+                if was_connected != is_connected:
+                    connection.update_mcp_status(connected=is_connected)
+                    await self._update_connection_in_db(connection)
+                    
+                    if is_connected:
+                        logger.info(f"Agent MCP connected for user {connection.user_id} via heartbeat")
+                    else:
+                        logger.info(f"Agent MCP disconnected for user {connection.user_id} via heartbeat")
+            
+            # Send heartbeat ack
+            await connection.websocket.send_json(
+                AgentMessage(
+                    type=AgentEventType.HEARTBEAT_ACK,
+                    payload={"server_time": datetime.utcnow().isoformat()}
+                ).to_dict()
+            )
+        
         elif message.type == AgentEventType.MCP_CONNECTED:
             # Agent connected to MCP server
             payload = message.payload
@@ -545,6 +572,32 @@ class AgentRelayService:
         elif message.type == AgentEventType.PROJECT_INFO:
             # Project info from UE5
             await self._emit("project_info", connection, message.payload)
+        
+        elif message.type == "status_update" or message.type == AgentEventType.AGENT_STATUS:
+            # Status update from agent (includes MCP connection status)
+            payload = message.payload
+            ue5_status = payload.get("ue5_status", "disconnected")
+            logger.info(f"Received status_update: ue5_status={ue5_status}, payload={payload}")
+            
+            if ue5_status == "connected":
+                connection.update_mcp_status(
+                    connected=True,
+                    host=payload.get("mcp_host"),
+                    tools_count=len(payload.get("available_tools", []))
+                )
+                logger.info(f"Agent MCP connected for user {connection.user_id} via status_update")
+            else:
+                connection.update_mcp_status(connected=False)
+                logger.info(f"Agent MCP disconnected for user {connection.user_id} via status_update")
+            
+            # Update database
+            await self._update_connection_in_db(connection)
+            
+            # Notify handlers
+            if ue5_status == "connected":
+                await self._emit("mcp_connected", connection)
+            else:
+                await self._emit("mcp_disconnected", connection)
     
     async def execute_tool(
         self,
