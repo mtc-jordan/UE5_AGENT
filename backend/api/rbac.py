@@ -11,7 +11,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from core.database import get_db
-from core.auth import get_current_user
+from services.auth import get_current_user
 from core.permissions import (
     require_permission, require_role, can_manage_roles,
     can_read_users, can_update_users, can_read_audit

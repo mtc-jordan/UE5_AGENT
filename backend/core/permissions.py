@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
 from core.database import get_db
-from core.auth import get_current_user
+from services.auth import get_current_user
 from services.rbac import rbac_service
 from models.user import User
 from models.rbac import RoleLevel

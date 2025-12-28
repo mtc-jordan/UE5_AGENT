@@ -41,7 +41,8 @@ class User(Base):
     
     # Permission overrides relationship
     permission_overrides = relationship(
-        "UserPermissionOverride",
+        "UserPermission",
+        foreign_keys="[UserPermission.user_id]",
         back_populates="user",
         cascade="all, delete-orphan",
         lazy="selectin"

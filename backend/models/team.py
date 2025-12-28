@@ -231,7 +231,7 @@ class TeamInvitation(Base):
     
     # Invitation details
     email = Column(String(320), nullable=True)  # Null for link-based invitations
-    token = Column(String(64), unique=True, nullable=False, index=True)
+    token = Column(String(64), unique=True, nullable=False)  # Index defined in __table_args__
     role = Column(SQLEnum(TeamRole), default=TeamRole.MEMBER, nullable=False)
     message = Column(Text, nullable=True)  # Personal message from inviter
     

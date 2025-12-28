@@ -76,7 +76,7 @@ user_roles = Table(
     Column('user_id', Integer, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True),
     Column('role_id', Integer, ForeignKey('roles.id', ondelete='CASCADE'), primary_key=True),
     Column('assigned_at', DateTime, default=func.now()),
-    Column('assigned_by', Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True),
+    Column('assigned_by_id', Integer, nullable=True),  # Removed FK to avoid ambiguity
     Column('expires_at', DateTime, nullable=True)
 )
 
@@ -197,9 +197,9 @@ class UserPermission(Base):
     reason = Column(Text, nullable=True)
     
     # Relationships
-    user = relationship('User', foreign_keys=[user_id], backref='permission_overrides')
+    user = relationship('User', foreign_keys=[user_id], back_populates='permission_overrides')
     permission = relationship('Permission')
-    granter = relationship('User', foreign_keys=[granted_by])
+    granter = relationship('User', foreign_keys=[granted_by], overlaps='permission_overrides,user')
     
     __table_args__ = (
         UniqueConstraint('user_id', 'permission_id', name='uq_user_permission'),

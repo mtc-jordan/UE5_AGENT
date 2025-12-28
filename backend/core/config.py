@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings
-from pydantic import Field
-from typing import Optional
+from pydantic import Field, field_validator
+from typing import Optional, List
 import os
 
 
@@ -28,7 +28,12 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: Optional[str] = Field(default=None)
     
     # CORS
-    CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000", "*"]
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000,*"
+    
+    @property
+    def cors_origins_list(self) -> List[str]:
+        """Parse CORS_ORIGINS string into list."""
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(',')]
     
     @property
     def DATABASE_URL(self) -> str:

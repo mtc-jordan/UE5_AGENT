@@ -243,7 +243,6 @@ async def delete_configuration(
 async def authorize(
     config_id: int,
     data: AuthorizeRequest,
-    current_user: Optional[User] = None,  # Optional - for linking accounts
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -257,7 +256,7 @@ async def authorize(
         auth_url, state = await service.create_authorization_url(
             config_id=config_id,
             redirect_uri=data.redirect_uri,
-            user_id=current_user.id if current_user else None,
+            user_id=None,  # No user linking in this flow
             use_pkce=data.use_pkce
         )
         
