@@ -14,6 +14,7 @@ import Workspace from './pages/Workspace'
 import Plugins from './pages/Plugins'
 import PluginEditor from './pages/PluginEditor'
 import ModelComparison from './pages/ModelComparison'
+import AdminRoles from './pages/AdminRoles'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -77,6 +78,7 @@ function App() {
           <Route path="compare" element={<ModelComparison />} />
           <Route path="ue5" element={<UE5Connection />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="admin/roles" element={<AdminRoles />} />
         </Route>
       </Routes>
     </PreferencesLoader>

@@ -12,6 +12,7 @@ from api.workspace_ai import router as workspace_ai_router
 from api.plugin import router as plugin_router
 from api.websocket import router as websocket_router
 from api.comparison import router as comparison_router
+from api.rbac import router as rbac_router
 
 api_router = APIRouter(prefix="/api")
 
@@ -28,5 +29,6 @@ api_router.include_router(workspace_ai_router)
 api_router.include_router(plugin_router)
 api_router.include_router(websocket_router)
 api_router.include_router(comparison_router)
+api_router.include_router(rbac_router)
 
 __all__ = ["api_router"]

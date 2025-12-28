@@ -46,6 +46,11 @@ from services.comparison import (
     ComparisonService,
     comparison_service
 )
+from services.rbac import (
+    RBACService,
+    PermissionCache,
+    rbac_service
+)
 
 __all__ = [
     # Auth
@@ -99,5 +104,9 @@ __all__ = [
     "realtime_workspace",
     # Comparison
     "ComparisonService",
-    "comparison_service"
+    "comparison_service",
+    # RBAC
+    "RBACService",
+    "PermissionCache",
+    "rbac_service"
 ]

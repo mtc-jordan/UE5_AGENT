@@ -30,6 +30,20 @@ from models.comparison import (
     MODEL_INFO,
     get_model_info
 )
+from models.rbac import (
+    Role,
+    Permission,
+    UserPermission,
+    PermissionAuditLog,
+    RoleLevel,
+    PermissionCategory,
+    AuditAction,
+    role_permissions,
+    user_roles,
+    DEFAULT_PERMISSIONS,
+    DEFAULT_ROLES,
+    expand_wildcard_permissions
+)
 
 __all__ = [
     # User
@@ -74,5 +88,18 @@ __all__ = [
     "ComparisonSession",
     "ComparisonResult",
     "MODEL_INFO",
-    "get_model_info"
+    "get_model_info",
+    # RBAC
+    "Role",
+    "Permission",
+    "UserPermission",
+    "PermissionAuditLog",
+    "RoleLevel",
+    "PermissionCategory",
+    "AuditAction",
+    "role_permissions",
+    "user_roles",
+    "DEFAULT_PERMISSIONS",
+    "DEFAULT_ROLES",
+    "expand_wildcard_permissions"
 ]

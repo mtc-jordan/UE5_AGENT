@@ -29,6 +29,7 @@ import {
   Files,
   Package,
   Scale,
+  Shield,
 } from 'lucide-react'
 import { cn, truncate } from '../lib/utils'
 
@@ -239,6 +240,7 @@ export default function Layout() {
     { path: '/workspace', icon: Files, label: 'Workspace' },
     { path: '/plugins', icon: Package, label: 'Plugins' },
     { path: '/ue5', icon: Plug, label: 'UE Connection' },
+    { path: '/admin/roles', icon: Shield, label: 'Admin' },
     { path: '/settings', icon: Settings, label: 'Settings' },
   ]
 
