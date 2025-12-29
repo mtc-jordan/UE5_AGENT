@@ -30,7 +30,7 @@ import {
   ChevronDown, ChevronUp, Sparkles, Zap,
   Home, Lightbulb, Film, Palette, Image,
   Gauge, Package, Camera, Gamepad2, Navigation,
-  MousePointer, RotateCcw, HelpCircle, Users
+  MousePointer, RotateCcw, HelpCircle, Users, Wand2
 } from 'lucide-react';
 import {
   parseVoiceCommand,
@@ -89,6 +89,7 @@ const CATEGORY_ICONS: Record<CommandCategory, React.ReactNode> = {
   selection: <MousePointer className="w-4 h-4" />,
   transform: <RotateCcw className="w-4 h-4" />,
   collaboration: <Users className="w-4 h-4" />,
+  scene_generation: <Wand2 className="w-4 h-4" />,
 };
 
 // Category colors
@@ -107,6 +108,7 @@ const CATEGORY_COLORS: Record<CommandCategory, string> = {
   selection: 'from-fuchsia-500 to-pink-500',
   transform: 'from-orange-500 to-amber-500',
   collaboration: 'from-violet-500 to-purple-500',
+  scene_generation: 'from-violet-500 to-fuchsia-500',
 };
 
 // Check if Web Speech API is supported

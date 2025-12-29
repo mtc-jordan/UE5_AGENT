@@ -45,6 +45,7 @@ import VoiceControl from '../components/VoiceControl';
 import LightingWizard from '../components/LightingWizard';
 import AnimationAssistant from '../components/AnimationAssistant';
 import CollaborationPanel from '../components/CollaborationPanel';
+import AISceneGenerator from '../components/AISceneGenerator';
 import { ParsedCommand } from '../lib/voiceCommandParser';
 
 // ==================== TYPES ====================
@@ -1769,6 +1770,27 @@ export default function UE5Connection() {
           setChatHistory(prev => [...prev, {
             role: 'assistant',
             content: `Scene built successfully! Created ${plan.objects.length} objects: ${plan.objects.map(o => o.name).join(', ')}`,
+            timestamp: new Date().toISOString()
+          }]);
+        }}
+      />
+
+      {/* AI Scene Generator */}
+      <AISceneGenerator
+        onGenerate={(plan) => {
+          // Refresh screenshots after scene is generated
+          loadScreenshots();
+          // Add to chat history
+          setChatHistory(prev => [...prev, {
+            role: 'assistant',
+            content: `AI Scene generated: "${plan.name}" with ${plan.totalObjects} objects. Style: ${plan.style}, Mood: ${plan.mood}`,
+            timestamp: new Date().toISOString()
+          }]);
+        }}
+        onCancel={() => {
+          setChatHistory(prev => [...prev, {
+            role: 'assistant',
+            content: 'Scene generation cancelled.',
             timestamp: new Date().toISOString()
           }]);
         }}

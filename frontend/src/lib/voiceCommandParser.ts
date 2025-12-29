@@ -28,7 +28,8 @@ export type CommandCategory =
   | 'navigation'
   | 'selection'
   | 'transform'
-  | 'collaboration';
+  | 'collaboration'
+  | 'scene_generation';
 
 // Parsed command result
 export interface ParsedCommand {
@@ -747,6 +748,128 @@ const COMMAND_PATTERNS: CommandPattern[] = [
     action: 'highlightSelection',
     extractParams: () => ({})
   },
+
+  // ==================== AI SCENE GENERATION ====================
+  {
+    pattern: /(?:generate|create|build)\s+(?:a\s+)?(?:medieval\s+)?castle(?:\s+(?:courtyard|scene))?/i,
+    category: 'scene_generation',
+    action: 'generateScene',
+    extractParams: () => ({ template: 'medieval-castle', prompt: 'medieval castle courtyard' })
+  },
+  {
+    pattern: /(?:generate|create|build)\s+(?:a\s+)?(?:sci-?fi\s+)?(?:spaceship|space\s+ship)(?:\s+(?:interior|bridge))?/i,
+    category: 'scene_generation',
+    action: 'generateScene',
+    extractParams: () => ({ template: 'scifi-spaceship', prompt: 'sci-fi spaceship interior' })
+  },
+  {
+    pattern: /(?:generate|create|build)\s+(?:a\s+)?(?:enchanted\s+)?forest(?:\s+(?:clearing|scene))?/i,
+    category: 'scene_generation',
+    action: 'generateScene',
+    extractParams: () => ({ template: 'forest-clearing', prompt: 'enchanted forest clearing' })
+  },
+  {
+    pattern: /(?:generate|create|build)\s+(?:a\s+)?(?:modern\s+)?office(?:\s+(?:space|scene))?/i,
+    category: 'scene_generation',
+    action: 'generateScene',
+    extractParams: () => ({ template: 'modern-office', prompt: 'modern office space' })
+  },
+  {
+    pattern: /(?:generate|create|build)\s+(?:a\s+)?(?:cozy\s+)?(?:mountain\s+)?cabin/i,
+    category: 'scene_generation',
+    action: 'generateScene',
+    extractParams: () => ({ template: 'cozy-cabin', prompt: 'cozy mountain cabin' })
+  },
+  {
+    pattern: /(?:generate|create|build)\s+(?:a\s+)?(?:underwater\s+)?(?:ancient\s+)?ruins/i,
+    category: 'scene_generation',
+    action: 'generateScene',
+    extractParams: () => ({ template: 'underwater-ruins', prompt: 'underwater ancient ruins' })
+  },
+  {
+    pattern: /(?:generate|create|build)\s+(?:a\s+)?cyberpunk(?:\s+(?:city|alley|scene))?/i,
+    category: 'scene_generation',
+    action: 'generateScene',
+    extractParams: () => ({ template: 'cyberpunk-alley', prompt: 'cyberpunk city alley' })
+  },
+  {
+    pattern: /(?:generate|create|build)\s+(?:a\s+)?desert(?:\s+oasis)?/i,
+    category: 'scene_generation',
+    action: 'generateScene',
+    extractParams: () => ({ template: 'desert-oasis', prompt: 'desert oasis' })
+  },
+  {
+    pattern: /(?:generate|create|build)\s+(?:a\s+)?(?:battle\s+)?arena/i,
+    category: 'scene_generation',
+    action: 'generateScene',
+    extractParams: () => ({ template: 'battle-arena', prompt: 'battle arena' })
+  },
+  {
+    pattern: /(?:generate|create|build)\s+(?:a\s+)?(?:racing\s+)?track/i,
+    category: 'scene_generation',
+    action: 'generateScene',
+    extractParams: () => ({ template: 'racing-track', prompt: 'racing track' })
+  },
+  {
+    pattern: /(?:generate|create|build)\s+(?:a\s+)?(?:luxury\s+)?penthouse/i,
+    category: 'scene_generation',
+    action: 'generateScene',
+    extractParams: () => ({ template: 'luxury-penthouse', prompt: 'luxury penthouse' })
+  },
+  {
+    pattern: /(?:generate|create|build)\s+(?:a\s+)?(?:volcanic\s+)?cave/i,
+    category: 'scene_generation',
+    action: 'generateScene',
+    extractParams: () => ({ template: 'volcanic-cave', prompt: 'volcanic cave' })
+  },
+  {
+    pattern: /(?:generate|create)\s+(?:a\s+)?scene\s+(?:with|from|about)\s+(.+)/i,
+    category: 'scene_generation',
+    action: 'generateScene',
+    extractParams: (match) => ({ prompt: match[1].trim() })
+  },
+  {
+    pattern: /(?:ai\s+)?(?:generate|create)\s+(?:entire\s+)?scene/i,
+    category: 'scene_generation',
+    action: 'openGenerator',
+    extractParams: () => ({})
+  },
+  {
+    pattern: /(?:set\s+)?(?:scene\s+)?style\s+(?:to\s+)?(realistic|stylized|low[\s-]?poly|cartoon)/i,
+    category: 'scene_generation',
+    action: 'setStyle',
+    extractParams: (match) => ({ style: match[1].toLowerCase().replace(/[\s-]/g, '-') })
+  },
+  {
+    pattern: /(?:set\s+)?(?:scene\s+)?mood\s+(?:to\s+)?(peaceful|dramatic|mysterious|cheerful|dark|romantic)/i,
+    category: 'scene_generation',
+    action: 'setMood',
+    extractParams: (match) => ({ mood: match[1].toLowerCase() })
+  },
+  {
+    pattern: /(?:set\s+)?weather\s+(?:to\s+)?(clear|cloudy|rainy|foggy|snowy|stormy)/i,
+    category: 'scene_generation',
+    action: 'setWeather',
+    extractParams: (match) => ({ weather: match[1].toLowerCase() })
+  },
+  {
+    pattern: /(?:start|begin)\s+(?:scene\s+)?generation/i,
+    category: 'scene_generation',
+    action: 'startGeneration',
+    extractParams: () => ({})
+  },
+  {
+    pattern: /(?:cancel|stop)\s+(?:scene\s+)?generation/i,
+    category: 'scene_generation',
+    action: 'cancelGeneration',
+    extractParams: () => ({})
+  },
+  {
+    pattern: /(?:preview|show)\s+(?:the\s+)?(?:scene\s+)?plan/i,
+    category: 'scene_generation',
+    action: 'previewPlan',
+    extractParams: () => ({})
+  },
 ];
 
 // ==================== VOICE COMMAND EXAMPLES BY CATEGORY ====================
@@ -849,6 +972,18 @@ export const VOICE_COMMAND_EXAMPLES: Record<CommandCategory, string[]> = {
     "Invite team member",
     "Highlight my selection",
   ],
+  scene_generation: [
+    "Generate a medieval castle",
+    "Create a sci-fi spaceship interior",
+    "Build an enchanted forest",
+    "Generate a cyberpunk alley",
+    "Create a scene with dragons and mountains",
+    "Set style to realistic",
+    "Set mood to dramatic",
+    "Set weather to rainy",
+    "Start generation",
+    "Preview the plan",
+  ],
 };
 
 // ==================== PARSER FUNCTION ====================
@@ -907,6 +1042,7 @@ export const CATEGORY_DISPLAY_NAMES: Record<CommandCategory, string> = {
   selection: '✅ Selection',
   transform: '🔄 Transform',
   collaboration: '👥 Collaboration',
+  scene_generation: '🪄 AI Scene Generator',
 };
 
 // ==================== SUGGEST SIMILAR COMMANDS ====================
