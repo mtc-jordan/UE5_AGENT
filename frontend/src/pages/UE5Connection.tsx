@@ -46,6 +46,7 @@ import LightingWizard from '../components/LightingWizard';
 import AnimationAssistant from '../components/AnimationAssistant';
 import CollaborationPanel from '../components/CollaborationPanel';
 import AISceneGenerator from '../components/AISceneGenerator';
+import AnalyticsDashboard from '../components/AnalyticsDashboard';
 import { ParsedCommand } from '../lib/voiceCommandParser';
 
 // ==================== TYPES ====================
@@ -1923,6 +1924,11 @@ export default function UE5Connection() {
         onLockActor={(actorId) => console.log('Lock actor:', actorId)}
         onUnlockActor={(actorId) => console.log('Unlock actor:', actorId)}
         onSendChat={(message) => console.log('Send chat:', message)}
+      />
+
+      {/* Analytics Dashboard */}
+      <AnalyticsDashboard
+        onExport={(format) => console.log('Export analytics:', format)}
       />
 
       {/* Execution History */}
