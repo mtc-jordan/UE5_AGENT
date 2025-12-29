@@ -64,6 +64,7 @@ const EXAMPLE_PROMPTS = [
 const EnhancedAIChat: React.FC<EnhancedAIChatProps> = ({
   chatHistory,
   onSendMessage,
+  onClearHistory,
   isProcessing,
   isConnected,
   selectedModel,

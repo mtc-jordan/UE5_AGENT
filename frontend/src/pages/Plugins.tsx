@@ -262,7 +262,7 @@ export default function PluginsPage() {
   const [loading, setLoading] = useState(true);
 
   // Dialogs
-  const [ setShowNewPluginDialog] = useState(false);
+  const [showNewPluginDialog, setShowNewPluginDialog] = useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<PluginTemplate | null>(null);
   const [newPluginName, setNewPluginName] = useState('');

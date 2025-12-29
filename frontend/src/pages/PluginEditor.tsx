@@ -24,7 +24,7 @@ import {
   Loader,
   Trash2} from 'lucide-react';
 import {
-  pluginsAp
+  pluginsApi,
   Plugin,
   PluginCategory,
   CATEGORY_LABELS,
