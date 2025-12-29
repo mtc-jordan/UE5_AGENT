@@ -53,13 +53,13 @@ const VOICE_EXAMPLES = [
   "Spawn a red cube at the center",
   "Rotate selection 45 degrees",
   "Create a glowing material",
-  "Add a point light above",
-  "Take a screenshot",
-  "Undo last action",
   "Set up studio lighting",
   "Golden hour lighting",
-  "Make it cinematic",
-  "Change time to sunset",
+  "Play walk animation",
+  "Blend idle to run",
+  "Set animation speed to half",
+  "Show combat animations",
+  "Loop the animation",
 ];
 
 // Check if Web Speech API is supported

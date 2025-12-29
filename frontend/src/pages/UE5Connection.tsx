@@ -43,6 +43,7 @@ import PerformanceOptimizer from '../components/PerformanceOptimizer';
 import AssetManager from '../components/AssetManager';
 import VoiceControl from '../components/VoiceControl';
 import LightingWizard from '../components/LightingWizard';
+import AnimationAssistant from '../components/AnimationAssistant';
 
 // ==================== TYPES ====================
 
@@ -1768,6 +1769,22 @@ export default function UE5Connection() {
           setChatHistory(prev => [...prev, {
             role: 'assistant',
             content: `Applied lighting preset: ${preset.name} - ${preset.description}`,
+            timestamp: new Date().toISOString()
+          }]);
+        }}
+      />
+
+      {/* Animation Assistant */}
+      <AnimationAssistant
+        authToken={authToken || ''}
+        isConnected={agentStatus.mcp_connected}
+        onAnimationApplied={(animation) => {
+          // Refresh screenshots after animation is applied
+          loadScreenshots();
+          // Add to chat history
+          setChatHistory(prev => [...prev, {
+            role: 'assistant',
+            content: `Playing animation: ${animation.name} (${animation.duration.toFixed(1)}s)`,
             timestamp: new Date().toISOString()
           }]);
         }}
