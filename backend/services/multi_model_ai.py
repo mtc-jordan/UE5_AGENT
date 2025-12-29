@@ -92,24 +92,127 @@ class ModelInfo:
 
 
 # Model registry with detailed information
+# Aligned with Settings page model configuration
 MODEL_REGISTRY: Dict[str, ModelInfo] = {
-    # OpenAI Models
+    # DeepSeek Models (Primary - from Settings)
+    "deepseek-chat": ModelInfo(
+        id="deepseek-chat",
+        name="DeepSeek V3",
+        provider=AIProvider.DEEPSEEK,
+        description="Fast & efficient for general tasks",
+        context_window=64000,
+        strengths=["Very low cost", "Good quality", "Fast"],
+        best_for=[TaskType.GENERAL_CHAT, TaskType.CODE_GENERATION, TaskType.SCENE_BUILDING],
+        cost_tier="low"
+    ),
+    "deepseek-reasoner": ModelInfo(
+        id="deepseek-reasoner",
+        name="DeepSeek R1",
+        provider=AIProvider.DEEPSEEK,
+        description="Advanced reasoning capabilities",
+        context_window=64000,
+        strengths=["Strong reasoning", "Complex analysis", "Low cost"],
+        best_for=[TaskType.TECHNICAL_ANALYSIS, TaskType.BLUEPRINT_CREATION, TaskType.CODE_GENERATION],
+        cost_tier="low"
+    ),
+    
+    # Anthropic Models (from Settings)
+    "claude-3-5-sonnet": ModelInfo(
+        id="claude-3-5-sonnet",
+        name="Claude 3.5 Sonnet",
+        provider=AIProvider.ANTHROPIC,
+        description="Balanced performance and quality",
+        context_window=200000,
+        strengths=["Excellent coding", "Long context", "Detailed analysis"],
+        best_for=[TaskType.CODE_GENERATION, TaskType.BLUEPRINT_CREATION, TaskType.TECHNICAL_ANALYSIS],
+        cost_tier="medium",
+        supports_vision=True
+    ),
+    "claude-3-opus": ModelInfo(
+        id="claude-3-opus",
+        name="Claude 3 Opus",
+        provider=AIProvider.ANTHROPIC,
+        description="Highest quality output",
+        context_window=200000,
+        strengths=["Highest quality", "Complex reasoning", "Creative tasks"],
+        best_for=[TaskType.CREATIVE_WRITING, TaskType.MATERIAL_DESIGN, TaskType.ASSET_GENERATION],
+        cost_tier="high",
+        supports_vision=True
+    ),
+    "claude-3-haiku": ModelInfo(
+        id="claude-3-haiku",
+        name="Claude 3 Haiku",
+        provider=AIProvider.ANTHROPIC,
+        description="Fast and cost-effective",
+        context_window=200000,
+        strengths=["Very fast", "Low cost", "Good quality"],
+        best_for=[TaskType.GENERAL_CHAT, TaskType.SCENE_BUILDING],
+        cost_tier="low",
+        supports_vision=True
+    ),
+    
+    # Google Gemini Models (from Settings)
+    "gemini-2.5-flash": ModelInfo(
+        id="gemini-2.5-flash",
+        name="Gemini 2.5 Flash",
+        provider=AIProvider.GOOGLE,
+        description="Balanced speed and quality",
+        context_window=1000000,
+        strengths=["Massive context", "Fast", "Multimodal"],
+        best_for=[TaskType.GENERAL_CHAT, TaskType.TECHNICAL_ANALYSIS, TaskType.SCENE_BUILDING],
+        cost_tier="low",
+        supports_vision=True
+    ),
+    "gemini-2.5-flash-lite": ModelInfo(
+        id="gemini-2.5-flash-lite",
+        name="Gemini 2.5 Flash Lite",
+        provider=AIProvider.GOOGLE,
+        description="Fastest response times",
+        context_window=1000000,
+        strengths=["Extremely fast", "Very low cost", "Simple queries"],
+        best_for=[TaskType.GENERAL_CHAT],
+        cost_tier="low"
+    ),
+    "gemini-2.5-pro": ModelInfo(
+        id="gemini-2.5-pro",
+        name="Gemini 2.5 Pro",
+        provider=AIProvider.GOOGLE,
+        description="Best reasoning capabilities",
+        context_window=2000000,
+        strengths=["Largest context window", "Multimodal", "Best reasoning"],
+        best_for=[TaskType.TECHNICAL_ANALYSIS, TaskType.CODE_GENERATION, TaskType.CREATIVE_WRITING],
+        cost_tier="high",
+        supports_vision=True
+    ),
+    "gemini-2.0-flash": ModelInfo(
+        id="gemini-2.0-flash",
+        name="Gemini 2.0 Flash",
+        provider=AIProvider.GOOGLE,
+        description="Previous generation, still capable",
+        context_window=1000000,
+        strengths=["Fast", "Multimodal", "Good quality"],
+        best_for=[TaskType.GENERAL_CHAT, TaskType.CODE_GENERATION],
+        cost_tier="low",
+        supports_vision=True
+    ),
+    
+    # OpenAI Models (kept for compatibility)
     "gpt-4.1-mini": ModelInfo(
         id="gpt-4.1-mini",
         name="GPT-4.1 Mini",
         provider=AIProvider.OPENAI,
-        description="Fast and efficient for most tasks",
+        description="Efficient and capable",
         context_window=128000,
         strengths=["Fast responses", "Good balance of speed/quality", "Cost effective"],
         best_for=[TaskType.GENERAL_CHAT, TaskType.CODE_GENERATION, TaskType.SCENE_BUILDING],
         cost_tier="low",
-        supports_vision=True
+        supports_vision=False
     ),
     "gpt-4.1-nano": ModelInfo(
         id="gpt-4.1-nano",
         name="GPT-4.1 Nano",
         provider=AIProvider.OPENAI,
-        description="Fastest model for simple tasks",
+        description="Ultra-fast responses",
         context_window=128000,
         strengths=["Extremely fast", "Very low cost", "Good for simple queries"],
         best_for=[TaskType.GENERAL_CHAT],
@@ -119,118 +222,31 @@ MODEL_REGISTRY: Dict[str, ModelInfo] = {
         id="gpt-4o",
         name="GPT-4o",
         provider=AIProvider.OPENAI,
-        description="Most capable OpenAI model with vision",
+        description="Multimodal capabilities",
         context_window=128000,
         strengths=["Multimodal", "High quality", "Fast"],
         best_for=[TaskType.CODE_GENERATION, TaskType.TECHNICAL_ANALYSIS, TaskType.ASSET_GENERATION],
-        cost_tier="medium",
-        supports_vision=True
-    ),
-    
-    # Anthropic Models
-    "claude-3-5-sonnet-20241022": ModelInfo(
-        id="claude-3-5-sonnet-20241022",
-        name="Claude 3.5 Sonnet",
-        provider=AIProvider.ANTHROPIC,
-        description="Best for coding and technical tasks",
-        context_window=200000,
-        strengths=["Excellent coding", "Long context", "Detailed analysis"],
-        best_for=[TaskType.CODE_GENERATION, TaskType.BLUEPRINT_CREATION, TaskType.TECHNICAL_ANALYSIS],
-        cost_tier="medium",
-        supports_vision=True
-    ),
-    "claude-3-opus-20240229": ModelInfo(
-        id="claude-3-opus-20240229",
-        name="Claude 3 Opus",
-        provider=AIProvider.ANTHROPIC,
-        description="Most powerful Claude model",
-        context_window=200000,
-        strengths=["Highest quality", "Complex reasoning", "Creative tasks"],
-        best_for=[TaskType.CREATIVE_WRITING, TaskType.MATERIAL_DESIGN, TaskType.ASSET_GENERATION],
         cost_tier="high",
         supports_vision=True
-    ),
-    "claude-3-haiku-20240307": ModelInfo(
-        id="claude-3-haiku-20240307",
-        name="Claude 3 Haiku",
-        provider=AIProvider.ANTHROPIC,
-        description="Fast and affordable Claude model",
-        context_window=200000,
-        strengths=["Very fast", "Low cost", "Good quality"],
-        best_for=[TaskType.GENERAL_CHAT, TaskType.SCENE_BUILDING],
-        cost_tier="low",
-        supports_vision=True
-    ),
-    
-    # Google Models
-    "gemini-2.5-flash": ModelInfo(
-        id="gemini-2.5-flash",
-        name="Gemini 2.5 Flash",
-        provider=AIProvider.GOOGLE,
-        description="Latest fast Gemini model",
-        context_window=1000000,
-        strengths=["Massive context", "Fast", "Multimodal"],
-        best_for=[TaskType.GENERAL_CHAT, TaskType.TECHNICAL_ANALYSIS, TaskType.SCENE_BUILDING],
-        cost_tier="low",
-        supports_vision=True
-    ),
-    "gemini-1.5-pro": ModelInfo(
-        id="gemini-1.5-pro",
-        name="Gemini 1.5 Pro",
-        provider=AIProvider.GOOGLE,
-        description="Powerful Gemini model with huge context",
-        context_window=2000000,
-        strengths=["Largest context window", "Multimodal", "Good reasoning"],
-        best_for=[TaskType.TECHNICAL_ANALYSIS, TaskType.CODE_GENERATION],
-        cost_tier="medium",
-        supports_vision=True
-    ),
-    
-    # DeepSeek Models
-    "deepseek-chat": ModelInfo(
-        id="deepseek-chat",
-        name="DeepSeek Chat",
-        provider=AIProvider.DEEPSEEK,
-        description="General purpose DeepSeek model",
-        context_window=64000,
-        strengths=["Very low cost", "Good quality", "Fast"],
-        best_for=[TaskType.GENERAL_CHAT, TaskType.CODE_GENERATION],
-        cost_tier="low"
-    ),
-    "deepseek-coder": ModelInfo(
-        id="deepseek-coder",
-        name="DeepSeek Coder",
-        provider=AIProvider.DEEPSEEK,
-        description="Specialized for code generation",
-        context_window=64000,
-        strengths=["Excellent coding", "Very low cost", "Code completion"],
-        best_for=[TaskType.CODE_GENERATION, TaskType.BLUEPRINT_CREATION],
-        cost_tier="low"
-    ),
-    "deepseek-v3": ModelInfo(
-        id="deepseek-v3",
-        name="DeepSeek V3",
-        provider=AIProvider.DEEPSEEK,
-        description="Latest DeepSeek model with improved capabilities",
-        context_window=128000,
-        strengths=["State-of-the-art", "Low cost", "Strong reasoning"],
-        best_for=[TaskType.CODE_GENERATION, TaskType.TECHNICAL_ANALYSIS, TaskType.BLUEPRINT_CREATION],
-        cost_tier="low"
     )
 }
 
 
 # Task-specific model recommendations
+# Using model IDs from Settings page
 TASK_RECOMMENDATIONS: Dict[TaskType, List[str]] = {
-    TaskType.GENERAL_CHAT: ["gpt-4.1-mini", "claude-3-haiku-20240307", "gemini-2.5-flash", "deepseek-chat"],
-    TaskType.CODE_GENERATION: ["claude-3-5-sonnet-20241022", "deepseek-coder", "gpt-4o", "deepseek-v3"],
-    TaskType.BLUEPRINT_CREATION: ["claude-3-5-sonnet-20241022", "deepseek-coder", "gpt-4.1-mini"],
-    TaskType.MATERIAL_DESIGN: ["claude-3-opus-20240229", "gpt-4o", "gemini-1.5-pro"],
-    TaskType.SCENE_BUILDING: ["gpt-4.1-mini", "gemini-2.5-flash", "claude-3-haiku-20240307"],
-    TaskType.TECHNICAL_ANALYSIS: ["claude-3-5-sonnet-20241022", "gemini-1.5-pro", "deepseek-v3"],
-    TaskType.CREATIVE_WRITING: ["claude-3-opus-20240229", "gpt-4o", "gemini-1.5-pro"],
-    TaskType.ASSET_GENERATION: ["claude-3-opus-20240229", "gpt-4o", "claude-3-5-sonnet-20241022"]
+    TaskType.GENERAL_CHAT: ["deepseek-chat", "gemini-2.5-flash", "claude-3-haiku", "gemini-2.5-flash-lite"],
+    TaskType.CODE_GENERATION: ["claude-3-5-sonnet", "deepseek-reasoner", "deepseek-chat", "gemini-2.5-pro"],
+    TaskType.BLUEPRINT_CREATION: ["deepseek-reasoner", "claude-3-5-sonnet", "gemini-2.5-pro"],
+    TaskType.MATERIAL_DESIGN: ["claude-3-opus", "gemini-2.5-pro", "claude-3-5-sonnet"],
+    TaskType.SCENE_BUILDING: ["deepseek-chat", "gemini-2.5-flash", "claude-3-haiku"],
+    TaskType.TECHNICAL_ANALYSIS: ["deepseek-reasoner", "claude-3-5-sonnet", "gemini-2.5-pro"],
+    TaskType.CREATIVE_WRITING: ["claude-3-opus", "gemini-2.5-pro", "claude-3-5-sonnet"],
+    TaskType.ASSET_GENERATION: ["claude-3-opus", "gemini-2.5-pro", "claude-3-5-sonnet"]
 }
+
+# Default model (same as Settings page)
+DEFAULT_MODEL = "deepseek-chat"
 
 
 class BaseAIClient(ABC):

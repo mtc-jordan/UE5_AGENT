@@ -409,7 +409,7 @@ export default function UE5Connection() {
   const [chatHistory, setChatHistory] = useState<Array<{role: string; content: string; toolCalls?: any[]; toolResults?: any[]; screenshot?: Screenshot; beforeAfter?: BeforeAfterPair; modelUsed?: {id: string; name: string; provider: string}}>>([]);
   
   // AI Model selection state
-  const [selectedModel, setSelectedModel] = useState('gpt-4.1-mini');
+  const [selectedModel, setSelectedModel] = useState('deepseek-chat');
   const [autoSelectModel, setAutoSelectModel] = useState(false);
 
   // Viewport Preview state

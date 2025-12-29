@@ -112,7 +112,7 @@ export const TextureGenerator: React.FC<TextureGeneratorProps> = ({
   const [error, setError] = useState<string | null>(null);
   
   // Model selection state
-  const [selectedModel, setSelectedModel] = useState('gpt-4.1-mini');
+  const [selectedModel, setSelectedModel] = useState('deepseek-chat');
   const [autoSelectModel, setAutoSelectModel] = useState(false);
   const [modelUsed, setModelUsed] = useState<string | null>(null);
   

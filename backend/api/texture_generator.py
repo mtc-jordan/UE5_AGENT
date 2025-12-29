@@ -364,19 +364,26 @@ async def get_recommended_models():
                 "fast_generation": {
                     "description": "Quick texture generation for prototyping",
                     "models": generator.get_recommended_models("fast_generation"),
-                    "default": "gpt-4.1-nano"
+                    "default": "gemini-2.5-flash-lite"
                 }
             },
             "all_supported_models": [
-                {"id": "gpt-4.1-mini", "name": "GPT-4.1 Mini", "provider": "openai"},
-                {"id": "gpt-4.1-nano", "name": "GPT-4.1 Nano", "provider": "openai"},
-                {"id": "gpt-4o", "name": "GPT-4o", "provider": "openai"},
+                # DeepSeek Models (Primary)
+                {"id": "deepseek-chat", "name": "DeepSeek V3", "provider": "deepseek"},
+                {"id": "deepseek-reasoner", "name": "DeepSeek R1", "provider": "deepseek"},
+                # Anthropic Models
                 {"id": "claude-3-5-sonnet", "name": "Claude 3.5 Sonnet", "provider": "anthropic"},
                 {"id": "claude-3-opus", "name": "Claude 3 Opus", "provider": "anthropic"},
                 {"id": "claude-3-haiku", "name": "Claude 3 Haiku", "provider": "anthropic"},
+                # Google Gemini Models
                 {"id": "gemini-2.5-flash", "name": "Gemini 2.5 Flash", "provider": "google"},
-                {"id": "gemini-2.0-pro", "name": "Gemini 2.0 Pro", "provider": "google"},
-                {"id": "deepseek-v3", "name": "DeepSeek V3", "provider": "deepseek"}
+                {"id": "gemini-2.5-flash-lite", "name": "Gemini 2.5 Flash Lite", "provider": "google"},
+                {"id": "gemini-2.5-pro", "name": "Gemini 2.5 Pro", "provider": "google"},
+                {"id": "gemini-2.0-flash", "name": "Gemini 2.0 Flash", "provider": "google"},
+                # OpenAI Models (for compatibility)
+                {"id": "gpt-4.1-mini", "name": "GPT-4.1 Mini", "provider": "openai"},
+                {"id": "gpt-4.1-nano", "name": "GPT-4.1 Nano", "provider": "openai"},
+                {"id": "gpt-4o", "name": "GPT-4o", "provider": "openai"}
             ]
         }
         

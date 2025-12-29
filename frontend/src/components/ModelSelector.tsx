@@ -1,25 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-
-// Types
-interface ModelInfo {
-  id: string;
-  name: string;
-  provider: string;
-  description: string;
-  context_window: number;
-  strengths: string[];
-  best_for: string[];
-  cost_tier: string;
-  supports_vision: boolean;
-  supports_streaming: boolean;
-}
-
-interface Provider {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-}
+import { AI_MODELS, AI_PROVIDERS, MODEL_GROUPS, getModelById, DEFAULT_MODEL, type AIModel, type AIProvider } from '../config/models';
 
 interface ModelSelectorProps {
   selectedModel: string;
@@ -29,8 +9,6 @@ interface ModelSelectorProps {
   disabled?: boolean;
   compact?: boolean;
 }
-
-const API_BASE = '/api';
 
 // Provider icons and colors
 const providerStyles: Record<string, { icon: string; color: string; bgColor: string }> = {
@@ -42,9 +20,9 @@ const providerStyles: Record<string, { icon: string; color: string; bgColor: str
 
 // Cost tier badges
 const costTierStyles: Record<string, { label: string; color: string }> = {
-  low: { label: '$', color: 'text-green-400' },
-  medium: { label: '$$', color: 'text-yellow-400' },
-  high: { label: '$$$', color: 'text-red-400' }
+  '$': { label: '$', color: 'text-green-400' },
+  '$$': { label: '$$', color: 'text-yellow-400' },
+  '$$$': { label: '$$$', color: 'text-red-400' }
 };
 
 export const ModelSelector: React.FC<ModelSelectorProps> = ({
@@ -55,19 +33,11 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
   disabled = false,
   compact = false
 }) => {
-  const [models, setModels] = useState<ModelInfo[]>([]);
-  const [providers, setProviders] = useState<Provider[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showDetails, setShowDetails] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Load models and providers on mount
-  useEffect(() => {
-    loadModels();
-    loadProviders();
-  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -80,171 +50,158 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const loadModels = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/ue5-ai/models`);
-      if (response.ok) {
-        const data = await response.json();
-        setModels(data.models);
-      }
-    } catch (err) {
-      console.error('Failed to load models:', err);
-    }
-  };
+  // Get current model info
+  const currentModel = getModelById(selectedModel) || getModelById(DEFAULT_MODEL);
+  const currentProvider = currentModel ? AI_PROVIDERS.find(p => p.id === currentModel.provider) : null;
+  const currentProviderStyle = currentProvider ? providerStyles[currentProvider.id] : providerStyles.deepseek;
 
-  const loadProviders = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/ue5-ai/models/providers`);
-      if (response.ok) {
-        const data = await response.json();
-        setProviders(data.providers);
-      }
-    } catch (err) {
-      console.error('Failed to load providers:', err);
-    }
-  };
-
-  const getSelectedModelInfo = (): ModelInfo | undefined => {
-    return models.find(m => m.id === selectedModel);
-  };
-
-  const filteredModels = models.filter(model => {
-    const matchesProvider = !selectedProvider || model.provider === selectedProvider;
-    const matchesSearch = !searchQuery || 
+  // Filter models based on search and provider
+  const filteredModels = AI_MODELS.filter(model => {
+    const matchesSearch = searchQuery === '' || 
       model.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       model.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesProvider && matchesSearch;
+    const matchesProvider = !selectedProvider || model.provider === selectedProvider;
+    return matchesSearch && matchesProvider;
   });
 
-  const groupedModels = filteredModels.reduce((acc, model) => {
-    if (!acc[model.provider]) {
-      acc[model.provider] = [];
-    }
-    acc[model.provider].push(model);
-    return acc;
-  }, {} as Record<string, ModelInfo[]>);
+  // Group filtered models by provider
+  const groupedModels = MODEL_GROUPS.map(group => ({
+    ...group,
+    models: filteredModels.filter(m => m.provider === group.id)
+  })).filter(group => group.models.length > 0);
 
-  const selectedModelInfo = getSelectedModelInfo();
+  const handleModelSelect = (modelId: string) => {
+    onModelChange(modelId);
+    setIsOpen(false);
+    setSearchQuery('');
+  };
 
-  // Compact view for inline use
+  // Compact view for inline usage
   if (compact) {
     return (
-      <div className="relative" ref={dropdownRef}>
+      <div ref={dropdownRef} className="relative">
         <button
           onClick={() => !disabled && setIsOpen(!isOpen)}
           disabled={disabled}
           className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
-            disabled
-              ? 'bg-gray-800/50 border-gray-700 text-gray-500 cursor-not-allowed'
-              : 'bg-gray-800/50 border-gray-700 text-white hover:border-purple-500'
+            disabled 
+              ? 'bg-gray-800/50 border-gray-700 cursor-not-allowed opacity-50'
+              : 'bg-gray-800/50 border-gray-700 hover:border-purple-500/50 hover:bg-gray-800'
           }`}
         >
           {autoSelect ? (
             <>
-              <span className="text-purple-400">✨</span>
-              <span className="text-sm">Auto</span>
-            </>
-          ) : selectedModelInfo ? (
-            <>
-              <span>{providerStyles[selectedModelInfo.provider]?.icon || '🤖'}</span>
-              <span className="text-sm">{selectedModelInfo.name}</span>
+              <span className="text-yellow-400">✨</span>
+              <span className="text-xs text-gray-300">Auto</span>
             </>
           ) : (
-            <span className="text-sm text-gray-400">Select Model</span>
+            <>
+              <span>{currentProviderStyle.icon}</span>
+              <span className="text-xs text-gray-300 max-w-[100px] truncate">
+                {currentModel?.name || 'Select Model'}
+              </span>
+            </>
           )}
-          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className={`w-3 h-3 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>
 
         {isOpen && (
-          <div className="absolute top-full left-0 mt-2 w-72 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
+          <div className="absolute right-0 top-full mt-2 w-80 bg-gray-900 border border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden">
             {/* Auto-select toggle */}
-            <div className="p-2 border-b border-gray-700">
-              <button
-                onClick={() => {
-                  onAutoSelectChange(!autoSelect);
-                  if (!autoSelect) setIsOpen(false);
-                }}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  autoSelect
-                    ? 'bg-purple-500/20 text-purple-400'
-                    : 'hover:bg-gray-800 text-gray-400'
-                }`}
-              >
-                <span>✨</span>
-                <span>Auto-select best model</span>
-                {autoSelect && <span className="ml-auto">✓</span>}
-              </button>
+            <div className="p-3 border-b border-gray-700">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <div className={`relative w-10 h-5 rounded-full transition-colors ${autoSelect ? 'bg-purple-500' : 'bg-gray-700'}`}>
+                  <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${autoSelect ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                </div>
+                <div className="flex-1">
+                  <span className="text-sm text-white">Auto-select</span>
+                  <p className="text-xs text-gray-400">Let AI choose the best model</p>
+                </div>
+                <span className="text-yellow-400">✨</span>
+              </label>
             </div>
 
             {/* Search */}
             <div className="p-2 border-b border-gray-700">
               <input
                 type="text"
+                placeholder="Search models..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search models..."
-                className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
               />
             </div>
 
             {/* Provider filter */}
-            <div className="p-2 border-b border-gray-700 flex gap-1 overflow-x-auto">
+            <div className="flex gap-1 p-2 border-b border-gray-700 overflow-x-auto">
               <button
                 onClick={() => setSelectedProvider(null)}
-                className={`px-2 py-1 text-xs rounded whitespace-nowrap ${
-                  !selectedProvider
-                    ? 'bg-purple-500 text-white'
-                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                className={`px-2 py-1 text-xs rounded-lg whitespace-nowrap transition-colors ${
+                  !selectedProvider ? 'bg-purple-500/20 text-purple-400' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                 }`}
               >
                 All
               </button>
-              {providers.map(provider => (
+              {AI_PROVIDERS.map(provider => (
                 <button
                   key={provider.id}
-                  onClick={() => setSelectedProvider(provider.id)}
-                  className={`px-2 py-1 text-xs rounded whitespace-nowrap flex items-center gap-1 ${
-                    selectedProvider === provider.id
-                      ? 'bg-purple-500 text-white'
+                  onClick={() => setSelectedProvider(provider.id === selectedProvider ? null : provider.id)}
+                  className={`px-2 py-1 text-xs rounded-lg whitespace-nowrap transition-colors flex items-center gap-1 ${
+                    selectedProvider === provider.id 
+                      ? `${providerStyles[provider.id].bgColor} ${providerStyles[provider.id].color}` 
                       : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                   }`}
                 >
                   <span>{provider.icon}</span>
-                  <span>{provider.name}</span>
+                  {provider.name}
                 </button>
               ))}
             </div>
 
             {/* Model list */}
             <div className="max-h-64 overflow-y-auto">
-              {Object.entries(groupedModels).map(([provider, providerModels]) => (
-                <div key={provider}>
-                  <div className="px-3 py-1.5 text-xs text-gray-500 bg-gray-800/50 sticky top-0">
-                    {providerStyles[provider]?.icon} {provider.charAt(0).toUpperCase() + provider.slice(1)}
+              {groupedModels.map(group => (
+                <div key={group.id}>
+                  <div className={`px-3 py-1.5 text-xs font-medium ${providerStyles[group.id].color} ${providerStyles[group.id].bgColor}`}>
+                    {group.icon} {group.name}
                   </div>
-                  {providerModels.map(model => (
+                  {group.models.map(model => (
                     <button
                       key={model.id}
-                      onClick={() => {
-                        onModelChange(model.id);
-                        onAutoSelectChange(false);
-                        setIsOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-800 transition-colors ${
-                        selectedModel === model.id && !autoSelect ? 'bg-purple-500/10' : ''
+                      onClick={() => handleModelSelect(model.id)}
+                      onMouseEnter={() => setShowDetails(model.id)}
+                      onMouseLeave={() => setShowDetails(null)}
+                      className={`w-full px-3 py-2 text-left hover:bg-gray-800 transition-colors ${
+                        selectedModel === model.id ? 'bg-purple-500/10 border-l-2 border-purple-500' : ''
                       }`}
                     >
-                      <div className="flex-1 text-left">
-                        <div className="text-sm text-white">{model.name}</div>
-                        <div className="text-xs text-gray-500">{model.description}</div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-white">{model.name}</span>
+                            {model.capabilities.vision && (
+                              <span className="text-[10px] px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded">👁️</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 truncate">{model.description}</p>
+                        </div>
+                        <span className={`text-xs ${costTierStyles[model.costTier].color}`}>
+                          {costTierStyles[model.costTier].label}
+                        </span>
                       </div>
-                      <span className={`text-xs ${costTierStyles[model.cost_tier]?.color || 'text-gray-400'}`}>
-                        {costTierStyles[model.cost_tier]?.label || '$'}
-                      </span>
-                      {selectedModel === model.id && !autoSelect && (
-                        <span className="text-purple-400">✓</span>
+                      
+                      {/* Details tooltip */}
+                      {showDetails === model.id && (
+                        <div className="mt-2 p-2 bg-gray-800 rounded-lg text-xs">
+                          <div className="flex flex-wrap gap-1">
+                            {model.capabilities.fast && <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded">Fast</span>}
+                            {model.capabilities.reasoning && <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded">Reasoning</span>}
+                            {model.capabilities.creative && <span className="px-1.5 py-0.5 bg-pink-500/20 text-pink-400 rounded">Creative</span>}
+                            {model.capabilities.code && <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded">Code</span>}
+                          </div>
+                        </div>
                       )}
                     </button>
                   ))}
@@ -257,204 +214,101 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
     );
   }
 
-  // Full view with details
+  // Full view for settings/dedicated pages
   return (
-    <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-purple-500/20 overflow-hidden">
-      {/* Header */}
-      <div className="p-4 border-b border-purple-500/20 bg-gradient-to-r from-purple-900/30 to-blue-900/30">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-              <span className="text-xl">🧠</span>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white">AI Model Selection</h3>
-              <p className="text-xs text-gray-400">Choose the best model for your task</p>
-            </div>
+    <div ref={dropdownRef} className="space-y-4">
+      {/* Auto-select toggle */}
+      <div className="p-4 bg-gray-800/50 border border-gray-700 rounded-xl">
+        <label className="flex items-center gap-4 cursor-pointer">
+          <div className={`relative w-12 h-6 rounded-full transition-colors ${autoSelect ? 'bg-purple-500' : 'bg-gray-700'}`}>
+            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${autoSelect ? 'translate-x-7' : 'translate-x-1'}`} />
           </div>
-          
-          {/* Auto-select toggle */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <span className="text-sm text-gray-400">Auto-select</span>
-            <div className="relative">
-              <input
-                type="checkbox"
-                checked={autoSelect}
-                onChange={(e) => onAutoSelectChange(e.target.checked)}
-                className="sr-only"
-                disabled={disabled}
-              />
-              <div className={`w-10 h-5 rounded-full transition-colors ${
-                autoSelect ? 'bg-purple-500' : 'bg-gray-700'
-              }`}>
-                <div className={`w-4 h-4 rounded-full bg-white shadow transform transition-transform ${
-                  autoSelect ? 'translate-x-5' : 'translate-x-0.5'
-                } mt-0.5`} />
-              </div>
-            </div>
-          </label>
-        </div>
+          <div className="flex-1">
+            <span className="text-white font-medium">Auto-select Model</span>
+            <p className="text-sm text-gray-400">Automatically choose the best model based on your task</p>
+          </div>
+          <span className="text-2xl">✨</span>
+        </label>
       </div>
 
-      <div className="p-4 space-y-4">
-        {/* Provider tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          <button
-            onClick={() => setSelectedProvider(null)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-              !selectedProvider
-                ? 'bg-purple-500 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-            }`}
-          >
-            All Providers
-          </button>
-          {providers.map(provider => (
-            <button
-              key={provider.id}
-              onClick={() => setSelectedProvider(provider.id)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
-                selectedProvider === provider.id
-                  ? `${providerStyles[provider.id]?.bgColor || 'bg-purple-500/20'} ${providerStyles[provider.id]?.color || 'text-purple-400'}`
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-              }`}
+      {/* Model selection */}
+      {!autoSelect && (
+        <div className="space-y-3">
+          {/* Search and filter */}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Search models..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+            />
+            <select
+              value={selectedProvider || ''}
+              onChange={(e) => setSelectedProvider(e.target.value || null)}
+              className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-purple-500"
             >
-              <span>{provider.icon}</span>
-              <span>{provider.name}</span>
-            </button>
-          ))}
-        </div>
+              <option value="">All Providers</option>
+              {AI_PROVIDERS.map(provider => (
+                <option key={provider.id} value={provider.id}>
+                  {provider.icon} {provider.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        {/* Search */}
-        <div className="relative">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search models by name or description..."
-            className="w-full px-4 py-2 pl-10 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-          />
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
+          {/* Model grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {filteredModels.map(model => {
+              const provider = AI_PROVIDERS.find(p => p.id === model.provider);
+              const style = providerStyles[model.provider];
+              const isSelected = selectedModel === model.id;
 
-        {/* Model grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-2">
-          {filteredModels.map(model => (
-            <div
-              key={model.id}
-              onClick={() => {
-                onModelChange(model.id);
-                onAutoSelectChange(false);
-              }}
-              className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                selectedModel === model.id && !autoSelect
-                  ? 'border-purple-500 bg-purple-500/10'
-                  : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  <span className={`text-lg ${providerStyles[model.provider]?.color || 'text-gray-400'}`}>
-                    {providerStyles[model.provider]?.icon || '🤖'}
-                  </span>
-                  <div>
-                    <div className="text-sm font-medium text-white">{model.name}</div>
-                    <div className="text-xs text-gray-500 capitalize">{model.provider}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-xs ${costTierStyles[model.cost_tier]?.color || 'text-gray-400'}`}>
-                    {costTierStyles[model.cost_tier]?.label || '$'}
-                  </span>
-                  {model.supports_vision && (
-                    <span className="text-xs" title="Supports vision">👁️</span>
-                  )}
-                  {selectedModel === model.id && !autoSelect && (
-                    <span className="text-purple-400">✓</span>
-                  )}
-                </div>
-              </div>
-              
-              <p className="text-xs text-gray-400 mt-2 line-clamp-2">{model.description}</p>
-              
-              {/* Strengths */}
-              <div className="flex flex-wrap gap-1 mt-2">
-                {model.strengths.slice(0, 2).map((strength, i) => (
-                  <span key={i} className="px-1.5 py-0.5 text-[10px] bg-gray-700 text-gray-300 rounded">
-                    {strength}
-                  </span>
-                ))}
-              </div>
-              
-              {/* Show details button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowDetails(showDetails === model.id ? null : model.id);
-                }}
-                className="mt-2 text-xs text-purple-400 hover:text-purple-300"
-              >
-                {showDetails === model.id ? 'Hide details' : 'Show details'}
-              </button>
-              
-              {/* Expanded details */}
-              {showDetails === model.id && (
-                <div className="mt-3 pt-3 border-t border-gray-700 space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-gray-500">Context Window:</span>
-                    <span className="text-white">{(model.context_window / 1000).toFixed(0)}K tokens</span>
-                  </div>
-                  <div>
-                    <span className="text-xs text-gray-500">Best for:</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {model.best_for.map((task, i) => (
-                        <span key={i} className="px-1.5 py-0.5 text-[10px] bg-purple-500/20 text-purple-400 rounded">
-                          {task.replace(/_/g, ' ')}
-                        </span>
-                      ))}
+              return (
+                <button
+                  key={model.id}
+                  onClick={() => onModelChange(model.id)}
+                  disabled={disabled}
+                  className={`p-4 rounded-xl border text-left transition-all ${
+                    isSelected 
+                      ? 'bg-purple-500/10 border-purple-500 shadow-lg shadow-purple-500/20' 
+                      : 'bg-gray-800/50 border-gray-700 hover:border-gray-600 hover:bg-gray-800'
+                  } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-8 h-8 rounded-lg ${style.bgColor} flex items-center justify-center text-lg`}>
+                        {style.icon}
+                      </span>
+                      <div>
+                        <h4 className="text-white font-medium">{model.name}</h4>
+                        <p className="text-xs text-gray-500">{provider?.name}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {model.capabilities.vision && (
+                        <span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full">👁️ Vision</span>
+                      )}
+                      <span className={`text-sm font-medium ${costTierStyles[model.costTier].color}`}>
+                        {costTierStyles[model.costTier].label}
+                      </span>
                     </div>
                   </div>
-                  <div>
-                    <span className="text-xs text-gray-500">All strengths:</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {model.strengths.map((strength, i) => (
-                        <span key={i} className="px-1.5 py-0.5 text-[10px] bg-gray-700 text-gray-300 rounded">
-                          {strength}
-                        </span>
-                      ))}
-                    </div>
+                  
+                  <p className="text-sm text-gray-400 mb-3">{model.description}</p>
+                  
+                  <div className="flex flex-wrap gap-1">
+                    {model.capabilities.fast && <span className="text-xs px-2 py-0.5 bg-green-500/10 text-green-400 rounded-full">⚡ Fast</span>}
+                    {model.capabilities.reasoning && <span className="text-xs px-2 py-0.5 bg-purple-500/10 text-purple-400 rounded-full">🧠 Reasoning</span>}
+                    {model.capabilities.creative && <span className="text-xs px-2 py-0.5 bg-pink-500/10 text-pink-400 rounded-full">🎨 Creative</span>}
+                    {model.capabilities.code && <span className="text-xs px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-full">💻 Code</span>}
                   </div>
-                </div>
-              )}
-            </div>
-          ))}
+                </button>
+              );
+            })}
+          </div>
         </div>
-
-        {/* Selected model info */}
-        {selectedModelInfo && !autoSelect && (
-          <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
-            <div className="flex items-center gap-2">
-              <span className="text-purple-400">✓</span>
-              <span className="text-sm text-white font-medium">Selected: {selectedModelInfo.name}</span>
-            </div>
-            <p className="text-xs text-gray-400 mt-1">{selectedModelInfo.description}</p>
-          </div>
-        )}
-
-        {autoSelect && (
-          <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
-            <div className="flex items-center gap-2">
-              <span className="text-purple-400">✨</span>
-              <span className="text-sm text-white font-medium">Auto-select enabled</span>
-            </div>
-            <p className="text-xs text-gray-400 mt-1">
-              The best model will be automatically selected based on your task type.
-            </p>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 };

@@ -195,15 +195,17 @@ class TextureGeneratorService:
     """
     
     # Models recommended for texture generation tasks
+    # Using model IDs from Settings page
     RECOMMENDED_MODELS = {
-        "prompt_analysis": ["gpt-4.1-mini", "claude-3-5-sonnet", "gemini-2.5-flash"],
-        "creative_generation": ["claude-3-opus", "gpt-4o", "gemini-2.0-pro"],
-        "fast_generation": ["gpt-4.1-nano", "claude-3-haiku", "deepseek-v3"]
+        "prompt_analysis": ["deepseek-chat", "claude-3-5-sonnet", "gemini-2.5-flash"],
+        "creative_generation": ["claude-3-opus", "gemini-2.5-pro", "claude-3-5-sonnet"],
+        "fast_generation": ["gemini-2.5-flash-lite", "claude-3-haiku", "deepseek-chat"]
     }
     
     def __init__(self):
         self.client = AsyncOpenAI()
-        self.default_model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+        # Default model same as Settings page
+        self.default_model = os.getenv("OPENAI_MODEL", "deepseek-chat")
         self.image_model = "gpt-4.1-mini"  # For image generation
         
         # Cache for generated textures
