@@ -17,8 +17,8 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 import logging
 
-from core.auth import get_current_user
-from models.user import User
+# from services.auth import get_current_user
+# from models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +145,7 @@ async def get_animation_library(
     category: Optional[str] = None,
     skeleton: Optional[str] = None,
     search: Optional[str] = None,
-    current_user: User = Depends(get_current_user)
+
 ):
     """
     Get the animation library from the UE5 project.
@@ -195,7 +195,7 @@ async def get_animation_library(
 @router.post("/play", response_model=AnimationResponse)
 async def play_animation(
     request: PlayAnimationRequest,
-    current_user: User = Depends(get_current_user)
+
 ):
     """
     Play an animation on the selected actor or specified actor.
@@ -240,7 +240,7 @@ async def play_animation(
 @router.post("/stop", response_model=AnimationResponse)
 async def stop_animation(
     request: StopAnimationRequest,
-    current_user: User = Depends(get_current_user)
+
 ):
     """
     Stop animation playback on the selected or specified actor.
@@ -275,11 +275,14 @@ async def stop_animation(
         )
 
 
+class SetSpeedRequest(BaseModel):
+    """Request to set animation speed."""
+    speed: float = Field(..., ge=0.1, le=5.0)
+    actor_id: Optional[str] = None
+
 @router.post("/set-speed", response_model=AnimationResponse)
 async def set_animation_speed(
-    speed: float = Field(..., ge=0.1, le=5.0),
-    actor_id: Optional[str] = None,
-    current_user: User = Depends(get_current_user)
+    request: SetSpeedRequest
 ):
     """
     Set the playback speed of the current animation.
@@ -296,15 +299,15 @@ async def set_animation_speed(
         result = await _agent_relay.execute_mcp_tool(
             "set_animation_speed",
             {
-                "actor_id": actor_id,
-                "play_rate": speed
+                "actor_id": request.actor_id,
+                "play_rate": request.speed
             }
         )
         
         return AnimationResponse(
             success=True,
-            message=f"Animation speed set to {speed}x",
-            data={"speed": speed}
+            message=f"Animation speed set to {request.speed}x",
+            data={"speed": request.speed}
         )
         
     except Exception as e:
@@ -318,7 +321,7 @@ async def set_animation_speed(
 @router.post("/blend-space/create", response_model=AnimationResponse)
 async def create_blend_space(
     request: CreateBlendSpaceRequest,
-    current_user: User = Depends(get_current_user)
+
 ):
     """
     Create a new blend space asset.
@@ -377,7 +380,7 @@ async def create_blend_space(
 @router.post("/montage/create", response_model=AnimationResponse)
 async def create_montage(
     request: CreateMontageRequest,
-    current_user: User = Depends(get_current_user)
+
 ):
     """
     Create a new animation montage.
@@ -437,7 +440,7 @@ async def create_montage(
 @router.post("/retarget", response_model=AnimationResponse)
 async def retarget_animation(
     request: RetargetRequest,
-    current_user: User = Depends(get_current_user)
+
 ):
     """
     Retarget an animation from one skeleton to another.
@@ -482,7 +485,7 @@ async def get_animation_suggestions(
     context: Optional[str] = None,
     action_type: Optional[str] = None,
     current_animation: Optional[str] = None,
-    current_user: User = Depends(get_current_user)
+
 ):
     """
     Get AI-powered animation suggestions based on context.
@@ -598,7 +601,7 @@ async def get_animation_suggestions(
 
 @router.get("/categories")
 async def get_animation_categories(
-    current_user: User = Depends(get_current_user)
+
 ):
     """Get available animation categories."""
     return {
@@ -615,7 +618,7 @@ async def get_animation_categories(
 
 @router.get("/skeletons")
 async def get_available_skeletons(
-    current_user: User = Depends(get_current_user)
+
 ):
     """Get available skeleton assets."""
     global _agent_relay

@@ -20,8 +20,8 @@ import asyncio
 import uuid
 import json
 
-from core.auth import get_current_user
-from models.user import User
+# from services.auth import get_current_user
+# from models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -643,7 +643,7 @@ async def spawn_objects(
 async def generate_scene(
     request: GenerateSceneRequest,
     background_tasks: BackgroundTasks,
-    current_user: User = Depends(get_current_user)
+
 ):
     """
     Generate a scene from a text prompt.
@@ -695,7 +695,7 @@ async def execute_generation(
     job_id: str,
     background_tasks: BackgroundTasks,
     clear_existing: bool = True,
-    current_user: User = Depends(get_current_user)
+
 ):
     """
     Start executing a scene generation job.
@@ -735,7 +735,7 @@ async def execute_generation(
 @router.get("/progress/{job_id}", response_model=GenerationProgress)
 async def get_generation_progress(
     job_id: str,
-    current_user: User = Depends(get_current_user)
+
 ):
     """
     Get the progress of a scene generation job.
@@ -753,7 +753,7 @@ async def get_generation_progress(
 @router.post("/cancel/{job_id}")
 async def cancel_generation(
     job_id: str,
-    current_user: User = Depends(get_current_user)
+
 ):
     """
     Cancel a scene generation job.
@@ -778,7 +778,7 @@ async def cancel_generation(
 @router.get("/templates", response_model=List[SceneTemplate])
 async def get_templates(
     category: Optional[str] = None,
-    current_user: User = Depends(get_current_user)
+
 ):
     """
     Get available scene templates.
@@ -794,7 +794,7 @@ async def get_templates(
 @router.get("/templates/{template_id}", response_model=SceneTemplate)
 async def get_template(
     template_id: str,
-    current_user: User = Depends(get_current_user)
+
 ):
     """
     Get a specific scene template.
@@ -813,7 +813,7 @@ async def get_template(
 @router.get("/plans/{plan_id}", response_model=ScenePlan)
 async def get_scene_plan(
     plan_id: str,
-    current_user: User = Depends(get_current_user)
+
 ):
     """
     Get a specific scene plan.

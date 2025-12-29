@@ -16,8 +16,9 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 import logging
 
-from core.auth import get_current_user
-from models.user import User
+# Authentication is optional for these endpoints
+# from services.auth import get_current_user
+# from models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +125,7 @@ class AILightingRequest(BaseModel):
 @router.post("/apply", response_model=LightingResponse)
 async def apply_lighting_preset(
     request: ApplyPresetRequest,
-    current_user: User = Depends(get_current_user)
+
 ):
     """
     Apply a lighting preset to the UE5 scene.
@@ -248,7 +249,7 @@ async def apply_lighting_preset(
 @router.post("/apply-custom", response_model=LightingResponse)
 async def apply_custom_lighting(
     request: ApplyCustomRequest,
-    current_user: User = Depends(get_current_user)
+
 ):
     """Apply custom lighting settings to the UE5 scene."""
     # Reuse the apply preset logic with a custom preset ID
@@ -262,7 +263,7 @@ async def apply_custom_lighting(
 @router.post("/time-of-day", response_model=LightingResponse)
 async def set_time_of_day(
     request: TimeOfDayRequest,
-    current_user: User = Depends(get_current_user)
+
 ):
     """
     Set the time of day in the UE5 scene.
@@ -304,7 +305,7 @@ async def set_time_of_day(
 @router.post("/hdri", response_model=LightingResponse)
 async def set_hdri_sky(
     request: HDRIRequest,
-    current_user: User = Depends(get_current_user)
+
 ):
     """Set the HDRI sky background."""
     global _agent_relay
@@ -346,7 +347,7 @@ async def set_hdri_sky(
 @router.post("/suggest", response_model=List[AILightingSuggestion])
 async def get_ai_lighting_suggestions(
     request: AILightingRequest,
-    current_user: User = Depends(get_current_user)
+
 ):
     """
     Get AI-powered lighting suggestions based on scene description or mood.
@@ -450,7 +451,7 @@ async def get_ai_lighting_suggestions(
 
 @router.get("/presets")
 async def list_lighting_presets(
-    current_user: User = Depends(get_current_user)
+
 ):
     """List all available lighting presets."""
     presets = [
@@ -474,7 +475,7 @@ async def list_lighting_presets(
 
 @router.get("/hdri-options")
 async def list_hdri_options(
-    current_user: User = Depends(get_current_user)
+
 ):
     """List available HDRI sky options."""
     hdri_options = [
