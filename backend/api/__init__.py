@@ -27,6 +27,7 @@ from api.scene_builder import router as scene_builder_router
 from api.action_history import router as action_history_router
 from api.blueprint_material import router as blueprint_material_router
 from api.texture_generator import router as texture_generator_router
+from api.scene_analyzer import router as scene_analyzer_router
 
 api_router = APIRouter(prefix="/api")
 
@@ -58,5 +59,6 @@ api_router.include_router(scene_builder_router)
 api_router.include_router(action_history_router)
 api_router.include_router(blueprint_material_router)
 api_router.include_router(texture_generator_router)
+api_router.include_router(scene_analyzer_router)
 
 __all__ = ["api_router"]

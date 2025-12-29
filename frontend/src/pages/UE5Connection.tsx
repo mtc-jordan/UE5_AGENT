@@ -37,6 +37,7 @@ import TextureGenerator from '../components/TextureGenerator';
 import ModelSelector from '../components/ModelSelector';
 import EnhancedAIChat from '../components/EnhancedAIChat';
 import EnhancedConnectionStatus from '../components/EnhancedConnectionStatus';
+import SceneAnalyzer from '../components/SceneAnalyzer';
 
 // ==================== TYPES ====================
 
@@ -1776,6 +1777,17 @@ export default function UE5Connection() {
             content: `Redone: ${action.description}`,
             timestamp: new Date().toISOString()
           }]);
+        }}
+      />
+
+      {/* Scene Analyzer */}
+      <SceneAnalyzer
+        authToken={authToken || ''}
+        isConnected={agentStatus.mcp_connected}
+        onExecuteCommand={(command) => {
+          // Execute command via AI chat
+          setAiCommand(command);
+          processAiCommand();
         }}
       />
 
