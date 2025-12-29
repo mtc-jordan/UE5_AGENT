@@ -18,7 +18,15 @@ import {
   Sparkles,
   Pin,
   Archive,
-  Type} from 'lucide-react'
+  Type,
+  Key,
+  Eye,
+  EyeOff,
+  Check,
+  X,
+  AlertCircle,
+  ExternalLink
+} from 'lucide-react'
 import { cn, agentColors } from '../lib/utils'
 
 interface Agent {
@@ -84,9 +92,46 @@ export default function Settings() {
   const [prefsSaving, setPrefsSaving] = useState(false)
   const [prefsChanged, setPrefsChanged] = useState(false)
 
+  // API Keys state
+  const [apiKeys, setApiKeys] = useState<{
+    openai: string;
+    deepseek: string;
+    anthropic: string;
+    google: string;
+  }>({
+    openai: '',
+    deepseek: '',
+    anthropic: '',
+    google: ''
+  })
+  const [apiKeyVisibility, setApiKeyVisibility] = useState<{
+    openai: boolean;
+    deepseek: boolean;
+    anthropic: boolean;
+    google: boolean;
+  }>({
+    openai: false,
+    deepseek: false,
+    anthropic: false,
+    google: false
+  })
+  const [apiKeyStatus, setApiKeyStatus] = useState<{
+    openai: 'unconfigured' | 'configured' | 'testing' | 'valid' | 'invalid';
+    deepseek: 'unconfigured' | 'configured' | 'testing' | 'valid' | 'invalid';
+    anthropic: 'unconfigured' | 'configured' | 'testing' | 'valid' | 'invalid';
+    google: 'unconfigured' | 'configured' | 'testing' | 'valid' | 'invalid';
+  }>({
+    openai: 'unconfigured',
+    deepseek: 'unconfigured',
+    anthropic: 'unconfigured',
+    google: 'unconfigured'
+  })
+  const [savingApiKey, setSavingApiKey] = useState<string | null>(null)
+
   useEffect(() => {
     loadAgents()
     loadPreferences()
+    loadApiKeys()
   }, [])
 
   const loadAgents = async () => {
@@ -111,6 +156,106 @@ export default function Settings() {
       console.error('Failed to load preferences:', error)
     } finally {
       setPrefsLoading(false)
+    }
+  }
+
+  const loadApiKeys = async () => {
+    try {
+      const response = await fetch('/api/settings/api-keys')
+      if (response.ok) {
+        const data = await response.json()
+        // Only show masked versions, never the actual keys
+        setApiKeyStatus({
+          openai: data.openai ? 'configured' : 'unconfigured',
+          deepseek: data.deepseek ? 'configured' : 'unconfigured',
+          anthropic: data.anthropic ? 'configured' : 'unconfigured',
+          google: data.google ? 'configured' : 'unconfigured'
+        })
+      }
+    } catch (error) {
+      console.error('Failed to load API keys status:', error)
+    }
+  }
+
+  const handleSaveApiKey = async (provider: 'openai' | 'deepseek' | 'anthropic' | 'google') => {
+    const key = apiKeys[provider]
+    if (!key.trim()) {
+      toast.error('Please enter an API key')
+      return
+    }
+
+    setSavingApiKey(provider)
+    setApiKeyStatus(prev => ({ ...prev, [provider]: 'testing' }))
+
+    try {
+      const response = await fetch('/api/settings/api-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, key })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.valid) {
+          setApiKeyStatus(prev => ({ ...prev, [provider]: 'valid' }))
+          setApiKeys(prev => ({ ...prev, [provider]: '' })) // Clear input after save
+          toast.success(`${provider.charAt(0).toUpperCase() + provider.slice(1)} API key saved and validated!`)
+          // After a delay, change status to configured
+          setTimeout(() => {
+            setApiKeyStatus(prev => ({ ...prev, [provider]: 'configured' }))
+          }, 2000)
+        } else {
+          setApiKeyStatus(prev => ({ ...prev, [provider]: 'invalid' }))
+          toast.error(data.error || 'API key validation failed')
+        }
+      } else {
+        setApiKeyStatus(prev => ({ ...prev, [provider]: 'invalid' }))
+        toast.error('Failed to save API key')
+      }
+    } catch (error) {
+      console.error('Failed to save API key:', error)
+      setApiKeyStatus(prev => ({ ...prev, [provider]: 'invalid' }))
+      toast.error('Failed to save API key')
+    } finally {
+      setSavingApiKey(null)
+    }
+  }
+
+  const handleDeleteApiKey = async (provider: 'openai' | 'deepseek' | 'anthropic' | 'google') => {
+    if (!confirm(`Are you sure you want to delete the ${provider} API key?`)) return
+
+    try {
+      const response = await fetch(`/api/settings/api-keys/${provider}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        setApiKeyStatus(prev => ({ ...prev, [provider]: 'unconfigured' }))
+        toast.success(`${provider.charAt(0).toUpperCase() + provider.slice(1)} API key deleted`)
+      } else {
+        toast.error('Failed to delete API key')
+      }
+    } catch (error) {
+      console.error('Failed to delete API key:', error)
+      toast.error('Failed to delete API key')
+    }
+  }
+
+  const toggleApiKeyVisibility = (provider: 'openai' | 'deepseek' | 'anthropic' | 'google') => {
+    setApiKeyVisibility(prev => ({ ...prev, [provider]: !prev[provider] }))
+  }
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'configured':
+      case 'valid':
+        return <span className="px-2 py-1 text-xs rounded bg-green-500/20 text-green-400 flex items-center gap-1"><Check className="w-3 h-3" /> Configured</span>
+      case 'testing':
+        return <span className="px-2 py-1 text-xs rounded bg-blue-500/20 text-blue-400 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Testing...</span>
+      case 'invalid':
+        return <span className="px-2 py-1 text-xs rounded bg-red-500/20 text-red-400 flex items-center gap-1"><X className="w-3 h-3" /> Invalid</span>
+      default:
+        return <span className="px-2 py-1 text-xs rounded bg-yellow-500/20 text-yellow-400">Not Configured</span>
     }
   }
 
@@ -344,56 +489,217 @@ export default function Settings() {
             {/* API Keys Configuration */}
             <div className="card">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-                </svg>
+                <Key className="w-5 h-5" />
                 API Keys Configuration
               </h2>
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
-                <p className="text-sm text-yellow-500">
-                  ⚠️ API keys are configured via environment variables on the server. Contact your administrator to update them.
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4">
+                <p className="text-sm text-blue-400">
+                  🔐 Configure your API keys below. Keys are stored securely and validated before saving.
                 </p>
               </div>
               <div className="space-y-4">
+                {/* OpenAI */}
+                <div className="p-4 bg-ue-bg rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+                      <div>
+                        <div className="font-medium">OpenAI</div>
+                        <div className="text-xs text-ue-muted">GPT-4, GPT-3.5, DALL-E</div>
+                      </div>
+                    </div>
+                    {getStatusBadge(apiKeyStatus.openai)}
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type={apiKeyVisibility.openai ? 'text' : 'password'}
+                        value={apiKeys.openai}
+                        onChange={(e) => setApiKeys(prev => ({ ...prev, openai: e.target.value }))}
+                        placeholder={apiKeyStatus.openai === 'configured' ? '••••••••••••••••' : 'sk-...'}
+                        className="input w-full pr-10"
+                      />
+                      <button
+                        onClick={() => toggleApiKeyVisibility('openai')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-ue-muted hover:text-ue-text"
+                      >
+                        {apiKeyVisibility.openai ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => handleSaveApiKey('openai')}
+                      disabled={savingApiKey === 'openai' || !apiKeys.openai.trim()}
+                      className="btn-primary px-4 disabled:opacity-50"
+                    >
+                      {savingApiKey === 'openai' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    </button>
+                    {apiKeyStatus.openai === 'configured' && (
+                      <button
+                        onClick={() => handleDeleteApiKey('openai')}
+                        className="btn-ghost px-3 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-xs text-ue-accent hover:underline mt-2 inline-flex items-center gap-1">
+                    Get API Key <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+
                 {/* DeepSeek */}
-                <div className="flex items-center justify-between p-3 bg-ue-bg rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <span className="w-3 h-3 rounded-full bg-blue-500"></span>
-                    <div>
-                      <div className="font-medium">DeepSeek</div>
-                      <div className="text-xs text-ue-muted">DEEPSEEK_API_KEY</div>
+                <div className="p-4 bg-ue-bg rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+                      <div>
+                        <div className="font-medium">DeepSeek</div>
+                        <div className="text-xs text-ue-muted">DeepSeek V3, DeepSeek R1</div>
+                      </div>
                     </div>
+                    {getStatusBadge(apiKeyStatus.deepseek)}
                   </div>
-                  <span className="px-2 py-1 text-xs rounded bg-green-500/20 text-green-400">Configured</span>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type={apiKeyVisibility.deepseek ? 'text' : 'password'}
+                        value={apiKeys.deepseek}
+                        onChange={(e) => setApiKeys(prev => ({ ...prev, deepseek: e.target.value }))}
+                        placeholder={apiKeyStatus.deepseek === 'configured' ? '••••••••••••••••' : 'sk-...'}
+                        className="input w-full pr-10"
+                      />
+                      <button
+                        onClick={() => toggleApiKeyVisibility('deepseek')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-ue-muted hover:text-ue-text"
+                      >
+                        {apiKeyVisibility.deepseek ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => handleSaveApiKey('deepseek')}
+                      disabled={savingApiKey === 'deepseek' || !apiKeys.deepseek.trim()}
+                      className="btn-primary px-4 disabled:opacity-50"
+                    >
+                      {savingApiKey === 'deepseek' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    </button>
+                    {apiKeyStatus.deepseek === 'configured' && (
+                      <button
+                        onClick={() => handleDeleteApiKey('deepseek')}
+                        className="btn-ghost px-3 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener noreferrer" className="text-xs text-ue-accent hover:underline mt-2 inline-flex items-center gap-1">
+                    Get API Key <ExternalLink className="w-3 h-3" />
+                  </a>
                 </div>
-                
+
                 {/* Anthropic */}
-                <div className="flex items-center justify-between p-3 bg-ue-bg rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <span className="w-3 h-3 rounded-full bg-orange-500"></span>
-                    <div>
-                      <div className="font-medium">Anthropic (Claude)</div>
-                      <div className="text-xs text-ue-muted">ANTHROPIC_API_KEY</div>
+                <div className="p-4 bg-ue-bg rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="w-3 h-3 rounded-full bg-orange-500"></span>
+                      <div>
+                        <div className="font-medium">Anthropic (Claude)</div>
+                        <div className="text-xs text-ue-muted">Claude 3.5 Sonnet, Claude 3 Opus</div>
+                      </div>
                     </div>
+                    {getStatusBadge(apiKeyStatus.anthropic)}
                   </div>
-                  <span className="px-2 py-1 text-xs rounded bg-yellow-500/20 text-yellow-400">Optional</span>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type={apiKeyVisibility.anthropic ? 'text' : 'password'}
+                        value={apiKeys.anthropic}
+                        onChange={(e) => setApiKeys(prev => ({ ...prev, anthropic: e.target.value }))}
+                        placeholder={apiKeyStatus.anthropic === 'configured' ? '••••••••••••••••' : 'sk-ant-...'}
+                        className="input w-full pr-10"
+                      />
+                      <button
+                        onClick={() => toggleApiKeyVisibility('anthropic')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-ue-muted hover:text-ue-text"
+                      >
+                        {apiKeyVisibility.anthropic ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => handleSaveApiKey('anthropic')}
+                      disabled={savingApiKey === 'anthropic' || !apiKeys.anthropic.trim()}
+                      className="btn-primary px-4 disabled:opacity-50"
+                    >
+                      {savingApiKey === 'anthropic' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    </button>
+                    {apiKeyStatus.anthropic === 'configured' && (
+                      <button
+                        onClick={() => handleDeleteApiKey('anthropic')}
+                        className="btn-ghost px-3 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-xs text-ue-accent hover:underline mt-2 inline-flex items-center gap-1">
+                    Get API Key <ExternalLink className="w-3 h-3" />
+                  </a>
                 </div>
-                
+
                 {/* Google Gemini */}
-                <div className="flex items-center justify-between p-3 bg-ue-bg rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <span className="w-3 h-3 rounded-full bg-green-500"></span>
-                    <div>
-                      <div className="font-medium">Google Gemini</div>
-                      <div className="text-xs text-ue-muted">GOOGLE_API_KEY</div>
+                <div className="p-4 bg-ue-bg rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
+                      <div>
+                        <div className="font-medium">Google Gemini</div>
+                        <div className="text-xs text-ue-muted">Gemini 2.5 Flash, Gemini Pro</div>
+                      </div>
                     </div>
+                    {getStatusBadge(apiKeyStatus.google)}
                   </div>
-                  <span className="px-2 py-1 text-xs rounded bg-yellow-500/20 text-yellow-400">Optional</span>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type={apiKeyVisibility.google ? 'text' : 'password'}
+                        value={apiKeys.google}
+                        onChange={(e) => setApiKeys(prev => ({ ...prev, google: e.target.value }))}
+                        placeholder={apiKeyStatus.google === 'configured' ? '••••••••••••••••' : 'AIza...'}
+                        className="input w-full pr-10"
+                      />
+                      <button
+                        onClick={() => toggleApiKeyVisibility('google')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-ue-muted hover:text-ue-text"
+                      >
+                        {apiKeyVisibility.google ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => handleSaveApiKey('google')}
+                      disabled={savingApiKey === 'google' || !apiKeys.google.trim()}
+                      className="btn-primary px-4 disabled:opacity-50"
+                    >
+                      {savingApiKey === 'google' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    </button>
+                    {apiKeyStatus.google === 'configured' && (
+                      <button
+                        onClick={() => handleDeleteApiKey('google')}
+                        className="btn-ghost px-3 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-xs text-ue-accent hover:underline mt-2 inline-flex items-center gap-1">
+                    Get API Key <ExternalLink className="w-3 h-3" />
+                  </a>
                 </div>
               </div>
-              <p className="text-xs text-ue-muted mt-4">
-                To add or update API keys, set the environment variables in your .env file or server configuration.
-              </p>
+              <div className="mt-4 p-3 bg-ue-surface/50 rounded-lg">
+                <p className="text-xs text-ue-muted">
+                  <AlertCircle className="w-3 h-3 inline mr-1" />
+                  API keys are stored securely on the server and are never exposed to the frontend. Each key is validated before being saved.
+                </p>
+              </div>
             </div>
           </div>
         )}
