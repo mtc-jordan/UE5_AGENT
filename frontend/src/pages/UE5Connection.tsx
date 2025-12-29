@@ -1960,7 +1960,7 @@ export default function UE5Connection() {
 
       {/* Scene Builder */}
       <SceneBuilder
-        authToken={authToken}
+        authToken={authToken || ''}
         isConnected={agentStatus.mcp_connected}
         onSceneBuilt={(plan) => {
           // Refresh screenshots after scene is built
@@ -1976,7 +1976,7 @@ export default function UE5Connection() {
 
       {/* Blueprint & Material Assistant */}
       <BlueprintMaterialAssistant
-        authToken={authToken}
+        authToken={authToken || ''}
         isConnected={agentStatus.mcp_connected}
         onAssetCreated={(asset) => {
           // Refresh screenshots after asset is created
@@ -2000,7 +2000,7 @@ export default function UE5Connection() {
             timestamp: new Date().toISOString()
           }]);
         }}
-        onApplyToActor={(texture, actorName) => {
+        onApplyToActor={(_texture, actorName) => {
           // Apply texture to actor via MCP
           setChatHistory(prev => [...prev, {
             role: 'assistant',
@@ -2012,7 +2012,7 @@ export default function UE5Connection() {
 
       {/* Action Timeline (Undo/Redo) */}
       <ActionTimeline
-        authToken={authToken}
+        authToken={authToken || ''}
         isConnected={agentStatus.mcp_connected}
         onActionUndone={(action) => {
           // Refresh screenshots after undo

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AI_MODELS, AI_PROVIDERS, MODEL_GROUPS, getModelById, DEFAULT_MODEL, type AIModel, type AIProvider } from '../config/models';
+import { AI_MODELS, AI_PROVIDERS, MODEL_GROUPS, getModelById, DEFAULT_MODEL } from '../config/models';
 
 interface ModelSelectorProps {
   selectedModel: string;
@@ -111,7 +111,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
           <div className="absolute right-0 top-full mt-2 w-80 bg-gray-900 border border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden">
             {/* Auto-select toggle */}
             <div className="p-3 border-b border-gray-700">
-              <label className="flex items-center gap-3 cursor-pointer">
+              <label className="flex items-center gap-3 cursor-pointer" onClick={() => onAutoSelectChange(!autoSelect)}>
                 <div className={`relative w-10 h-5 rounded-full transition-colors ${autoSelect ? 'bg-purple-500' : 'bg-gray-700'}`}>
                   <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${autoSelect ? 'translate-x-5' : 'translate-x-0.5'}`} />
                 </div>
@@ -219,7 +219,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
     <div ref={dropdownRef} className="space-y-4">
       {/* Auto-select toggle */}
       <div className="p-4 bg-gray-800/50 border border-gray-700 rounded-xl">
-        <label className="flex items-center gap-4 cursor-pointer">
+        <label className="flex items-center gap-4 cursor-pointer" onClick={() => onAutoSelectChange(!autoSelect)}>
           <div className={`relative w-12 h-6 rounded-full transition-colors ${autoSelect ? 'bg-purple-500' : 'bg-gray-700'}`}>
             <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${autoSelect ? 'translate-x-7' : 'translate-x-1'}`} />
           </div>
