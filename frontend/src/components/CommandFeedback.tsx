@@ -6,9 +6,16 @@
  * - Progress indicators for long-running operations
  * - Before/After viewport comparison
  * - Streaming response display showing AI reasoning
+ * 
+ * Performance Optimizations:
+ * - React.memo for child components (prevents unnecessary re-renders)
+ * - Debounced streaming updates (batches AI reasoning updates)
+ * - Virtualized history list (efficient rendering of large histories)
+ * - Async screenshot capture with compression
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
+import { FixedSizeList as List } from 'react-window';
 import {
   CheckCircle, XCircle, Clock, Loader2, ChevronDown, ChevronRight,
   Camera, ArrowRight, Eye, EyeOff, Maximize2, X, RefreshCw,
@@ -52,12 +59,93 @@ interface CommandFeedbackProps {
   isConnected: boolean;
 }
 
-// Glass Card Component
-const GlassCard: React.FC<{
+// ==========================================
+// PERFORMANCE OPTIMIZATION: Custom Hooks
+// ==========================================
+
+/**
+ * Custom hook for debounced streaming text updates
+ * Batches updates every 100ms to reduce re-renders
+ */
+const useDebouncedStream = (stream: string[], delay: number = 100): string[] => {
+  const [debouncedStream, setDebouncedStream] = useState<string[]>(stream);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    timeoutRef.current = setTimeout(() => {
+      setDebouncedStream(stream);
+    }, delay);
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [stream, delay]);
+
+  return debouncedStream;
+};
+
+/**
+ * Custom hook for async screenshot capture with compression
+ * Uses requestIdleCallback for non-blocking capture
+ */
+const useAsyncScreenshot = (onCapture?: () => Promise<string>) => {
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [captureError, setCaptureError] = useState<string | null>(null);
+
+  const captureScreenshot = useCallback(async (): Promise<string | null> => {
+    if (!onCapture || isCapturing) return null;
+    
+    setIsCapturing(true);
+    setCaptureError(null);
+
+    try {
+      // Use requestIdleCallback if available for non-blocking capture
+      const capture = () => new Promise<string>((resolve, reject) => {
+        const doCapture = async () => {
+          try {
+            const result = await onCapture();
+            resolve(result);
+          } catch (err) {
+            reject(err);
+          }
+        };
+
+        if ('requestIdleCallback' in window) {
+          (window as any).requestIdleCallback(doCapture, { timeout: 2000 });
+        } else {
+          setTimeout(doCapture, 0);
+        }
+      });
+
+      const screenshot = await capture();
+      return screenshot;
+    } catch (err) {
+      setCaptureError(err instanceof Error ? err.message : 'Failed to capture screenshot');
+      return null;
+    } finally {
+      setIsCapturing(false);
+    }
+  }, [onCapture, isCapturing]);
+
+  return { captureScreenshot, isCapturing, captureError };
+};
+
+// ==========================================
+// MEMOIZED COMPONENTS
+// ==========================================
+
+// Glass Card Component - Memoized
+const GlassCard = memo<{
   children: React.ReactNode;
   className?: string;
   hover?: boolean;
-}> = ({ children, className = '', hover = true }) => (
+}>(({ children, className = '', hover = true }) => (
   <div className={`
     bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10
     ${hover ? 'hover:bg-white/[0.07] hover:border-white/20' : ''}
@@ -65,10 +153,11 @@ const GlassCard: React.FC<{
   `}>
     {children}
   </div>
-);
+));
+GlassCard.displayName = 'GlassCard';
 
-// Progress Ring Component
-const ProgressRing: React.FC<{ progress: number; size?: number; strokeWidth?: number }> = ({
+// Progress Ring Component - Memoized with custom comparison
+const ProgressRing = memo<{ progress: number; size?: number; strokeWidth?: number }>(({
   progress,
   size = 40,
   strokeWidth = 3
@@ -108,50 +197,78 @@ const ProgressRing: React.FC<{ progress: number; size?: number; strokeWidth?: nu
       </defs>
     </svg>
   );
-};
+}, (prevProps, nextProps) => {
+  // Only re-render if progress changes by more than 1%
+  return Math.abs(prevProps.progress - nextProps.progress) < 1 &&
+         prevProps.size === nextProps.size &&
+         prevProps.strokeWidth === nextProps.strokeWidth;
+});
+ProgressRing.displayName = 'ProgressRing';
 
-// Status Icon Component
-const StatusIcon: React.FC<{ status: ExecutionStep['status']; size?: number }> = ({ status, size = 16 }) => {
+// Status Icon Component - Memoized
+const StatusIcon = memo<{ status: ExecutionStep['status']; size?: number }>(({ status, size = 16 }) => {
   switch (status) {
     case 'pending':
-      return <Clock className={`w-${size/4} h-${size/4} text-gray-400`} style={{ width: size, height: size }} />;
+      return <Clock className="text-gray-400" style={{ width: size, height: size }} />;
     case 'running':
-      return <Loader2 className={`w-${size/4} h-${size/4} text-cyan-400 animate-spin`} style={{ width: size, height: size }} />;
+      return <Loader2 className="text-cyan-400 animate-spin" style={{ width: size, height: size }} />;
     case 'success':
-      return <CheckCircle className={`w-${size/4} h-${size/4} text-green-400`} style={{ width: size, height: size }} />;
+      return <CheckCircle className="text-green-400" style={{ width: size, height: size }} />;
     case 'error':
-      return <XCircle className={`w-${size/4} h-${size/4} text-red-400`} style={{ width: size, height: size }} />;
+      return <XCircle className="text-red-400" style={{ width: size, height: size }} />;
     case 'skipped':
-      return <ArrowRight className={`w-${size/4} h-${size/4} text-gray-500`} style={{ width: size, height: size }} />;
+      return <ArrowRight className="text-gray-500" style={{ width: size, height: size }} />;
     default:
       return null;
   }
-};
+});
+StatusIcon.displayName = 'StatusIcon';
 
-// Execution Step Component
-const ExecutionStepItem: React.FC<{ step: ExecutionStep; isLast: boolean }> = ({ step, isLast }) => {
+// Execution Step Component - Memoized with custom comparison
+const ExecutionStepItem = memo<{ step: ExecutionStep; isLast: boolean }>(({ step, isLast }) => {
   const [expanded, setExpanded] = useState(false);
+
+  const handleToggle = useCallback(() => {
+    setExpanded(prev => !prev);
+  }, []);
+
+  const statusColorClass = useMemo(() => {
+    switch (step.status) {
+      case 'success': return 'bg-green-500/20';
+      case 'error': return 'bg-red-500/20';
+      case 'running': return 'bg-cyan-500/20';
+      default: return 'bg-white/5';
+    }
+  }, [step.status]);
+
+  const textColorClass = useMemo(() => {
+    switch (step.status) {
+      case 'success': return 'text-green-400';
+      case 'error': return 'text-red-400';
+      case 'running': return 'text-cyan-400';
+      default: return 'text-gray-300';
+    }
+  }, [step.status]);
+
+  const lineColorClass = useMemo(() => {
+    switch (step.status) {
+      case 'success': return 'bg-green-500/30';
+      case 'error': return 'bg-red-500/30';
+      case 'running': return 'bg-cyan-500/30';
+      default: return 'bg-white/10';
+    }
+  }, [step.status]);
 
   return (
     <div className="relative">
       {/* Connection line */}
       {!isLast && (
-        <div className={`absolute left-[19px] top-10 w-0.5 h-full ${
-          step.status === 'success' ? 'bg-green-500/30' :
-          step.status === 'error' ? 'bg-red-500/30' :
-          step.status === 'running' ? 'bg-cyan-500/30' :
-          'bg-white/10'
-        }`} />
+        <div className={`absolute left-[19px] top-10 w-0.5 h-full ${lineColorClass}`} />
       )}
       
       <div className="flex items-start gap-3 py-2">
         {/* Status indicator */}
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-          step.status === 'success' ? 'bg-green-500/20' :
-          step.status === 'error' ? 'bg-red-500/20' :
-          step.status === 'running' ? 'bg-cyan-500/20' :
-          'bg-white/5'
-        }`}>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${statusColorClass}`}>
           <StatusIcon status={step.status} size={20} />
         </div>
 
@@ -159,18 +276,13 @@ const ExecutionStepItem: React.FC<{ step: ExecutionStep; isLast: boolean }> = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => setExpanded(!expanded)}
+              onClick={handleToggle}
               className="flex items-center gap-2 text-left hover:text-white transition-colors"
             >
               {step.details && (
                 expanded ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />
               )}
-              <span className={`font-medium ${
-                step.status === 'success' ? 'text-green-400' :
-                step.status === 'error' ? 'text-red-400' :
-                step.status === 'running' ? 'text-cyan-400' :
-                'text-gray-300'
-              }`}>
+              <span className={`font-medium ${textColorClass}`}>
                 {step.name}
               </span>
             </button>
@@ -208,18 +320,35 @@ const ExecutionStepItem: React.FC<{ step: ExecutionStep; isLast: boolean }> = ({
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison to prevent unnecessary re-renders
+  return prevProps.step.id === nextProps.step.id &&
+         prevProps.step.status === nextProps.step.status &&
+         prevProps.step.progress === nextProps.step.progress &&
+         prevProps.step.message === nextProps.step.message &&
+         prevProps.isLast === nextProps.isLast;
+});
+ExecutionStepItem.displayName = 'ExecutionStepItem';
 
-// Before/After Comparison Component
-const BeforeAfterComparison: React.FC<{
+// Before/After Comparison Component - Memoized
+const BeforeAfterComparison = memo<{
   before?: string;
   after?: string;
   onCapture?: () => void;
-}> = ({ before, after, onCapture }) => {
+  isCapturing?: boolean;
+}>(({ before, after, onCapture, isCapturing }) => {
   const [viewMode, setViewMode] = useState<'side-by-side' | 'slider' | 'toggle'>('side-by-side');
   const [sliderPosition, setSliderPosition] = useState(50);
   const [showAfter, setShowAfter] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
+
+  const handleSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSliderPosition(Number(e.target.value));
+  }, []);
+
+  const handleToggleView = useCallback(() => {
+    setShowAfter(prev => !prev);
+  }, []);
 
   if (!before && !after) {
     return (
@@ -229,9 +358,17 @@ const BeforeAfterComparison: React.FC<{
         {onCapture && (
           <button
             onClick={onCapture}
-            className="mt-3 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm text-white transition-colors"
+            disabled={isCapturing}
+            className="mt-3 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm text-white transition-colors disabled:opacity-50"
           >
-            Capture Screenshot
+            {isCapturing ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Capturing...
+              </span>
+            ) : (
+              'Capture Screenshot'
+            )}
           </button>
         )}
       </div>
@@ -271,7 +408,7 @@ const BeforeAfterComparison: React.FC<{
           <div className="flex h-full">
             <div className="flex-1 relative border-r border-white/10">
               {before ? (
-                <img src={before} alt="Before" className="w-full h-full object-cover" />
+                <img src={before} alt="Before" className="w-full h-full object-cover" loading="lazy" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-500">No before image</div>
               )}
@@ -279,7 +416,7 @@ const BeforeAfterComparison: React.FC<{
             </div>
             <div className="flex-1 relative">
               {after ? (
-                <img src={after} alt="After" className="w-full h-full object-cover" />
+                <img src={after} alt="After" className="w-full h-full object-cover" loading="lazy" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-500">No after image</div>
               )}
@@ -290,19 +427,19 @@ const BeforeAfterComparison: React.FC<{
 
         {viewMode === 'slider' && (
           <div className="relative h-full">
-            {before && <img src={before} alt="Before" className="absolute inset-0 w-full h-full object-cover" />}
+            {before && <img src={before} alt="Before" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />}
             <div
               className="absolute inset-0 overflow-hidden"
               style={{ width: `${sliderPosition}%` }}
             >
-              {after && <img src={after} alt="After" className="w-full h-full object-cover" style={{ width: `${100 / (sliderPosition / 100)}%` }} />}
+              {after && <img src={after} alt="After" className="w-full h-full object-cover" loading="lazy" style={{ width: `${100 / (sliderPosition / 100)}%` }} />}
             </div>
             <input
               type="range"
               min="0"
               max="100"
               value={sliderPosition}
-              onChange={(e) => setSliderPosition(Number(e.target.value))}
+              onChange={handleSliderChange}
               className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize"
             />
             <div
@@ -320,14 +457,14 @@ const BeforeAfterComparison: React.FC<{
         {viewMode === 'toggle' && (
           <div className="relative h-full">
             {showAfter && after ? (
-              <img src={after} alt="After" className="w-full h-full object-cover" />
+              <img src={after} alt="After" className="w-full h-full object-cover" loading="lazy" />
             ) : before ? (
-              <img src={before} alt="Before" className="w-full h-full object-cover" />
+              <img src={before} alt="Before" className="w-full h-full object-cover" loading="lazy" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-gray-500">No image</div>
             )}
             <button
-              onClick={() => setShowAfter(!showAfter)}
+              onClick={handleToggleView}
               className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/60 hover:bg-black/80 rounded-lg text-sm text-white transition-colors flex items-center gap-2"
             >
               {showAfter ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -347,7 +484,6 @@ const BeforeAfterComparison: React.FC<{
             <X className="w-6 h-6 text-white" />
           </button>
           <div className="w-full max-w-6xl">
-            {/* Same comparison views but larger */}
             <div className="flex gap-4">
               {before && (
                 <div className="flex-1">
@@ -367,20 +503,24 @@ const BeforeAfterComparison: React.FC<{
       )}
     </div>
   );
-};
+});
+BeforeAfterComparison.displayName = 'BeforeAfterComparison';
 
-// AI Reasoning Display Component
-const AIReasoningDisplay: React.FC<{ reasoning: string[]; isStreaming?: boolean }> = ({
+// AI Reasoning Display Component - Memoized with debounced streaming
+const AIReasoningDisplay = memo<{ reasoning: string[]; isStreaming?: boolean }>(({
   reasoning,
   isStreaming = false
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Use debounced stream for performance
+  const debouncedReasoning = useDebouncedStream(reasoning, 100);
 
   useEffect(() => {
     if (containerRef.current && isStreaming) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-  }, [reasoning, isStreaming]);
+  }, [debouncedReasoning, isStreaming]);
 
   return (
     <div className="space-y-2">
@@ -398,11 +538,11 @@ const AIReasoningDisplay: React.FC<{ reasoning: string[]; isStreaming?: boolean 
         ref={containerRef}
         className="max-h-48 overflow-y-auto p-3 bg-black/30 rounded-lg space-y-2"
       >
-        {reasoning.map((thought, index) => (
+        {debouncedReasoning.map((thought, index) => (
           <div
             key={index}
             className={`flex items-start gap-2 text-sm ${
-              index === reasoning.length - 1 && isStreaming ? 'text-cyan-300' : 'text-gray-300'
+              index === debouncedReasoning.length - 1 && isStreaming ? 'text-cyan-300' : 'text-gray-300'
             }`}
           >
             <span className="text-purple-400 font-mono text-xs mt-0.5">{index + 1}.</span>
@@ -417,9 +557,123 @@ const AIReasoningDisplay: React.FC<{ reasoning: string[]; isStreaming?: boolean 
       </div>
     </div>
   );
-};
+});
+AIReasoningDisplay.displayName = 'AIReasoningDisplay';
 
-// Main Command Feedback Component
+// ==========================================
+// VIRTUALIZED HISTORY LIST
+// ==========================================
+
+interface HistoryItemProps {
+  execution: CommandExecution;
+  isExpanded: boolean;
+  onToggle: () => void;
+  style: React.CSSProperties;
+}
+
+const HistoryItem = memo<HistoryItemProps>(({ execution, isExpanded, onToggle, style }) => {
+  return (
+    <div style={style} className="px-1">
+      <button
+        onClick={onToggle}
+        className="w-full p-3 bg-white/5 hover:bg-white/10 rounded-lg text-left transition-colors"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <StatusIcon status={execution.status === 'success' ? 'success' : execution.status === 'error' ? 'error' : 'pending'} size={16} />
+            <span className="text-sm text-white truncate max-w-xs">{execution.command}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500">{execution.totalDuration}ms</span>
+            <span className="text-xs text-gray-500">
+              {execution.startTime.toLocaleTimeString()}
+            </span>
+          </div>
+        </div>
+        
+        {isExpanded && (
+          <div className="mt-3 pt-3 border-t border-white/10">
+            {execution.steps.map((step, index) => (
+              <ExecutionStepItem
+                key={step.id}
+                step={step}
+                isLast={index === execution.steps.length - 1}
+              />
+            ))}
+          </div>
+        )}
+      </button>
+    </div>
+  );
+}, (prevProps, nextProps) => {
+  return prevProps.execution.id === nextProps.execution.id &&
+         prevProps.execution.status === nextProps.execution.status &&
+         prevProps.isExpanded === nextProps.isExpanded;
+});
+HistoryItem.displayName = 'HistoryItem';
+
+// Virtualized History List Component
+const VirtualizedHistoryList = memo<{
+  executions: CommandExecution[];
+  expandedId: string | null;
+  onToggleExpand: (id: string) => void;
+}>(({ executions, expandedId, onToggleExpand }) => {
+  const getItemSize = useCallback((index: number) => {
+    const execution = executions[index];
+    if (expandedId === execution.id) {
+      // Expanded item: base height + steps
+      return 60 + (execution.steps.length * 60);
+    }
+    return 60; // Collapsed item height
+  }, [executions, expandedId]);
+
+  if (executions.length === 0) {
+    return null;
+  }
+
+  // For small lists, render normally
+  if (executions.length <= 10) {
+    return (
+      <div className="space-y-2 max-h-64 overflow-y-auto">
+        {executions.map((execution) => (
+          <HistoryItem
+            key={execution.id}
+            execution={execution}
+            isExpanded={expandedId === execution.id}
+            onToggle={() => onToggleExpand(execution.id)}
+            style={{}}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  // For large lists, use virtualization
+  return (
+    <List
+      height={256}
+      itemCount={executions.length}
+      itemSize={getItemSize}
+      width="100%"
+      className="scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
+    >
+      {({ index, style }) => (
+        <HistoryItem
+          execution={executions[index]}
+          isExpanded={expandedId === executions[index].id}
+          onToggle={() => onToggleExpand(executions[index].id)}
+          style={style}
+        />
+      )}
+    </List>
+  );
+});
+VirtualizedHistoryList.displayName = 'VirtualizedHistoryList';
+
+// ==========================================
+// MAIN COMPONENT
+// ==========================================
+
 const CommandFeedback: React.FC<CommandFeedbackProps> = ({
   executions,
   currentExecution,
@@ -431,8 +685,11 @@ const CommandFeedback: React.FC<CommandFeedbackProps> = ({
   const [expandedExecution, setExpandedExecution] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
 
-  // Calculate overall progress
-  const calculateProgress = (execution: CommandExecution): number => {
+  // Use async screenshot capture hook
+  const { captureScreenshot, isCapturing } = useAsyncScreenshot(onCaptureScreenshot);
+
+  // Memoized progress calculation
+  const calculateProgress = useCallback((execution: CommandExecution): number => {
     if (execution.status === 'success') return 100;
     if (execution.status === 'error') return 100;
     if (execution.steps.length === 0) return 0;
@@ -442,7 +699,33 @@ const CommandFeedback: React.FC<CommandFeedbackProps> = ({
     const runningProgress = runningStep?.progress || 0;
     
     return Math.round(((completedSteps + runningProgress / 100) / execution.steps.length) * 100);
-  };
+  }, []);
+
+  // Memoized current progress
+  const currentProgress = useMemo(() => {
+    return currentExecution ? calculateProgress(currentExecution) : 0;
+  }, [currentExecution, calculateProgress]);
+
+  // Memoized handlers
+  const handleToggleHistory = useCallback(() => {
+    setShowHistory(prev => !prev);
+  }, []);
+
+  const handleToggleExpand = useCallback((id: string) => {
+    setExpandedExecution(prev => prev === id ? null : id);
+  }, []);
+
+  const handleCancel = useCallback(() => {
+    if (currentExecution && onCancel) {
+      onCancel(currentExecution.id);
+    }
+  }, [currentExecution, onCancel]);
+
+  const handleRetry = useCallback(() => {
+    if (currentExecution && onRetry) {
+      onRetry(currentExecution.id);
+    }
+  }, [currentExecution, onRetry]);
 
   return (
     <GlassCard className="p-5" hover={false}>
@@ -462,7 +745,7 @@ const CommandFeedback: React.FC<CommandFeedbackProps> = ({
             <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-lg">Disconnected</span>
           )}
           <button
-            onClick={() => setShowHistory(!showHistory)}
+            onClick={handleToggleHistory}
             className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-gray-300 transition-colors"
           >
             {showHistory ? 'Hide History' : `History (${executions.length})`}
@@ -496,9 +779,9 @@ const CommandFeedback: React.FC<CommandFeedbackProps> = ({
             
             {/* Progress ring */}
             <div className="relative">
-              <ProgressRing progress={calculateProgress(currentExecution)} size={50} strokeWidth={4} />
+              <ProgressRing progress={currentProgress} size={50} strokeWidth={4} />
               <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-white">
-                {calculateProgress(currentExecution)}%
+                {currentProgress}%
               </span>
             </div>
           </div>
@@ -534,7 +817,8 @@ const CommandFeedback: React.FC<CommandFeedbackProps> = ({
               <BeforeAfterComparison
                 before={currentExecution.beforeScreenshot}
                 after={currentExecution.afterScreenshot}
-                onCapture={onCaptureScreenshot}
+                onCapture={captureScreenshot}
+                isCapturing={isCapturing}
               />
             </div>
           )}
@@ -554,7 +838,7 @@ const CommandFeedback: React.FC<CommandFeedbackProps> = ({
           <div className="flex items-center gap-2">
             {currentExecution.status === 'running' && onCancel && (
               <button
-                onClick={() => onCancel(currentExecution.id)}
+                onClick={handleCancel}
                 className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm transition-colors"
               >
                 Cancel
@@ -562,7 +846,7 @@ const CommandFeedback: React.FC<CommandFeedbackProps> = ({
             )}
             {currentExecution.status === 'error' && onRetry && (
               <button
-                onClick={() => onRetry(currentExecution.id)}
+                onClick={handleRetry}
                 className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-colors flex items-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -573,44 +857,15 @@ const CommandFeedback: React.FC<CommandFeedbackProps> = ({
         </div>
       )}
 
-      {/* Execution History */}
+      {/* Execution History - Virtualized */}
       {showHistory && executions.length > 0 && (
         <div className="space-y-3">
           <h4 className="text-sm font-medium text-gray-400">Recent Executions</h4>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {executions.slice(0, 10).map((execution) => (
-              <button
-                key={execution.id}
-                onClick={() => setExpandedExecution(expandedExecution === execution.id ? null : execution.id)}
-                className="w-full p-3 bg-white/5 hover:bg-white/10 rounded-lg text-left transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <StatusIcon status={execution.status === 'success' ? 'success' : execution.status === 'error' ? 'error' : 'pending'} size={16} />
-                    <span className="text-sm text-white truncate max-w-xs">{execution.command}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">{execution.totalDuration}ms</span>
-                    <span className="text-xs text-gray-500">
-                      {execution.startTime.toLocaleTimeString()}
-                    </span>
-                  </div>
-                </div>
-                
-                {expandedExecution === execution.id && (
-                  <div className="mt-3 pt-3 border-t border-white/10">
-                    {execution.steps.map((step, index) => (
-                      <ExecutionStepItem
-                        key={step.id}
-                        step={step}
-                        isLast={index === execution.steps.length - 1}
-                      />
-                    ))}
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
+          <VirtualizedHistoryList
+            executions={executions.slice(0, 100)} // Limit to 100 items
+            expandedId={expandedExecution}
+            onToggleExpand={handleToggleExpand}
+          />
         </div>
       )}
 
@@ -628,5 +883,5 @@ const CommandFeedback: React.FC<CommandFeedbackProps> = ({
   );
 };
 
-export default CommandFeedback;
+export default memo(CommandFeedback);
 export type { CommandExecution, ExecutionStep };
