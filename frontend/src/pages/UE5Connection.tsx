@@ -38,6 +38,7 @@ import ModelSelector from '../components/ModelSelector';
 import EnhancedAIChat from '../components/EnhancedAIChat';
 import EnhancedConnectionStatus from '../components/EnhancedConnectionStatus';
 import SceneAnalyzer from '../components/SceneAnalyzer';
+import SceneQuickActions from '../components/SceneQuickActions';
 
 // ==================== TYPES ====================
 
@@ -893,8 +894,25 @@ export default function UE5Connection() {
       {/* Enhanced Connection Status */}
       <EnhancedConnectionStatus agentStatus={agentStatus} />
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Scene Quick Actions - Auto-Fix & Recommendations */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SceneQuickActions
+          authToken={authToken || ''}
+          isConnected={agentStatus.mcp_connected}
+          onExecuteCommand={(cmd) => {
+            // Parse command and execute appropriate tool
+            if (cmd.toLowerCase().includes('light')) {
+              executeTool('spawn_actor', { actor_type: 'DirectionalLight', location: { x: 0, y: 0, z: 500 } });
+            } else if (cmd.toLowerCase().includes('camera')) {
+              executeTool('spawn_actor', { actor_type: 'CameraActor', location: { x: 0, y: -500, z: 200 } });
+            }
+          }}
+          onNavigateToAnalyzer={() => setActiveTab('ai')}
+        />
+        
+        {/* Quick Stats Summary */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
         <StatCard
           icon={Cloud}
           label="Cloud Status"
@@ -923,6 +941,8 @@ export default function UE5Connection() {
           subtext="15 categories"
           gradient="from-green-500 to-emerald-500"
         />
+          </div>
+        </div>
       </div>
 
       {/* Quick Actions */}
