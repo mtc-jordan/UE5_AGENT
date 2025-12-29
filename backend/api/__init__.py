@@ -33,6 +33,7 @@ from api.assets import router as assets_router
 from api.lighting import router as lighting_router
 from api.animation import router as animation_router
 from api.collaboration import router as collaboration_router
+from api.collaboration_ws import router as collaboration_ws_router
 
 api_router = APIRouter(prefix="/api")
 
@@ -70,5 +71,6 @@ api_router.include_router(assets_router)
 api_router.include_router(lighting_router)
 api_router.include_router(animation_router)
 api_router.include_router(collaboration_router)
+api_router.include_router(collaboration_ws_router)
 
 __all__ = ["api_router"]

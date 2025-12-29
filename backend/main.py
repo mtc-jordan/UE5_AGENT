@@ -45,6 +45,10 @@ from api.viewport import set_agent_relay_service
 from api.scene_builder import set_agent_relay_service as set_scene_builder_relay
 from api.action_history import set_agent_relay_service as set_action_history_relay
 from api.blueprint_material import set_agent_relay_service as set_blueprint_material_relay
+from services.actor_lock_service import actor_lock_service
+from services.ue5_command_service import ue5_command_service
+from api.lighting import set_agent_relay_service as set_lighting_relay
+from api.animation import set_agent_relay_service as set_animation_relay
 
 
 async def seed_default_agents():
@@ -103,6 +107,15 @@ async def lifespan(app: FastAPI):
     set_scene_builder_relay(agent_relay)
     set_action_history_relay(agent_relay)
     set_blueprint_material_relay(agent_relay)
+    set_lighting_relay(agent_relay)
+    set_animation_relay(agent_relay)
+    
+    # Start actor lock service for collaboration
+    await actor_lock_service.start()
+    
+    # Initialize UE5 command service
+    ue5_command_service.set_agent_relay(agent_relay)
+    
     logger.info("Real-time services started")
     
     logger.info(f"{settings.APP_NAME} is ready!")
@@ -113,6 +126,7 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down...")
     
     # Stop real-time services
+    await actor_lock_service.stop()
     await agent_relay.stop()
     await realtime_workspace.stop()
     await realtime_chat.stop()
