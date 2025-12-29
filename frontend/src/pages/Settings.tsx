@@ -1174,9 +1174,9 @@ export default function Settings() {
   }
 
   return (
-    <div className="min-h-screen bg-ue-bg">
+    <div className="h-full bg-ue-bg overflow-y-auto">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-ue-bg/80 backdrop-blur-xl border-b border-ue-border">
+      <div className="sticky top-0 z-20 bg-ue-bg/95 backdrop-blur-xl border-b border-ue-border">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-ue-accent to-purple-500 flex items-center justify-center">
@@ -1194,7 +1194,7 @@ export default function Settings() {
         <div className="flex gap-8">
           {/* Sidebar Navigation */}
           <div className="w-64 flex-shrink-0">
-            <nav className="sticky top-24 space-y-1">
+            <nav className="sticky top-20 space-y-1">
               {settingsCategories.map((category) => {
                 const Icon = category.icon
                 const isActive = activeCategory === category.id
@@ -1222,7 +1222,7 @@ export default function Settings() {
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 pb-8">
             {renderContent()}
           </div>
         </div>
