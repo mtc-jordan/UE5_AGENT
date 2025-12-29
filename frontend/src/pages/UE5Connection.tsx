@@ -44,6 +44,7 @@ import AssetManager from '../components/AssetManager';
 import VoiceControl from '../components/VoiceControl';
 import LightingWizard from '../components/LightingWizard';
 import AnimationAssistant from '../components/AnimationAssistant';
+import { ParsedCommand } from '../lib/voiceCommandParser';
 
 // ==================== TYPES ====================
 
@@ -1676,8 +1677,22 @@ export default function UE5Connection() {
         {/* Voice Control Panel */}
         <div className="lg:col-span-1">
           <VoiceControl
-            onCommand={(command) => {
-              setAiCommand(command);
+            onCommand={(command, parsedCommand) => {
+              // Handle parsed voice commands with feature routing
+              if (parsedCommand) {
+                // Add context about the parsed command to help AI
+                const contextualCommand = `[Voice Command - ${parsedCommand.category}] ${command}`;
+                setAiCommand(contextualCommand);
+                
+                // Add to chat history with category info
+                setChatHistory(prev => [...prev, {
+                  role: 'assistant',
+                  content: `🎙️ Voice command recognized: "${command}" → ${parsedCommand.category}/${parsedCommand.action}`,
+                  timestamp: new Date().toISOString()
+                }]);
+              } else {
+                setAiCommand(command);
+              }
               processAiCommand();
             }}
             isProcessing={isAiProcessing}

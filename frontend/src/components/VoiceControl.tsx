@@ -1,23 +1,46 @@
 /**
  * Voice Control Component for UE5 AI Agent
  * 
+ * Comprehensive voice command system supporting all platform features:
+ * - Scene Builder
+ * - Lighting Wizard
+ * - Animation Assistant
+ * - Blueprint & Material Assistant
+ * - Texture Generator
+ * - Performance Optimizer
+ * - Asset Manager
+ * - Viewport Preview
+ * - General UE5 Commands
+ * 
  * Features:
  * - Web Speech API integration for voice recognition
  * - Real-time transcription display
  * - Visual feedback with waveform animation
  * - Voice command history
- * - Noise level indicator
- * - Customizable wake word support
  * - Multi-language support
+ * - Command category routing
+ * - Smart suggestions
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Mic, MicOff, Volume2, VolumeX, Settings, X,
-  Loader2, CheckCircle, AlertCircle, Waveform,
-  Languages, History, Trash2, Play, Pause,
-  ChevronDown, ChevronUp, Sparkles, Zap
+  Mic, MicOff, Volume2, Settings, X,
+  Loader2, CheckCircle, AlertCircle,
+  Languages, History, Trash2,
+  ChevronDown, ChevronUp, Sparkles, Zap,
+  Home, Lightbulb, Film, Palette, Image,
+  Gauge, Package, Camera, Gamepad2, Navigation,
+  MousePointer, RotateCcw, HelpCircle
 } from 'lucide-react';
+import {
+  parseVoiceCommand,
+  getAllVoiceExamples,
+  VOICE_COMMAND_EXAMPLES,
+  CATEGORY_DISPLAY_NAMES,
+  suggestSimilarCommands,
+  CommandCategory,
+  ParsedCommand
+} from '../lib/voiceCommandParser';
 
 // Types
 interface VoiceCommand {
@@ -27,10 +50,12 @@ interface VoiceCommand {
   timestamp: Date;
   status: 'pending' | 'processing' | 'completed' | 'error';
   result?: string;
+  category?: CommandCategory;
+  parsedCommand?: ParsedCommand | null;
 }
 
 interface VoiceControlProps {
-  onCommand: (command: string) => void;
+  onCommand: (command: string, parsedCommand?: ParsedCommand | null) => void;
   isProcessing: boolean;
   isConnected: boolean;
   disabled?: boolean;
@@ -48,19 +73,39 @@ const LANGUAGES = [
   { code: 'ar-SA', name: 'Arabic', flag: '🇸🇦' },
 ];
 
-// Voice command examples
-const VOICE_EXAMPLES = [
-  "Spawn a red cube at the center",
-  "Rotate selection 45 degrees",
-  "Create a glowing material",
-  "Set up studio lighting",
-  "Golden hour lighting",
-  "Play walk animation",
-  "Blend idle to run",
-  "Set animation speed to half",
-  "Show combat animations",
-  "Loop the animation",
-];
+// Category icons
+const CATEGORY_ICONS: Record<CommandCategory, React.ReactNode> = {
+  scene: <Home className="w-4 h-4" />,
+  lighting: <Lightbulb className="w-4 h-4" />,
+  animation: <Film className="w-4 h-4" />,
+  material: <Palette className="w-4 h-4" />,
+  blueprint: <Sparkles className="w-4 h-4" />,
+  texture: <Image className="w-4 h-4" />,
+  performance: <Gauge className="w-4 h-4" />,
+  asset: <Package className="w-4 h-4" />,
+  viewport: <Camera className="w-4 h-4" />,
+  general: <Gamepad2 className="w-4 h-4" />,
+  navigation: <Navigation className="w-4 h-4" />,
+  selection: <MousePointer className="w-4 h-4" />,
+  transform: <RotateCcw className="w-4 h-4" />,
+};
+
+// Category colors
+const CATEGORY_COLORS: Record<CommandCategory, string> = {
+  scene: 'from-blue-500 to-cyan-500',
+  lighting: 'from-yellow-500 to-orange-500',
+  animation: 'from-purple-500 to-pink-500',
+  material: 'from-green-500 to-emerald-500',
+  blueprint: 'from-indigo-500 to-violet-500',
+  texture: 'from-rose-500 to-red-500',
+  performance: 'from-amber-500 to-yellow-500',
+  asset: 'from-teal-500 to-cyan-500',
+  viewport: 'from-sky-500 to-blue-500',
+  general: 'from-gray-500 to-slate-500',
+  navigation: 'from-lime-500 to-green-500',
+  selection: 'from-fuchsia-500 to-pink-500',
+  transform: 'from-orange-500 to-amber-500',
+};
 
 // Check if Web Speech API is supported
 const isSpeechRecognitionSupported = () => {
@@ -88,10 +133,13 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
   const [commandHistory, setCommandHistory] = useState<VoiceCommand[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('en-US');
   const [continuousMode, setContinuousMode] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<CommandCategory | 'all'>('all');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
   // Refs
   const recognitionRef = useRef<any>(null);
@@ -126,7 +174,6 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
       setIsListening(false);
       stopAudioVisualization();
       
-      // Restart if continuous mode is enabled
       if (continuousMode && !disabled && isConnected) {
         try {
           recognition.start();
@@ -152,8 +199,15 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
 
       setInterimTranscript(interim);
       
+      // Update suggestions based on interim transcript
+      if (interim) {
+        const newSuggestions = suggestSimilarCommands(interim);
+        setSuggestions(newSuggestions);
+      }
+      
       if (final) {
         setTranscript(final);
+        setSuggestions([]);
         handleVoiceCommand(final, Math.round(event.results[event.results.length - 1][0].confidence * 100));
       }
     };
@@ -232,19 +286,23 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
 
   // Handle voice command
   const handleVoiceCommand = useCallback((text: string, conf: number) => {
+    // Parse the command to determine category and action
+    const parsedCommand = parseVoiceCommand(text);
+    
     const command: VoiceCommand = {
       id: Date.now().toString(),
       transcript: text,
       confidence: conf,
       timestamp: new Date(),
       status: 'pending',
+      category: parsedCommand?.category,
+      parsedCommand,
     };
 
-    setCommandHistory(prev => [command, ...prev].slice(0, 50)); // Keep last 50 commands
+    setCommandHistory(prev => [command, ...prev].slice(0, 50));
     
-    // Send command to AI
     if (isConnected && !isProcessing) {
-      onCommand(text);
+      onCommand(text, parsedCommand);
       setCommandHistory(prev => 
         prev.map(c => c.id === command.id ? { ...c, status: 'processing' } : c)
       );
@@ -261,6 +319,7 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
       setTranscript('');
       setInterimTranscript('');
       setError(null);
+      setSuggestions([]);
       try {
         recognitionRef.current?.start();
       } catch (e) {
@@ -277,19 +336,34 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
   // Retry command
   const retryCommand = (command: VoiceCommand) => {
     if (isConnected && !isProcessing) {
-      onCommand(command.transcript);
+      onCommand(command.transcript, command.parsedCommand);
     }
+  };
+
+  // Use example command
+  const useExampleCommand = (example: string) => {
+    if (isConnected && !isProcessing) {
+      const parsedCommand = parseVoiceCommand(example);
+      handleVoiceCommand(example, 100);
+    }
+  };
+
+  // Get filtered examples
+  const getFilteredExamples = () => {
+    if (selectedCategory === 'all') {
+      return getAllVoiceExamples().slice(0, 10);
+    }
+    return VOICE_COMMAND_EXAMPLES[selectedCategory] || [];
   };
 
   // Render waveform bars
   const renderWaveform = () => {
-    const bars = 12;
+    const bars = 16;
     return (
-      <div className="flex items-center justify-center gap-0.5 h-8">
+      <div className="flex items-center justify-center gap-0.5 h-10">
         {Array.from({ length: bars }).map((_, i) => {
-          const delay = i * 0.05;
           const height = isListening 
-            ? Math.max(4, Math.min(32, audioLevel * 40 + Math.sin(Date.now() / 100 + i) * 8))
+            ? Math.max(4, Math.min(40, audioLevel * 50 + Math.sin(Date.now() / 100 + i) * 10))
             : 4;
           return (
             <div
@@ -299,10 +373,7 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
                   ? 'bg-gradient-to-t from-green-500 to-emerald-400' 
                   : 'bg-gray-600'
               }`}
-              style={{
-                height: `${height}px`,
-                animationDelay: `${delay}s`,
-              }}
+              style={{ height: `${height}px` }}
             />
           );
         })}
@@ -325,20 +396,15 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
             }
             ${(!isSupported || disabled) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
           `}
-          title={isSupported ? 'Voice Control' : 'Voice not supported'}
+          title="Voice Control"
         >
           {isListening ? (
             <Mic className="w-5 h-5 text-white animate-pulse" />
           ) : (
             <MicOff className="w-5 h-5 text-gray-400" />
           )}
-          
-          {/* Pulse animation when listening */}
           {isListening && (
-            <>
-              <span className="absolute inset-0 rounded-xl bg-green-500/30 animate-ping" />
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse" />
-            </>
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-ping" />
           )}
         </button>
       </div>
@@ -347,174 +413,199 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
 
   // Expanded mode
   return (
-    <div className="bg-gradient-to-br from-gray-900/90 to-gray-950/90 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+    <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
-        <div className="flex items-center gap-3">
-          <div className={`
-            w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300
-            ${isListening 
-              ? 'bg-gradient-to-br from-green-500 to-emerald-500 shadow-lg shadow-green-500/30' 
-              : 'bg-gradient-to-br from-violet-500 to-purple-600'
-            }
-          `}>
-            {isListening ? (
-              <Mic className="w-5 h-5 text-white" />
-            ) : (
-              <MicOff className="w-5 h-5 text-white" />
-            )}
-          </div>
-          <div>
-            <h3 className="font-semibold text-white flex items-center gap-2">
-              Voice Control
-              {isListening && (
-                <span className="px-2 py-0.5 text-xs bg-green-500/20 text-green-400 rounded-full animate-pulse">
-                  Listening
-                </span>
+      <div className="p-4 border-b border-white/10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${isListening ? 'bg-green-500/20' : 'bg-white/10'}`}>
+              {isListening ? (
+                <Mic className="w-5 h-5 text-green-400" />
+              ) : (
+                <MicOff className="w-5 h-5 text-gray-400" />
               )}
-            </h3>
-            <p className="text-xs text-gray-400">
-              {isSupported 
-                ? isConnected 
-                  ? 'Speak commands to control UE5' 
-                  : 'Connect to UE5 to use voice'
-                : 'Not supported in this browser'
-              }
-            </p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-white">Voice Control</h3>
+              <p className="text-xs text-gray-400">
+                {isListening ? 'Listening...' : 'Click to start'}
+              </p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-            title="Settings"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-            title="History"
-          >
-            <History className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setIsExpanded(false)}
-            className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-            title="Minimize"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              className={`p-2 rounded-lg transition-colors ${showHelp ? 'bg-blue-500/20 text-blue-400' : 'hover:bg-white/10 text-gray-400'}`}
+              title="Voice Commands Help"
+            >
+              <HelpCircle className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className={`p-2 rounded-lg transition-colors ${showSettings ? 'bg-purple-500/20 text-purple-400' : 'hover:bg-white/10 text-gray-400'}`}
+              title="Settings"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className={`p-2 rounded-lg transition-colors ${showHistory ? 'bg-blue-500/20 text-blue-400' : 'hover:bg-white/10 text-gray-400'}`}
+              title="History"
+            >
+              <History className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setIsExpanded(false)}
+              className="p-2 rounded-lg hover:bg-white/10 text-gray-400 transition-colors"
+              title="Minimize"
+            >
+              <ChevronUp className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Settings Panel */}
       {showSettings && (
-        <div className="p-4 border-b border-white/10 bg-white/5 space-y-4 animate-fade-in">
-          {/* Language Selection */}
-          <div>
-            <label className="text-xs text-gray-400 uppercase tracking-wider mb-2 block">
-              Language
-            </label>
-            <div className="grid grid-cols-4 gap-2">
-              {LANGUAGES.map(lang => (
-                <button
-                  key={lang.code}
-                  onClick={() => setSelectedLanguage(lang.code)}
-                  className={`
-                    flex items-center gap-2 p-2 rounded-lg text-sm transition-all
-                    ${selectedLanguage === lang.code 
-                      ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' 
-                      : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-transparent'
-                    }
-                  `}
-                >
-                  <span>{lang.flag}</span>
-                  <span className="truncate">{lang.name.split(' ')[0]}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Continuous Mode Toggle */}
-          <div className="flex items-center justify-between">
+        <div className="p-4 border-b border-white/10 bg-white/5">
+          <div className="space-y-4">
             <div>
-              <p className="text-sm text-white">Continuous Listening</p>
-              <p className="text-xs text-gray-500">Keep listening after each command</p>
+              <label className="text-sm text-gray-400 mb-2 block">Language</label>
+              <div className="grid grid-cols-4 gap-2">
+                {LANGUAGES.map(lang => (
+                  <button
+                    key={lang.code}
+                    onClick={() => setSelectedLanguage(lang.code)}
+                    className={`p-2 rounded-lg text-sm transition-colors ${
+                      selectedLanguage === lang.code
+                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                    }`}
+                  >
+                    <span className="text-lg">{lang.flag}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-            <button
-              onClick={() => setContinuousMode(!continuousMode)}
-              className={`
-                relative w-12 h-6 rounded-full transition-colors
-                ${continuousMode ? 'bg-violet-500' : 'bg-gray-700'}
-              `}
-            >
-              <span
-                className={`
-                  absolute top-1 w-4 h-4 bg-white rounded-full transition-transform
-                  ${continuousMode ? 'left-7' : 'left-1'}
-                `}
-              />
-            </button>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-400">Continuous Listening</span>
+              <button
+                onClick={() => setContinuousMode(!continuousMode)}
+                className={`w-12 h-6 rounded-full transition-colors ${
+                  continuousMode ? 'bg-purple-500' : 'bg-gray-600'
+                }`}
+              >
+                <div className={`w-5 h-5 rounded-full bg-white transition-transform ${
+                  continuousMode ? 'translate-x-6' : 'translate-x-0.5'
+                }`} />
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Main Content */}
-      <div className="p-4">
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-red-400 text-sm animate-fade-in">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{error}</span>
+      {/* Help Panel - Voice Commands by Category */}
+      {showHelp && (
+        <div className="p-4 border-b border-white/10 bg-white/5 max-h-80 overflow-y-auto">
+          <h4 className="text-sm font-medium text-white mb-3">Voice Commands by Category</h4>
+          
+          {/* Category Filter */}
+          <div className="flex flex-wrap gap-2 mb-4">
             <button
-              onClick={() => setError(null)}
-              className="ml-auto p-1 hover:bg-red-500/20 rounded"
+              onClick={() => setSelectedCategory('all')}
+              className={`px-3 py-1 rounded-full text-xs transition-colors ${
+                selectedCategory === 'all'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
+              }`}
             >
-              <X className="w-3 h-3" />
+              All
             </button>
+            {(Object.keys(CATEGORY_DISPLAY_NAMES) as CommandCategory[]).map(cat => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-3 py-1 rounded-full text-xs transition-colors flex items-center gap-1 ${
+                  selectedCategory === cat
+                    ? `bg-gradient-to-r ${CATEGORY_COLORS[cat]} text-white`
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                }`}
+              >
+                {CATEGORY_ICONS[cat]}
+                {CATEGORY_DISPLAY_NAMES[cat].split(' ')[1]}
+              </button>
+            ))}
+          </div>
+          
+          {/* Commands List */}
+          <div className="space-y-2">
+            {getFilteredExamples().map((example, idx) => (
+              <button
+                key={idx}
+                onClick={() => useExampleCommand(example)}
+                className="w-full text-left p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors group"
+              >
+                <span className="text-sm text-gray-300 group-hover:text-white">"{example}"</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Waveform Visualization */}
+      <div className="p-4 border-b border-white/10">
+        {renderWaveform()}
+        
+        {/* Transcript Display */}
+        {(transcript || interimTranscript) && (
+          <div className="mt-3 p-3 rounded-lg bg-white/5">
+            {interimTranscript && (
+              <p className="text-gray-400 text-sm italic">{interimTranscript}</p>
+            )}
+            {transcript && (
+              <div className="flex items-center justify-between">
+                <p className="text-white">{transcript}</p>
+                <span className="text-xs text-green-400">{confidence}%</span>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Waveform Visualization */}
-        <div className="mb-4 p-4 bg-white/5 rounded-xl border border-white/10">
-          {renderWaveform()}
-          
-          {/* Transcript Display */}
-          <div className="mt-3 min-h-[60px] flex items-center justify-center">
-            {isListening ? (
-              <div className="text-center">
-                {interimTranscript ? (
-                  <p className="text-gray-400 italic animate-pulse">
-                    {interimTranscript}
-                  </p>
-                ) : transcript ? (
-                  <div>
-                    <p className="text-white font-medium">{transcript}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Confidence: {confidence}%
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-gray-500">Listening for commands...</p>
-                )}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-sm">
-                Click the microphone to start
-              </p>
-            )}
+        {/* Real-time Suggestions */}
+        {suggestions.length > 0 && (
+          <div className="mt-2 space-y-1">
+            <p className="text-xs text-gray-500">Did you mean:</p>
+            {suggestions.map((suggestion, idx) => (
+              <button
+                key={idx}
+                onClick={() => useExampleCommand(suggestion)}
+                className="block w-full text-left text-sm text-gray-400 hover:text-white p-1 rounded hover:bg-white/5"
+              >
+                "{suggestion}"
+              </button>
+            ))}
           </div>
-        </div>
+        )}
 
-        {/* Main Control Button */}
+        {/* Error Display */}
+        {error && (
+          <div className="mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-400" />
+            <p className="text-sm text-red-400">{error}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Main Control Button */}
+      <div className="p-4">
         <button
           onClick={toggleListening}
           disabled={!isSupported || disabled || !isConnected}
           className={`
-            w-full py-4 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-3
-            ${isListening 
-              ? 'bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white shadow-lg shadow-red-500/30' 
+            w-full py-4 rounded-xl font-medium transition-all duration-300
+            flex items-center justify-center gap-3
+            ${isListening
+              ? 'bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white shadow-lg shadow-red-500/30'
               : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg shadow-green-500/30'
             }
             ${(!isSupported || disabled || !isConnected) ? 'opacity-50 cursor-not-allowed' : ''}
@@ -533,44 +624,40 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
           )}
         </button>
 
-        {/* Voice Examples */}
-        {!isListening && !showHistory && (
-          <div className="mt-4">
-            <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-              <Sparkles className="w-3 h-3" />
-              Try saying
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {VOICE_EXAMPLES.slice(0, 4).map((example, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    if (isConnected && !isProcessing) {
-                      onCommand(example);
-                    }
-                  }}
-                  disabled={!isConnected || isProcessing}
-                  className="px-3 py-1.5 text-xs bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all disabled:opacity-50"
-                >
-                  "{example}"
-                </button>
-              ))}
-            </div>
+        {/* Quick Examples */}
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-gray-500">Quick Commands</p>
+            <button
+              onClick={() => setShowHelp(true)}
+              className="text-xs text-purple-400 hover:text-purple-300"
+            >
+              View All
+            </button>
           </div>
-        )}
+          <div className="flex flex-wrap gap-2">
+            {getFilteredExamples().slice(0, 5).map((example, idx) => (
+              <button
+                key={idx}
+                onClick={() => useExampleCommand(example)}
+                className="px-3 py-1.5 rounded-full text-xs bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
+              >
+                "{example}"
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Command History */}
       {showHistory && (
-        <div className="border-t border-white/10 max-h-64 overflow-y-auto">
-          <div className="p-3 bg-white/5 flex items-center justify-between sticky top-0">
-            <span className="text-xs text-gray-400 uppercase tracking-wider">
-              Command History ({commandHistory.length})
-            </span>
+        <div className="border-t border-white/10 p-4 max-h-60 overflow-y-auto">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-medium text-white">Command History</h4>
             {commandHistory.length > 0 && (
               <button
                 onClick={clearHistory}
-                className="text-xs text-gray-500 hover:text-red-400 transition-colors flex items-center gap-1"
+                className="text-xs text-gray-400 hover:text-red-400 flex items-center gap-1"
               >
                 <Trash2 className="w-3 h-3" />
                 Clear
@@ -579,27 +666,36 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
           </div>
           
           {commandHistory.length === 0 ? (
-            <div className="p-8 text-center text-gray-500 text-sm">
-              No commands yet
-            </div>
+            <p className="text-sm text-gray-500 text-center py-4">No commands yet</p>
           ) : (
-            <div className="divide-y divide-white/5">
+            <div className="space-y-2">
               {commandHistory.map(cmd => (
                 <div
                   key={cmd.id}
-                  className="p-3 hover:bg-white/5 transition-colors"
+                  className="p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white truncate">{cmd.transcript}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        {cmd.category && (
+                          <span className={`p-1 rounded bg-gradient-to-r ${CATEGORY_COLORS[cmd.category]} bg-opacity-20`}>
+                            {CATEGORY_ICONS[cmd.category]}
+                          </span>
+                        )}
+                        <p className="text-sm text-white">{cmd.transcript}</p>
+                      </div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs text-gray-500">
                           {cmd.timestamp.toLocaleTimeString()}
                         </span>
-                        <span className="text-xs text-gray-600">•</span>
-                        <span className="text-xs text-gray-500">
-                          {cmd.confidence}% confidence
-                        </span>
+                        <span className="text-xs text-gray-500">•</span>
+                        <span className="text-xs text-green-400">{cmd.confidence}%</span>
+                        {cmd.category && (
+                          <>
+                            <span className="text-xs text-gray-500">•</span>
+                            <span className="text-xs text-purple-400">{CATEGORY_DISPLAY_NAMES[cmd.category]}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -612,7 +708,7 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
                       {cmd.status === 'error' && (
                         <button
                           onClick={() => retryCommand(cmd)}
-                          className="p-1 hover:bg-white/10 rounded"
+                          className="p-1 rounded hover:bg-white/10"
                           title="Retry"
                         >
                           <AlertCircle className="w-4 h-4 text-red-400" />
