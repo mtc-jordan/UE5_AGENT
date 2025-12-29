@@ -190,11 +190,20 @@ class TextureGeneratorService:
     
     Generates complete PBR texture sets from text prompts,
     with automatic map derivation and material presets.
+    
+    Supports multiple AI models for different generation tasks.
     """
+    
+    # Models recommended for texture generation tasks
+    RECOMMENDED_MODELS = {
+        "prompt_analysis": ["gpt-4.1-mini", "claude-3-5-sonnet", "gemini-2.5-flash"],
+        "creative_generation": ["claude-3-opus", "gpt-4o", "gemini-2.0-pro"],
+        "fast_generation": ["gpt-4.1-nano", "claude-3-haiku", "deepseek-v3"]
+    }
     
     def __init__(self):
         self.client = AsyncOpenAI()
-        self.model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+        self.default_model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
         self.image_model = "gpt-4.1-mini"  # For image generation
         
         # Cache for generated textures
@@ -203,16 +212,31 @@ class TextureGeneratorService:
         # Default resolution
         self.default_resolution = (512, 512)
     
-    async def analyze_prompt(self, prompt: str) -> Dict[str, Any]:
+    def get_recommended_models(self, task_type: str = "prompt_analysis") -> List[str]:
+        """
+        Get recommended models for a specific texture generation task.
+        
+        Args:
+            task_type: Type of task (prompt_analysis, creative_generation, fast_generation)
+            
+        Returns:
+            List of recommended model IDs
+        """
+        return self.RECOMMENDED_MODELS.get(task_type, self.RECOMMENDED_MODELS["prompt_analysis"])
+    
+    async def analyze_prompt(self, prompt: str, model: Optional[str] = None) -> Dict[str, Any]:
         """
         Analyze the prompt to determine material category and parameters.
         
         Args:
             prompt: User's texture description
+            model: Optional AI model to use for analysis
             
         Returns:
             Analysis with category, preset match, and suggested parameters
         """
+        model_to_use = model or self.default_model
+        
         system_prompt = """You are an expert material artist analyzing texture descriptions.
 
 Analyze the prompt and return JSON with:
@@ -229,7 +253,7 @@ Respond with JSON only."""
 
         try:
             response = await self.client.chat.completions.create(
-                model=self.model,
+                model=model_to_use,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt}
@@ -646,7 +670,8 @@ Respond with JSON only."""
         resolution: Tuple[int, int] = (512, 512),
         seamless: bool = True,
         reference_image: Optional[str] = None,
-        custom_params: Optional[Dict[str, Any]] = None
+        custom_params: Optional[Dict[str, Any]] = None,
+        model: Optional[str] = None
     ) -> GeneratedTexture:
         """
         Generate a complete PBR texture set from a prompt.
@@ -657,12 +682,13 @@ Respond with JSON only."""
             seamless: Whether to make textures seamlessly tileable
             reference_image: Optional base64 reference image
             custom_params: Optional custom PBR parameters
+            model: Optional AI model to use for generation
             
         Returns:
             GeneratedTexture with all PBR maps
         """
-        # Analyze the prompt
-        analysis = await self.analyze_prompt(prompt)
+        # Analyze the prompt using specified model
+        analysis = await self.analyze_prompt(prompt, model=model)
         
         # Get preset parameters or use analysis
         preset_name = analysis.get("preset_match")
@@ -736,7 +762,8 @@ Respond with JSON only."""
                 "metallic_base": metallic_base,
                 "ao_strength": ao_strength,
                 "normal_strength": normal_strength,
-                "analysis": analysis
+                "analysis": analysis,
+                "model_used": model or self.default_model
             }
         )
         

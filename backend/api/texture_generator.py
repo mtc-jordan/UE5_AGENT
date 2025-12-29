@@ -23,11 +23,13 @@ class GenerateTextureRequest(BaseModel):
     seamless: bool = Field(default=True, description="Make texture seamlessly tileable")
     reference_image: Optional[str] = Field(default=None, description="Base64 reference image")
     custom_params: Optional[Dict[str, float]] = Field(default=None, description="Custom PBR parameters")
+    model: Optional[str] = Field(default=None, description="AI model to use for generation")
 
 
 class AnalyzePromptRequest(BaseModel):
     """Request model for prompt analysis"""
     prompt: str = Field(..., description="Texture description to analyze")
+    model: Optional[str] = Field(default=None, description="AI model to use for analysis")
 
 
 @router.get("/presets")
@@ -84,14 +86,18 @@ async def analyze_prompt(request: AnalyzePromptRequest):
     Analyze a texture prompt to determine category and parameters.
     
     Args:
-        request: Contains the prompt to analyze
+        request: Contains the prompt to analyze and optional model selection
         
     Returns:
         Analysis with category, preset match, and suggested parameters
     """
     try:
         generator = get_texture_generator()
-        analysis = await generator.analyze_prompt(request.prompt)
+        analysis = await generator.analyze_prompt(request.prompt, model=request.model)
+        
+        # Add model info to response
+        analysis["model_used"] = request.model or generator.default_model
+        
         return analysis
         
     except Exception as e:
@@ -120,13 +126,14 @@ async def generate_texture(request: GenerateTextureRequest):
         if width > 4096 or height > 4096:
             raise HTTPException(status_code=400, detail="Resolution cannot exceed 4096x4096")
         
-        # Generate texture
+        # Generate texture with specified model
         texture = await generator.generate_texture(
             prompt=request.prompt,
             resolution=request.resolution,
             seamless=request.seamless,
             reference_image=request.reference_image,
-            custom_params=request.custom_params
+            custom_params=request.custom_params,
+            model=request.model
         )
         
         return generator.texture_to_dict(texture)
@@ -328,4 +335,51 @@ async def regenerate_map(
         raise
     except Exception as e:
         logger.error(f"Failed to regenerate map: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/recommended-models")
+async def get_recommended_models():
+    """
+    Get recommended AI models for texture generation tasks.
+    
+    Returns:
+        Dictionary of task types to recommended model lists
+    """
+    try:
+        generator = get_texture_generator()
+        
+        return {
+            "task_types": {
+                "prompt_analysis": {
+                    "description": "Analyzing texture prompts to determine material properties",
+                    "models": generator.get_recommended_models("prompt_analysis"),
+                    "default": generator.default_model
+                },
+                "creative_generation": {
+                    "description": "Creative and detailed texture generation",
+                    "models": generator.get_recommended_models("creative_generation"),
+                    "default": "claude-3-opus"
+                },
+                "fast_generation": {
+                    "description": "Quick texture generation for prototyping",
+                    "models": generator.get_recommended_models("fast_generation"),
+                    "default": "gpt-4.1-nano"
+                }
+            },
+            "all_supported_models": [
+                {"id": "gpt-4.1-mini", "name": "GPT-4.1 Mini", "provider": "openai"},
+                {"id": "gpt-4.1-nano", "name": "GPT-4.1 Nano", "provider": "openai"},
+                {"id": "gpt-4o", "name": "GPT-4o", "provider": "openai"},
+                {"id": "claude-3-5-sonnet", "name": "Claude 3.5 Sonnet", "provider": "anthropic"},
+                {"id": "claude-3-opus", "name": "Claude 3 Opus", "provider": "anthropic"},
+                {"id": "claude-3-haiku", "name": "Claude 3 Haiku", "provider": "anthropic"},
+                {"id": "gemini-2.5-flash", "name": "Gemini 2.5 Flash", "provider": "google"},
+                {"id": "gemini-2.0-pro", "name": "Gemini 2.0 Pro", "provider": "google"},
+                {"id": "deepseek-v3", "name": "DeepSeek V3", "provider": "deepseek"}
+            ]
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get recommended models: {e}")
         raise HTTPException(status_code=500, detail=str(e))

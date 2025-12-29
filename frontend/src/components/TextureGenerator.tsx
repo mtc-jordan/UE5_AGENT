@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import ModelSelector from './ModelSelector';
 
 // Types
 interface PBRMaps {
@@ -110,6 +111,11 @@ export const TextureGenerator: React.FC<TextureGeneratorProps> = ({
   const [zoom, setZoom] = useState(1);
   const [error, setError] = useState<string | null>(null);
   
+  // Model selection state
+  const [selectedModel, setSelectedModel] = useState('gpt-4.1-mini');
+  const [autoSelectModel, setAutoSelectModel] = useState(false);
+  const [modelUsed, setModelUsed] = useState<string | null>(null);
+  
   // Refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -158,7 +164,8 @@ export const TextureGenerator: React.FC<TextureGeneratorProps> = ({
           resolution,
           seamless,
           reference_image: referenceImage,
-          custom_params: showAdvanced ? customParams : undefined
+          custom_params: showAdvanced ? customParams : undefined,
+          model: autoSelectModel ? null : selectedModel
         })
       });
 
@@ -169,6 +176,11 @@ export const TextureGenerator: React.FC<TextureGeneratorProps> = ({
       const texture = await response.json();
       setGeneratedTexture(texture);
       setHistory(prev => [texture, ...prev.slice(0, 9)]);
+      
+      // Track which model was used
+      if (texture.parameters?.model_used) {
+        setModelUsed(texture.parameters.model_used);
+      }
       
       if (onTextureGenerated) {
         onTextureGenerated(texture);
@@ -433,15 +445,32 @@ export const TextureGenerator: React.FC<TextureGeneratorProps> = ({
               <p className="text-xs text-gray-400">Generate PBR textures from text prompts</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <span className="px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded-full">
               PBR Ready
             </span>
+            {/* Model Selector */}
+            <ModelSelector
+              selectedModel={selectedModel}
+              onModelChange={setSelectedModel}
+              autoSelect={autoSelectModel}
+              onAutoSelectChange={setAutoSelectModel}
+              disabled={isGenerating}
+              compact={true}
+            />
           </div>
         </div>
       </div>
 
       <div className="p-4 space-y-4">
+        {/* Model Used Badge */}
+        {modelUsed && generatedTexture && (
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+            <span className="text-xs text-gray-400">Generated with:</span>
+            <span className="text-xs text-purple-400 font-medium">{modelUsed}</span>
+          </div>
+        )}
+        
         {/* Prompt Input */}
         <div className="space-y-2">
           <label className="text-sm text-gray-400">Describe your texture</label>
