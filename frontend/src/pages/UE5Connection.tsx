@@ -2115,7 +2115,7 @@ npm start`} />
   // ==================== MAIN RENDER ====================
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="h-full overflow-y-auto bg-gray-950 text-white">
       {/* Custom CSS for animations */}
       <style>{`
         @keyframes shimmer {
