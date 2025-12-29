@@ -47,6 +47,9 @@ import CollaborationPanel from '../components/CollaborationPanel';
 import AISceneGenerator from '../components/AISceneGenerator';
 import AnalyticsDashboard from '../components/AnalyticsDashboard';
 import AdvancedAIFeatures from '../components/AdvancedAIFeatures';
+import CommandFeedback, { CommandExecution, ExecutionStep } from '../components/CommandFeedback';
+import CommandTemplates, { WorkflowStep } from '../components/CommandTemplates';
+import ErrorRecovery, { UndoAction, SceneContext } from '../components/ErrorRecovery';
 import { ParsedCommand } from '../lib/voiceCommandParser';
 
 // ==================== TYPES ====================
@@ -434,6 +437,15 @@ export default function UE5Connection() {
   // UI state
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [aiSubTab, setAiSubTab] = useState<'chat' | 'scene' | 'assets' | 'lighting' | 'advanced'>('chat');
+
+  // Command Feedback & Error Recovery state
+  const [currentExecution, setCurrentExecution] = useState<CommandExecution | null>(null);
+  const [commandExecutions, setCommandExecutions] = useState<CommandExecution[]>([]);
+  const [currentError, setCurrentError] = useState<string | null>(null);
+  const [failedCommand, setFailedCommand] = useState<string | null>(null);
+  const [undoHistory, setUndoHistory] = useState<UndoAction[]>([]);
+  const [redoHistory, setRedoHistory] = useState<UndoAction[]>([]);
+  const [sceneContext, setSceneContext] = useState<SceneContext | undefined>(undefined);
 
   const resultRef = useRef<HTMLDivElement>(null);
   const statusPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -1805,6 +1817,72 @@ export default function UE5Connection() {
             </div>
           </div>
 
+          {/* Real-Time Command Feedback */}
+          <CommandFeedback
+            executions={commandExecutions}
+            currentExecution={currentExecution || undefined}
+            onCaptureScreenshot={captureScreenshot}
+            onRetry={(executionId) => {
+              const exec = commandExecutions.find(e => e.id === executionId);
+              if (exec) {
+                setAiCommand(exec.command);
+                processAiCommand();
+              }
+            }}
+            onCancel={() => {
+              setCurrentExecution(null);
+              setIsAiProcessing(false);
+            }}
+            isConnected={agentStatus.mcp_connected}
+          />
+
+          {/* Error Recovery & Suggestions */}
+          <ErrorRecovery
+            error={currentError || undefined}
+            command={failedCommand || undefined}
+            sceneContext={sceneContext}
+            undoHistory={undoHistory}
+            redoHistory={redoHistory}
+            onRetry={(modifiedCommand) => {
+              setCurrentError(null);
+              if (modifiedCommand) {
+                setAiCommand(modifiedCommand);
+              }
+              processAiCommand();
+            }}
+            onUndo={() => {
+              if (undoHistory.length > 0) {
+                const action = undoHistory[undoHistory.length - 1];
+                setUndoHistory(prev => prev.slice(0, -1));
+                setRedoHistory(prev => [...prev, action]);
+                if (action.undoCommand) {
+                  setAiCommand(action.undoCommand);
+                  processAiCommand();
+                }
+              }
+            }}
+            onRedo={() => {
+              if (redoHistory.length > 0) {
+                const action = redoHistory[redoHistory.length - 1];
+                setRedoHistory(prev => prev.slice(0, -1));
+                setUndoHistory(prev => [...prev, action]);
+                setAiCommand(action.command);
+                processAiCommand();
+              }
+            }}
+            onDismiss={() => {
+              setCurrentError(null);
+              setFailedCommand(null);
+            }}
+            onApplySuggestion={(suggestion) => {
+              if (suggestion.autoFix) {
+                setAiCommand(suggestion.autoFix);
+                processAiCommand();
+              }
+            }}
+            isConnected={agentStatus.mcp_connected}
+          />
+
           {/* Viewport Preview */}
           {agentStatus.mcp_connected && (
             <ViewportPreview
@@ -2035,6 +2113,62 @@ export default function UE5Connection() {
       {/* Advanced Tab Content */}
       {aiSubTab === 'advanced' && (
         <div className="space-y-6">
+          {/* Command Templates & Workflow Presets */}
+          <CommandTemplates
+            onExecuteTemplate={(template, params) => {
+              // Build command from template
+              let command = template.template;
+              template.parameters.forEach(param => {
+                const value = params[param.name] || param.defaultValue || '';
+                command = command.replace(`{{${param.name}}}`, String(value));
+              });
+              setAiCommand(command);
+              processAiCommand();
+              setChatHistory(prev => [...prev, {
+                role: 'assistant',
+                content: `Executing template: ${template.name}`,
+                timestamp: new Date().toISOString()
+              }]);
+            }}
+            onExecuteWorkflow={async (workflow) => {
+              setChatHistory(prev => [...prev, {
+                role: 'assistant',
+                content: `Starting workflow: ${workflow.name} (${workflow.steps.length} steps)`,
+                timestamp: new Date().toISOString()
+              }]);
+              
+              for (const step of workflow.steps) {
+                setAiCommand(step.command);
+                await processAiCommand();
+                if (step.waitForCompletion) {
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+              }
+              
+              setChatHistory(prev => [...prev, {
+                role: 'assistant',
+                content: `Workflow completed: ${workflow.name}`,
+                timestamp: new Date().toISOString()
+              }]);
+            }}
+            onSaveTemplate={(template) => {
+              console.log('Save template:', template);
+            }}
+            onDeleteTemplate={(templateId) => {
+              console.log('Delete template:', templateId);
+            }}
+            onSaveWorkflow={(workflow) => {
+              console.log('Save workflow:', workflow);
+            }}
+            onDeleteWorkflow={(workflowId) => {
+              console.log('Delete workflow:', workflowId);
+            }}
+            onImportWorkflows={(workflows) => {
+              console.log('Import workflows:', workflows);
+            }}
+            isConnected={agentStatus.mcp_connected}
+          />
+
           {/* Advanced AI Features */}
           <AdvancedAIFeatures
             onExecuteCommand={(cmd) => console.log('Execute command:', cmd)}
