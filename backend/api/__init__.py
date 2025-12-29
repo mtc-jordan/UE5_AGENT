@@ -30,6 +30,7 @@ from api.texture_generator import router as texture_generator_router
 from api.scene_analyzer import router as scene_analyzer_router
 from api.performance import router as performance_router
 from api.assets import router as assets_router
+from api.lighting import router as lighting_router
 
 api_router = APIRouter(prefix="/api")
 
@@ -64,5 +65,6 @@ api_router.include_router(texture_generator_router)
 api_router.include_router(scene_analyzer_router)
 api_router.include_router(performance_router)
 api_router.include_router(assets_router)
+api_router.include_router(lighting_router)
 
 __all__ = ["api_router"]

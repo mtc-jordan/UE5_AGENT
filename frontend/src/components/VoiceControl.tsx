@@ -56,8 +56,10 @@ const VOICE_EXAMPLES = [
   "Add a point light above",
   "Take a screenshot",
   "Undo last action",
-  "Select all actors",
-  "Delete selected",
+  "Set up studio lighting",
+  "Golden hour lighting",
+  "Make it cinematic",
+  "Change time to sunset",
 ];
 
 // Check if Web Speech API is supported

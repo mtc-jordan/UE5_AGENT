@@ -42,6 +42,7 @@ import SceneQuickActions from '../components/SceneQuickActions';
 import PerformanceOptimizer from '../components/PerformanceOptimizer';
 import AssetManager from '../components/AssetManager';
 import VoiceControl from '../components/VoiceControl';
+import LightingWizard from '../components/LightingWizard';
 
 // ==================== TYPES ====================
 
@@ -1751,6 +1752,22 @@ export default function UE5Connection() {
           setChatHistory(prev => [...prev, {
             role: 'assistant',
             content: `Scene built successfully! Created ${plan.objects.length} objects: ${plan.objects.map(o => o.name).join(', ')}`,
+            timestamp: new Date().toISOString()
+          }]);
+        }}
+      />
+
+      {/* Lighting Wizard */}
+      <LightingWizard
+        authToken={authToken || ''}
+        isConnected={agentStatus.mcp_connected}
+        onLightingApplied={(preset) => {
+          // Refresh screenshots after lighting is applied
+          loadScreenshots();
+          // Add to chat history
+          setChatHistory(prev => [...prev, {
+            role: 'assistant',
+            content: `Applied lighting preset: ${preset.name} - ${preset.description}`,
             timestamp: new Date().toISOString()
           }]);
         }}
