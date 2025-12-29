@@ -31,8 +31,7 @@ import {
   Scale,
   Shield,
   CreditCard,
-  Download,
-} from 'lucide-react'
+  Download} from 'lucide-react'
 import { cn, truncate } from '../lib/utils'
 
 interface Project {
@@ -117,8 +116,7 @@ export default function Layout() {
         title: 'New Conversation',
         mode: 'team',
         model: 'deepseek-chat',
-        project_id: projectId,
-      })
+        project_id: projectId})
       setChats([response.data, ...chats])
       setCurrentChat(response.data)
       navigate(`/chat/${response.data.id}`)

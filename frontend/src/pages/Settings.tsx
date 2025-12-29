@@ -18,8 +18,7 @@ import {
   Sparkles,
   Pin,
   Archive,
-  Type,
-} from 'lucide-react'
+  Type} from 'lucide-react'
 import { cn, agentColors } from '../lib/utils'
 
 interface Agent {
@@ -49,8 +48,7 @@ const agentIcons: Record<string, any> = {
   blueprint: Workflow,
   qa: Shield,
   devops: Server,
-  artist: Palette,
-}
+  artist: Palette}
 
 const allAgents = ['architect', 'developer', 'blueprint', 'qa', 'devops', 'artist']
 
@@ -60,12 +58,11 @@ const agentNames: Record<string, string> = {
   blueprint: 'Blueprint Specialist',
   qa: 'QA Engineer',
   devops: 'DevOps Engineer',
-  artist: 'Technical Artist',
-}
+  artist: 'Technical Artist'}
 
 export default function Settings() {
   const { user } = useAuthStore()
-  const { model, setModel, mode, setMode, activeAgents, setActiveAgents, soloAgent, setSoloAgent } = useSettingsStore()
+  const { model, setModel, mode, setMode, setActiveAgents, setSoloAgent } = useSettingsStore()
   const [agents, setAgents] = useState<Agent[]>([])
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
   const [loading, setLoading] = useState(true)
@@ -82,8 +79,7 @@ export default function Settings() {
     auto_pin_project_chats: false,
     title_format: '{topic}',
     sidebar_collapsed: false,
-    show_archived_by_default: false,
-  })
+    show_archived_by_default: false})
   const [prefsLoading, setPrefsLoading] = useState(true)
   const [prefsSaving, setPrefsSaving] = useState(false)
   const [prefsChanged, setPrefsChanged] = useState(false)
@@ -126,8 +122,7 @@ export default function Settings() {
         name: selectedAgent.name,
         persona: selectedAgent.persona,
         system_prompt: selectedAgent.system_prompt,
-        is_active: selectedAgent.is_active,
-      })
+        is_active: selectedAgent.is_active})
       setAgents(agents.map((a) => (a.id === selectedAgent.id ? response.data : a)))
     } catch (error) {
       console.error('Failed to save agent:', error)
@@ -548,8 +543,7 @@ export default function Settings() {
                                 className="w-8 h-8 rounded flex items-center justify-center"
                                 style={{
                                   backgroundColor: `${agentColors[agent]}20`,
-                                  color: agentColors[agent],
-                                }}
+                                  color: agentColors[agent]}}
                               >
                                 <Icon className="w-4 h-4" />
                               </div>
@@ -668,8 +662,7 @@ export default function Settings() {
                         className="w-10 h-10 rounded-lg flex items-center justify-center"
                         style={{
                           backgroundColor: `${agentColors[agent.key]}20`,
-                          color: agentColors[agent.key],
-                        }}
+                          color: agentColors[agent.key]}}
                       >
                         <Icon className="w-5 h-5" />
                       </div>

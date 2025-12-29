@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react'
-import { Users, Circle, ChevronDown, ChevronUp } from 'lucide-react'
+import { Users, ChevronDown, ChevronUp } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useOnlineUsers } from '../hooks/useRealtime'
 

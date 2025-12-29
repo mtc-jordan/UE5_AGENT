@@ -26,13 +26,11 @@ import {
   Zap,
   Eye,
   EyeOff,
-  Download,
   Copy,
   RefreshCw,
   ArrowRight,
   Circle,
   Square,
-  Triangle,
   Hexagon,
   GitBranch,
   Clock,
@@ -289,7 +287,7 @@ const NodeGraphPreview: React.FC<{
       // Node background
       ctx.fillStyle = '#2d2d44';
       ctx.beginPath();
-      ctx.roundRect(x, y, nodeWidth, nodeHeight, 8 * scale);
+      ctx.roundRect(x, y,  8 * scale);
       ctx.fill();
       
       // Reset shadow
@@ -301,14 +299,14 @@ const NodeGraphPreview: React.FC<{
       // Node header
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.roundRect(x, y, nodeWidth, 24 * scale, [8 * scale, 8 * scale, 0, 0]);
+      ctx.roundRect(x, y,  24 * scale, [8 * scale, 8 * scale, 0, 0]);
       ctx.fill();
       
       // Node border
       ctx.strokeStyle = color;
       ctx.lineWidth = 2 * scale;
       ctx.beginPath();
-      ctx.roundRect(x, y, nodeWidth, nodeHeight, 8 * scale);
+      ctx.roundRect(x, y, 8 * scale);
       ctx.stroke();
       
       // Node title
@@ -341,7 +339,7 @@ const NodeGraphPreview: React.FC<{
         // Pin circle
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        ctx.arc(x + nodeWidth, pinY, 4 * scale, 0, Math.PI * 2);
+        ctx.arc(x +  pinY, 4 * scale, 0, Math.PI * 2);
         ctx.fill();
         
         // Pin label

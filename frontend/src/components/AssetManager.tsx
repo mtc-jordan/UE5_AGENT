@@ -9,15 +9,14 @@
  * - Organization suggestions
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState} from 'react';
 import {
   Search, FolderTree, Package, AlertTriangle, Copy, Trash2,
-  Move, RefreshCw, Loader2, ChevronRight, ChevronDown,
-  CheckCircle, XCircle, Info, Filter, Grid, List,
-  HardDrive, FileText, Image, Box, Layers, Music,
-  Sparkles, Zap, FolderOpen, MoreVertical, Check,
-  ArrowRight, Download, Upload, Settings, Eye,
-  Maximize2, Minimize2, X, AlertCircle
+  Move, RefreshCw, Loader2,
+  CheckCircle, XCircle, Filter, Grid, List, FileText, Image, Box, Layers, Music,
+  Sparkles, Zap, Check,
+  ArrowRight,
+  Maximize2, Minimize2, AlertCircle
 } from 'lucide-react';
 
 interface Asset {
@@ -108,7 +107,7 @@ const AssetManager: React.FC<AssetManagerProps> = ({
   const [duplicates, setDuplicates] = useState<DuplicateGroup[]>([]);
   const [suggestions, setSuggestions] = useState<OrganizationSuggestion[]>([]);
   const [statistics, setStatistics] = useState<any>(null);
-  const [healthSummary, setHealthSummary] = useState<any>(null);
+  const [ setHealthSummary] = useState<any>(null);
   
   const [activeTab, setActiveTab] = useState<'search' | 'issues' | 'duplicates' | 'organize'>('search');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
@@ -717,7 +716,7 @@ const AssetCard: React.FC<{
   isSelected: boolean;
   onToggleSelect: () => void;
   viewMode: 'grid' | 'list';
-}> = ({ asset, matchReason, relevance, isSelected, onToggleSelect, viewMode }) => {
+}> = ({ asset, matchReason, isSelected, onToggleSelect, viewMode }) => {
   const formatSize = (mb: number) => {
     if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`;
     if (mb >= 1) return `${mb.toFixed(1)} MB`;

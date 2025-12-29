@@ -6,8 +6,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Shield, Users, Key, Plus, Edit2, Trash2, Save, X,
-  ChevronDown, ChevronRight, Check, Search, Filter,
+  Shield, Users, Key, Plus, Trash2, Save, X,
+  ChevronDown, ChevronRight, Search,
   Crown, Code, BarChart, Eye, User, AlertCircle, History
 } from 'lucide-react';
 import {
@@ -18,11 +18,8 @@ import {
   RoleUpdate,
   AuditLog,
   groupPermissionsByCategory,
-  PERMISSION_CATEGORIES,
-  getRoleColor,
-  getRoleIcon
-} from '../lib/rbac-api';
-import { usePermissions, AdminGate } from '../hooks/usePermissions';
+  PERMISSION_CATEGORIES} from '../lib/rbac-api';
+import { usePermissions} from '../hooks/usePermissions';
 
 // ==================== Role Icon Component ====================
 

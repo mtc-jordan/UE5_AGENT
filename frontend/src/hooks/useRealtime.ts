@@ -11,7 +11,6 @@ import {
   registerEventHandler,
   EventType,
   WebSocketMessage,
-  OnlineUser,
   TypingUser
 } from '../lib/websocket'
 

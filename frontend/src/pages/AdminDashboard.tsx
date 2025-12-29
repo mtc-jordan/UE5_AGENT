@@ -7,16 +7,11 @@ import {
   TrendingUp,
   TrendingDown,
   Activity,
-  Database,
-  Download,
   RefreshCw,
-  Calendar,
   ArrowUpRight,
   ArrowDownRight,
   Zap,
-  Target,
-  PieChart
-} from 'lucide-react';
+  Target} from 'lucide-react';
 
 // Types
 interface OverviewKPIs {

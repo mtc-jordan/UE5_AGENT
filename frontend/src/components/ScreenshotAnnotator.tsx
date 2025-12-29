@@ -27,8 +27,6 @@ import {
   Share2,
   Minus,
   MousePointer,
-  Move,
-  RotateCcw,
   Check,
   Palette,
   Save
@@ -454,8 +452,7 @@ export const ScreenshotAnnotator: React.FC<ScreenshotAnnotatorProps> = ({
         const file = new File([blob], `${imageName}-annotated.png`, { type: 'image/png' });
         await navigator.share({
           files: [file],
-          title: 'Annotated Screenshot',
-        });
+          title: 'Annotated Screenshot'});
         return;
       } catch (err) {
         console.log('Native share failed, falling back to callback');
@@ -769,8 +766,7 @@ export const ScreenshotAnnotator: React.FC<ScreenshotAnnotatorProps> = ({
                 className="absolute"
                 style={{
                   left: textPosition.x * (canvasRef.current?.getBoundingClientRect().width || 1) / canvasSize.width,
-                  top: textPosition.y * (canvasRef.current?.getBoundingClientRect().height || 1) / canvasSize.height,
-                }}
+                  top: textPosition.y * (canvasRef.current?.getBoundingClientRect().height || 1) / canvasSize.height}}
               >
                 <input
                   type="text"

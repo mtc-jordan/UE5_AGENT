@@ -13,8 +13,8 @@ import React, { useState, useEffect } from 'react';
 import {
   Zap, AlertTriangle, AlertCircle, CheckCircle, Lightbulb,
   RefreshCw, Loader2, ChevronRight, Play, Shield,
-  Sun, Camera, Box, Layers, Activity, TrendingUp,
-  XCircle, Info, Sparkles, Target, ArrowRight
+  Sun, Camera, Box, Layers, Activity,
+  XCircle, Info, ArrowRight
 } from 'lucide-react';
 
 interface SceneIssue {

@@ -37,14 +37,10 @@ import {
   X,
   Maximize2,
   Minimize2,
-  Download,
-  MoreHorizontal,
   Clock,
   Zap,
   Sparkles,
-  AlertCircle,
-  Keyboard,
-} from 'lucide-react'
+  Keyboard} from 'lucide-react'
 import { cn, agentColors } from '../lib/utils'
 
 interface Message {
@@ -84,8 +80,7 @@ const agentIcons: Record<string, any> = {
   blueprint: Workflow,
   qa: Shield,
   devops: Server,
-  artist: Palette,
-}
+  artist: Palette}
 
 const agentNames: Record<string, string> = {
   architect: 'Lead Architect',
@@ -93,8 +88,7 @@ const agentNames: Record<string, string> = {
   blueprint: 'Blueprint Specialist',
   qa: 'QA Engineer',
   devops: 'DevOps Engineer',
-  artist: 'Technical Artist',
-}
+  artist: 'Technical Artist'}
 
 const models = [
   // DeepSeek Models
@@ -117,8 +111,7 @@ const SHORTCUTS = {
   send: { key: 'Enter', description: 'Send message' },
   newLine: { key: 'Shift+Enter', description: 'New line' },
   stop: { key: 'Escape', description: 'Stop generation' },
-  newChat: { key: 'Ctrl+N', description: 'New chat' },
-}
+  newChat: { key: 'Ctrl+N', description: 'New chat' }}
 
 export default function Chat() {
   const { chatId } = useParams()
@@ -132,9 +125,7 @@ export default function Chat() {
     isLoading, 
     setLoading,
     clearMessages,
-    cacheMessages,
-    getCachedMessages
-  } = useChatStore()
+    cacheMessages} = useChatStore()
   const { mode, setMode, model, setModel, activeAgents, setActiveAgents, soloAgent, setSoloAgent } = useSettingsStore()
   
   const [input, setInput] = useState('')
@@ -248,8 +239,7 @@ export default function Chat() {
         ...m,
         id: m.id.toString(),
         agent_name: m.agent ? agentNames[m.agent] : undefined,
-        agent_color: m.agent ? agentColors[m.agent] : undefined,
-      }))
+        agent_color: m.agent ? agentColors[m.agent] : undefined}))
       
       setMessages(loadedMessages)
       cacheMessages(id, loadedMessages)
@@ -297,8 +287,7 @@ export default function Chat() {
       id: Date.now().toString(),
       role: 'user',
       content: input.trim(),
-      created_at: new Date().toISOString(),
-    }
+      created_at: new Date().toISOString()}
 
     const messageContent = input.trim()
     setInput('')
@@ -319,8 +308,7 @@ export default function Chat() {
           mode,
           model,
           active_agents: activeAgents,
-          solo_agent: soloAgent,
-        })
+          solo_agent: soloAgent})
         activeChatId = response.data.id
         currentChatIdRef.current = activeChatId
         setCurrentChat(response.data)
@@ -352,8 +340,7 @@ export default function Chat() {
         mode,
         active_agents: activeAgents,
         solo_agent: soloAgent,
-        model,
-      })) {
+        model})) {
         if (!isStreamingRef.current || currentChatIdRef.current !== streamingForChatId) break
         
         if (chunk.type === 'phase') {
@@ -372,8 +359,7 @@ export default function Chat() {
               agent_name: chunk.agent_name || agentNames[agent],
               agent_color: chunk.agent_color || agentColors[agent],
               content: '',
-              created_at: new Date().toISOString(),
-            }
+              created_at: new Date().toISOString()}
             assistantMessages.set(agent, newMessage)
           }
           
@@ -400,8 +386,7 @@ export default function Chat() {
               id: Date.now().toString(),
               role: 'assistant',
               content: `⚠️ **Error:** ${chunk.message}`,
-              created_at: new Date().toISOString(),
-            }
+              created_at: new Date().toISOString()}
             addMessage(errorMessage)
           }
         } else if (chunk.type === 'cancelled') {
@@ -426,8 +411,7 @@ export default function Chat() {
             id: Date.now().toString(),
             role: 'assistant',
             content: `⚠️ **Error:** ${error.message || 'Failed to get response'}`,
-            created_at: new Date().toISOString(),
-          }
+            created_at: new Date().toISOString()}
           addMessage(errorMessage)
         }
       }
@@ -526,8 +510,7 @@ export default function Chat() {
       type: file.type.startsWith('image/') ? 'image' : 'file',
       size: file.size,
       file,
-      url: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
-    }))
+      url: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined}))
     
     setAttachments(prev => [...prev, ...newAttachments])
     if (fileInputRef.current) {
@@ -1022,8 +1005,7 @@ export default function Chat() {
                   style={{
                     backgroundColor: message.agent_color
                       ? `${message.agent_color}20`
-                      : 'rgba(59, 130, 246, 0.2)',
-                  }}
+                      : 'rgba(59, 130, 246, 0.2)'}}
                 >
                   {message.agent && agentIcons[message.agent] ? (
                     (() => {
@@ -1161,8 +1143,7 @@ export default function Chat() {
                               {children}
                             </blockquote>
                           )
-                        },
-                      }}
+                        }}}
                     >
                       {message.content || ''}
                     </ReactMarkdown>

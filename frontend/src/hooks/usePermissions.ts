@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { rbacApi, Role } from '../lib/rbac-api';
+import { rbacApi} from '../lib/rbac-api';
 
 interface UsePermissionsResult {
   permissions: string[];

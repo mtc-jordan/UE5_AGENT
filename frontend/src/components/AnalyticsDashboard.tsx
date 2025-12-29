@@ -12,17 +12,14 @@
  * - Date range filtering
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
-  BarChart3, LineChart, PieChart, TrendingUp, TrendingDown,
-  Download, FileText, Table, Calendar, Clock, Users,
-  Zap, Activity, Target, Award, Filter, RefreshCw,
-  ChevronDown, ChevronUp, Maximize2, Minimize2,
+  BarChart3, LineChart, PieChart,
+  Download, FileText, Table, Calendar, Clock, Users, Activity, Award, RefreshCw,
+  ChevronDown, Maximize2, Minimize2,
   ArrowUpRight, ArrowDownRight, Minus, Eye,
-  Command, Cpu, HardDrive, Gauge, Layers,
-  Sparkles, Lightbulb, Film, Palette, Package,
-  Settings, X, Check, Info
-} from 'lucide-react';
+  Command, Cpu, HardDrive, Gauge,
+  Sparkles, X, Check} from 'lucide-react';
 
 // Types
 interface CommandMetric {
@@ -99,8 +96,7 @@ const generateCommandMetrics = (days: number): CommandMetric[] => {
         texture: Math.floor(Math.random() * 10) + 3,
         performance: Math.floor(Math.random() * 10) + 2,
         asset: Math.floor(Math.random() * 8) + 2,
-        collaboration: Math.floor(Math.random() * 5) + 1,
-      }
+        collaboration: Math.floor(Math.random() * 5) + 1}
     });
   }
   
@@ -122,8 +118,7 @@ const generatePerformanceMetrics = (hours: number): PerformanceMetric[] => {
       gpuTime: Math.random() * 8 + 12,
       memoryUsage: Math.random() * 30 + 40,
       drawCalls: Math.floor(Math.random() * 1000) + 2000,
-      triangles: Math.floor(Math.random() * 2000000) + 4000000,
-    });
+      triangles: Math.floor(Math.random() * 2000000) + 4000000});
   }
   
   return metrics;
@@ -431,8 +426,7 @@ const StatCard: React.FC<{
     green: 'from-green-500/20 to-green-600/10 border-green-500/30',
     yellow: 'from-yellow-500/20 to-yellow-600/10 border-yellow-500/30',
     red: 'from-red-500/20 to-red-600/10 border-red-500/30',
-    cyan: 'from-cyan-500/20 to-cyan-600/10 border-cyan-500/30',
-  };
+    cyan: 'from-cyan-500/20 to-cyan-600/10 border-cyan-500/30'};
   
   return (
     <div className={`bg-gradient-to-br ${colorClasses[color]} backdrop-blur-sm rounded-xl p-4 border`}>

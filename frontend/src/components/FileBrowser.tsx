@@ -18,9 +18,7 @@ import {
   deleteFile,
   renameFile,
   getFileIcon,
-  formatFileSize,
-  sortFiles,
-} from '../lib/workspace-api';
+  formatFileSize} from '../lib/workspace-api';
 
 // =============================================================================
 // TYPES
@@ -65,8 +63,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   onToggle,
   onSelect,
   onDoubleClick,
-  onContextMenu,
-}) => {
+  onContextMenu}) => {
   const isExpanded = expandedPaths.has(node.path);
   const isSelected = node.id === selectedId;
   const isFolder = node.file_type === 'folder';
@@ -163,8 +160,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
   y,
   node,
   onClose,
-  onAction,
-}) => {
+  onAction}) => {
   const menuRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
@@ -238,8 +234,7 @@ const NewItemDialog: React.FC<NewItemDialogProps> = ({
   type,
   parentPath,
   onClose,
-  onCreate,
-}) => {
+  onCreate}) => {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -330,8 +325,7 @@ interface RenameDialogProps {
 const RenameDialog: React.FC<RenameDialogProps> = ({
   currentName,
   onClose,
-  onRename,
-}) => {
+  onRename}) => {
   const [name, setName] = useState(currentName);
   const [error, setError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -409,8 +403,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
   onFileSelect,
   onFileOpen,
   selectedFileId,
-  className = '',
-}) => {
+  className = ''}) => {
   const [tree, setTree] = useState<FileTreeNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -499,8 +492,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
     setContextMenu({
       x: e.clientX,
       y: e.clientY,
-      node,
-    });
+      node});
   };
   
   // Handle context menu action
@@ -582,8 +574,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
     setContextMenu({
       x: e.clientX,
       y: e.clientY,
-      node: { id: 0, name: '/', path: '/', file_type: 'folder', size: 0, language: null, is_generated: false, children: [] },
-    });
+      node: { id: 0, name: '/', path: '/', file_type: 'folder', size: 0, language: null, is_generated: false, children: [] }});
   };
   
   return (

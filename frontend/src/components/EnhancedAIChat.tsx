@@ -12,11 +12,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  Sparkles, Send, Loader2, History, Trash2, ChevronDown,
+  Sparkles, Send, Loader2, Trash2, ChevronDown,
   Wrench, CheckCircle, XCircle, Camera, Copy, Check,
   Lightbulb, Zap, Box, Palette, Film, Code, RotateCcw,
-  MessageSquare, Bot, User, Clock, ChevronRight
-} from 'lucide-react';
+  MessageSquare, Bot, User, Clock} from 'lucide-react';
 import ModelSelector from './ModelSelector';
 
 interface ChatMessage {
@@ -65,14 +64,12 @@ const EXAMPLE_PROMPTS = [
 const EnhancedAIChat: React.FC<EnhancedAIChatProps> = ({
   chatHistory,
   onSendMessage,
-  onClearHistory,
   isProcessing,
   isConnected,
   selectedModel,
   onModelChange,
   autoSelectModel,
-  onAutoSelectChange,
-}) => {
+  onAutoSelectChange}) => {
   const [message, setMessage] = useState('');
   const [showExamples, setShowExamples] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);

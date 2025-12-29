@@ -183,8 +183,7 @@ const StatusBadge: React.FC<{ status?: CommandStep['status'] }> = ({ status }) =
     running: { color: 'bg-blue-500/20 text-blue-400', icon: <RefreshCw className="w-3 h-3 animate-spin" /> },
     completed: { color: 'bg-green-500/20 text-green-400', icon: <CheckCircle className="w-3 h-3" /> },
     failed: { color: 'bg-red-500/20 text-red-400', icon: <XCircle className="w-3 h-3" /> },
-    skipped: { color: 'bg-yellow-500/20 text-yellow-400', icon: <FastForward className="w-3 h-3" /> },
-  };
+    skipped: { color: 'bg-yellow-500/20 text-yellow-400', icon: <FastForward className="w-3 h-3" /> }};
   
   const { color, icon } = config[status || 'pending'];
   
@@ -201,8 +200,7 @@ const SeverityBadge: React.FC<{ severity: DebugIssue['severity'] }> = ({ severit
     low: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
     medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
     high: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-    critical: 'bg-red-500/20 text-red-400 border-red-500/30',
-  };
+    critical: 'bg-red-500/20 text-red-400 border-red-500/30'};
   
   return (
     <span className={`px-2 py-0.5 rounded-full text-xs border ${config[severity]}`}>
@@ -222,8 +220,7 @@ interface AdvancedAIFeaturesProps {
 const AdvancedAIFeatures: React.FC<AdvancedAIFeaturesProps> = ({
   onExecuteCommand,
   onExecuteChain,
-  onExecuteMacro,
-}) => {
+  onExecuteMacro}) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [activeTab, setActiveTab] = useState<'chains' | 'suggestions' | 'macros' | 'debug'>('chains');
   const [chains, setChains] = useState<CommandChain[]>(SAMPLE_CHAINS);
@@ -234,9 +231,9 @@ const AdvancedAIFeatures: React.FC<AdvancedAIFeaturesProps> = ({
   const [isRecording, setIsRecording] = useState(false);
   const [recordedCommands, setRecordedCommands] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showCreateChain, setShowCreateChain] = useState(false);
+  const [ setShowCreateChain] = useState(false);
   const [showCreateMacro, setShowCreateMacro] = useState(false);
-  const [newChainName, setNewChainName] = useState('');
+  const [ setNewChainName] = useState('');
   const [newMacroName, setNewMacroName] = useState('');
   const [runningChain, setRunningChain] = useState<string | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -309,8 +306,7 @@ const AdvancedAIFeatures: React.FC<AdvancedAIFeaturesProps> = ({
         commands: recordedCommands,
         createdAt: new Date().toISOString(),
         usageCount: 0,
-        isFavorite: false,
-      };
+        isFavorite: false};
       setMacros(prev => [newMacro, ...prev]);
       setShowCreateMacro(false);
       setNewMacroName('');

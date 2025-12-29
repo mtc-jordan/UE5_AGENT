@@ -11,8 +11,7 @@ import {
   Cpu,
   Code,
   Workflow,
-  Shield,
-} from 'lucide-react'
+  Shield} from 'lucide-react'
 import { formatDate } from '../lib/utils'
 
 interface Project {
@@ -64,8 +63,7 @@ export default function Dashboard() {
       const response = await chatsApi.create({
         title: 'New Conversation',
         mode: 'team',
-        model: 'deepseek-chat',
-      })
+        model: 'deepseek-chat'})
       setChats([response.data, ...chats])
       setCurrentChat(response.data)
       navigate(`/chat/${response.data.id}`)

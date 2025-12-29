@@ -11,10 +11,7 @@ import {
   Zap,
   Trophy,
   Star,
-  TrendingUp,
-  BarChart3,
-  Award
-} from 'lucide-react'
+  BarChart3} from 'lucide-react'
 import {
   ComparisonResult,
   ModelInfo,

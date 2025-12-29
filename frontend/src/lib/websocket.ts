@@ -42,8 +42,7 @@ export enum EventType {
   CURSOR_UPDATE = 'cursor_update',
   
   // Notification events
-  NOTIFICATION = 'notification',
-}
+  NOTIFICATION = 'notification'}
 
 export interface WebSocketMessage {
   type: EventType | string
@@ -257,7 +256,7 @@ export const useWebSocketStore = create<WebSocketState>((set, get) => {
     lastError: null,
     
     connect: (token: string) => {
-      const { socket, connecting, connected } = get()
+      const {  connecting, connected } = get()
       
       if (connecting || connected) {
         return
@@ -331,7 +330,7 @@ export const useWebSocketStore = create<WebSocketState>((set, get) => {
     },
     
     send: (message: Partial<WebSocketMessage>) => {
-      const { socket, connected } = get()
+      const {  connected } = get()
       
       if (!socket || !connected) {
         console.warn('Cannot send message: not connected')

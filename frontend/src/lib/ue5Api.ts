@@ -149,9 +149,7 @@ async function apiRequest<T>(
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
+      ...options.headers}});
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
@@ -170,8 +168,7 @@ export const lightingApi = {
   applyPreset: async (presetId: string, settings: LightingSettings): Promise<CommandResult> => {
     return apiRequest('/lighting/apply', {
       method: 'POST',
-      body: JSON.stringify({ preset_id: presetId, settings }),
-    });
+      body: JSON.stringify({ preset_id: presetId, settings })});
   },
 
   /**
@@ -180,8 +177,7 @@ export const lightingApi = {
   applyCustom: async (settings: LightingSettings): Promise<CommandResult> => {
     return apiRequest('/lighting/apply-custom', {
       method: 'POST',
-      body: JSON.stringify({ settings }),
-    });
+      body: JSON.stringify({ settings })});
   },
 
   /**
@@ -194,8 +190,7 @@ export const lightingApi = {
   ): Promise<CommandResult> => {
     return apiRequest('/lighting/time-of-day', {
       method: 'POST',
-      body: JSON.stringify({ time, animate, duration }),
-    });
+      body: JSON.stringify({ time, animate, duration })});
   },
 
   /**
@@ -211,9 +206,7 @@ export const lightingApi = {
       body: JSON.stringify({
         hdri_asset: hdriAsset,
         intensity,
-        rotation,
-      }),
-    });
+        rotation})});
   },
 
   /**
@@ -227,9 +220,7 @@ export const lightingApi = {
       method: 'POST',
       body: JSON.stringify({
         scene_description: sceneDescription,
-        mood,
-      }),
-    });
+        mood})});
   },
 
   /**
@@ -237,8 +228,7 @@ export const lightingApi = {
    */
   getPresets: async (): Promise<{ presets: Array<{ id: string; name: string; category: string }> }> => {
     return apiRequest('/lighting/presets');
-  },
-};
+  }};
 
 // ==================== ANIMATION API ====================
 
@@ -265,8 +255,7 @@ export const animationApi = {
   play: async (request: PlayAnimationRequest): Promise<CommandResult> => {
     return apiRequest('/animation/play', {
       method: 'POST',
-      body: JSON.stringify(request),
-    });
+      body: JSON.stringify(request)});
   },
 
   /**
@@ -275,8 +264,7 @@ export const animationApi = {
   stop: async (actorId?: string, blendOut: number = 0.25): Promise<CommandResult> => {
     return apiRequest('/animation/stop', {
       method: 'POST',
-      body: JSON.stringify({ actor_id: actorId, blend_out: blendOut }),
-    });
+      body: JSON.stringify({ actor_id: actorId, blend_out: blendOut })});
   },
 
   /**
@@ -287,8 +275,7 @@ export const animationApi = {
     if (actorId) params.append('actor_id', actorId);
     
     return apiRequest(`/animation/set-speed?${params}`, {
-      method: 'POST',
-    });
+      method: 'POST'});
   },
 
   /**
@@ -297,8 +284,7 @@ export const animationApi = {
   createBlendSpace: async (request: CreateBlendSpaceRequest): Promise<CommandResult> => {
     return apiRequest('/animation/blend-space/create', {
       method: 'POST',
-      body: JSON.stringify(request),
-    });
+      body: JSON.stringify(request)});
   },
 
   /**
@@ -307,8 +293,7 @@ export const animationApi = {
   createMontage: async (request: CreateMontageRequest): Promise<CommandResult> => {
     return apiRequest('/animation/montage/create', {
       method: 'POST',
-      body: JSON.stringify(request),
-    });
+      body: JSON.stringify(request)});
   },
 
   /**
@@ -326,9 +311,7 @@ export const animationApi = {
         source_animation: sourceAnimation,
         source_skeleton: sourceSkeleton,
         target_skeleton: targetSkeleton,
-        output_path: outputPath,
-      }),
-    });
+        output_path: outputPath})});
   },
 
   /**
@@ -337,10 +320,8 @@ export const animationApi = {
   getSuggestions: async (context: string): Promise<{ suggestions: AnimationInfo[] }> => {
     return apiRequest('/animation/suggest', {
       method: 'POST',
-      body: JSON.stringify({ context }),
-    });
-  },
-};
+      body: JSON.stringify({ context })});
+  }};
 
 // ==================== COLLABORATION API ====================
 
@@ -351,8 +332,7 @@ export const collaborationApi = {
   createSession: async (projectId: string): Promise<{ session_id: string }> => {
     return apiRequest('/collaboration/sessions', {
       method: 'POST',
-      body: JSON.stringify({ project_id: projectId }),
-    });
+      body: JSON.stringify({ project_id: projectId })});
   },
 
   /**
@@ -372,8 +352,7 @@ export const collaborationApi = {
   ): Promise<{ success: boolean; lock?: ActorLock; error?: string }> => {
     return apiRequest(`/collaboration/sessions/${sessionId}/lock`, {
       method: 'POST',
-      body: JSON.stringify({ actor_id: actorId, actor_name: actorName }),
-    });
+      body: JSON.stringify({ actor_id: actorId, actor_name: actorName })});
   },
 
   /**
@@ -385,8 +364,7 @@ export const collaborationApi = {
   ): Promise<{ success: boolean; error?: string }> => {
     return apiRequest(`/collaboration/sessions/${sessionId}/unlock`, {
       method: 'POST',
-      body: JSON.stringify({ actor_id: actorId }),
-    });
+      body: JSON.stringify({ actor_id: actorId })});
   },
 
   /**
@@ -395,8 +373,7 @@ export const collaborationApi = {
   sendChat: async (sessionId: string, message: string): Promise<CommandResult> => {
     return apiRequest(`/collaboration/sessions/${sessionId}/chat`, {
       method: 'POST',
-      body: JSON.stringify({ message }),
-    });
+      body: JSON.stringify({ message })});
   },
 
   /**
@@ -407,8 +384,7 @@ export const collaborationApi = {
     limit: number = 50
   ): Promise<{ activities: Array<{ type: string; user: string; timestamp: string; data: unknown }> }> => {
     return apiRequest(`/collaboration/sessions/${sessionId}/activities?limit=${limit}`);
-  },
-};
+  }};
 
 // ==================== WEBSOCKET CONNECTION ====================
 
@@ -598,9 +574,7 @@ export const sceneApi = {
         location,
         rotation,
         scale,
-        name,
-      }),
-    });
+        name})});
   },
 
   /**
@@ -609,8 +583,7 @@ export const sceneApi = {
   deleteActor: async (actorName: string): Promise<CommandResult> => {
     return apiRequest('/scene/delete', {
       method: 'POST',
-      body: JSON.stringify({ actor_name: actorName }),
-    });
+      body: JSON.stringify({ actor_name: actorName })});
   },
 
   /**
@@ -626,8 +599,7 @@ export const sceneApi = {
   selectActor: async (actorName: string, addToSelection: boolean = false): Promise<CommandResult> => {
     return apiRequest('/scene/select', {
       method: 'POST',
-      body: JSON.stringify({ actor_name: actorName, add_to_selection: addToSelection }),
-    });
+      body: JSON.stringify({ actor_name: actorName, add_to_selection: addToSelection })});
   },
 
   /**
@@ -674,10 +646,8 @@ export const sceneApi = {
   ): Promise<{ success: boolean; path: string }> => {
     return apiRequest('/viewport/screenshot', {
       method: 'POST',
-      body: JSON.stringify({ filename, resolution }),
-    });
-  },
-};
+      body: JSON.stringify({ filename, resolution })});
+  }};
 
 // ==================== EXPORT DEFAULT ====================
 
@@ -686,5 +656,4 @@ export default {
   animation: animationApi,
   collaboration: collaborationApi,
   scene: sceneApi,
-  CollaborationWebSocket,
-};
+  CollaborationWebSocket};

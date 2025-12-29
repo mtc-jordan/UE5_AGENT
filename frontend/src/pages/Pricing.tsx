@@ -29,7 +29,6 @@ import {
   formatPrice,
   getTierColor,
   calculateYearlySavings,
-  isUnlimited,
   formatLimit
 } from '../lib/subscription-api';
 

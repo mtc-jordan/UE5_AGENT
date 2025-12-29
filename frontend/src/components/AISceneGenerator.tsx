@@ -20,7 +20,6 @@ import {
   Sparkles,
   Play,
   Pause,
-  RotateCcw,
   ChevronDown,
   ChevronUp,
   Check,
@@ -40,10 +39,8 @@ import {
   Rocket,
   Castle,
   Home,
-  Mountain,
   Waves,
   Flame,
-  Snowflake,
   CloudSun,
   Moon,
   Zap,
@@ -51,20 +48,10 @@ import {
   Mic,
   Settings,
   Save,
-  FolderOpen,
   Plus,
-  Trash2,
-  Copy,
-  Download,
-  Share2,
   History,
   Lightbulb,
-  Palette,
-  Grid3X3,
-  Move,
-  RotateCw,
-  Maximize2,
-} from 'lucide-react';
+  Palette} from 'lucide-react';
 
 // ==================== TYPES ====================
 
@@ -136,8 +123,7 @@ const SCENE_TEMPLATES: SceneTemplate[] = [
     icon: <Castle className="w-5 h-5" />,
     category: 'environment',
     prompt: 'Create a medieval castle courtyard with stone walls, a central fountain, guard towers, wooden crates, barrels, torches on the walls, a drawbridge entrance, and cobblestone floor',
-    tags: ['medieval', 'castle', 'fantasy'],
-  },
+    tags: ['medieval', 'castle', 'fantasy']},
   {
     id: 'scifi-spaceship',
     name: 'Sci-Fi Spaceship Interior',
@@ -145,8 +131,7 @@ const SCENE_TEMPLATES: SceneTemplate[] = [
     icon: <Rocket className="w-5 h-5" />,
     category: 'environment',
     prompt: 'Create a sci-fi spaceship interior with a central command bridge, holographic displays, control panels, captain chair, crew stations, glowing floor panels, and large viewport windows showing space',
-    tags: ['scifi', 'spaceship', 'futuristic'],
-  },
+    tags: ['scifi', 'spaceship', 'futuristic']},
   {
     id: 'forest-clearing',
     name: 'Enchanted Forest Clearing',
@@ -154,8 +139,7 @@ const SCENE_TEMPLATES: SceneTemplate[] = [
     icon: <TreePine className="w-5 h-5" />,
     category: 'environment',
     prompt: 'Create an enchanted forest clearing with giant ancient trees, glowing mushrooms, a small stream, moss-covered rocks, fireflies, fallen logs, and mystical fog',
-    tags: ['forest', 'nature', 'fantasy'],
-  },
+    tags: ['forest', 'nature', 'fantasy']},
   {
     id: 'modern-office',
     name: 'Modern Office Space',
@@ -163,8 +147,7 @@ const SCENE_TEMPLATES: SceneTemplate[] = [
     icon: <Building2 className="w-5 h-5" />,
     category: 'interior',
     prompt: 'Create a modern open-plan office with multiple workstations, ergonomic chairs, large monitors, a glass-walled meeting room, lounge area with sofas, indoor plants, and large windows',
-    tags: ['modern', 'office', 'interior'],
-  },
+    tags: ['modern', 'office', 'interior']},
   {
     id: 'cozy-cabin',
     name: 'Cozy Mountain Cabin',
@@ -172,8 +155,7 @@ const SCENE_TEMPLATES: SceneTemplate[] = [
     icon: <Home className="w-5 h-5" />,
     category: 'interior',
     prompt: 'Create a cozy mountain cabin interior with a stone fireplace, wooden beams, comfortable sofas, fur rugs, bookshelves, antler decorations, warm lighting, and snow visible through windows',
-    tags: ['cabin', 'cozy', 'rustic'],
-  },
+    tags: ['cabin', 'cozy', 'rustic']},
   {
     id: 'underwater-ruins',
     name: 'Underwater Ancient Ruins',
@@ -181,8 +163,7 @@ const SCENE_TEMPLATES: SceneTemplate[] = [
     icon: <Waves className="w-5 h-5" />,
     category: 'environment',
     prompt: 'Create underwater ancient ruins with crumbling stone columns, coral growth, schools of fish, sunken statues, treasure chests, seaweed, caustic light effects, and mysterious glowing artifacts',
-    tags: ['underwater', 'ruins', 'ancient'],
-  },
+    tags: ['underwater', 'ruins', 'ancient']},
   {
     id: 'cyberpunk-alley',
     name: 'Cyberpunk City Alley',
@@ -190,8 +171,7 @@ const SCENE_TEMPLATES: SceneTemplate[] = [
     icon: <Zap className="w-5 h-5" />,
     category: 'environment',
     prompt: 'Create a cyberpunk city alley with neon signs, holographic advertisements, steam vents, dumpsters, graffiti walls, flying drones, rain puddles reflecting lights, and vending machines',
-    tags: ['cyberpunk', 'urban', 'neon'],
-  },
+    tags: ['cyberpunk', 'urban', 'neon']},
   {
     id: 'desert-oasis',
     name: 'Desert Oasis',
@@ -199,8 +179,7 @@ const SCENE_TEMPLATES: SceneTemplate[] = [
     icon: <Sun className="w-5 h-5" />,
     category: 'environment',
     prompt: 'Create a desert oasis with palm trees, a clear blue pond, sand dunes, ancient stone ruins, a small tent camp, camels, pottery, and golden sunset lighting',
-    tags: ['desert', 'oasis', 'nature'],
-  },
+    tags: ['desert', 'oasis', 'nature']},
   // Game Levels
   {
     id: 'battle-arena',
@@ -209,8 +188,7 @@ const SCENE_TEMPLATES: SceneTemplate[] = [
     icon: <Sword className="w-5 h-5" />,
     category: 'game-level',
     prompt: 'Create a gladiator battle arena with sandy floor, stone walls, spectator stands, weapon racks, entrance gates, torches, victory podium, and dramatic overhead lighting',
-    tags: ['arena', 'combat', 'game'],
-  },
+    tags: ['arena', 'combat', 'game']},
   {
     id: 'racing-track',
     name: 'Racing Track Start',
@@ -218,8 +196,7 @@ const SCENE_TEMPLATES: SceneTemplate[] = [
     icon: <Car className="w-5 h-5" />,
     category: 'game-level',
     prompt: 'Create a racing track starting line with checkered start/finish line, grandstands with crowds, pit lane entrance, sponsor billboards, timing tower, and race cars on the grid',
-    tags: ['racing', 'track', 'game'],
-  },
+    tags: ['racing', 'track', 'game']},
   // Architectural
   {
     id: 'luxury-penthouse',
@@ -228,8 +205,7 @@ const SCENE_TEMPLATES: SceneTemplate[] = [
     icon: <Sofa className="w-5 h-5" />,
     category: 'interior',
     prompt: 'Create a luxury penthouse with floor-to-ceiling windows, modern furniture, marble floors, a grand piano, art pieces, indoor pool area, bar counter, and panoramic city views',
-    tags: ['luxury', 'penthouse', 'modern'],
-  },
+    tags: ['luxury', 'penthouse', 'modern']},
   {
     id: 'volcanic-cave',
     name: 'Volcanic Cave',
@@ -237,8 +213,7 @@ const SCENE_TEMPLATES: SceneTemplate[] = [
     icon: <Flame className="w-5 h-5" />,
     category: 'environment',
     prompt: 'Create a volcanic cave with flowing lava rivers, obsidian rock formations, glowing crystals, steam vents, ancient stone bridge, stalactites, and ominous red lighting',
-    tags: ['volcanic', 'cave', 'dangerous'],
-  },
+    tags: ['volcanic', 'cave', 'dangerous']},
 ];
 
 const STYLE_OPTIONS = [
@@ -293,8 +268,7 @@ interface AISceneGeneratorProps {
 export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
   onGenerate,
   onCancel,
-  className = '',
-}) => {
+  className = ''}) => {
   // State
   const [prompt, setPrompt] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<SceneTemplate | null>(null);
@@ -343,8 +317,7 @@ export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
         rotation: { pitch: 0, yaw: 0, roll: 0 },
         scale: { x: 10, y: 10, z: 1 },
         properties: {},
-        status: 'pending',
-      },
+        status: 'pending'},
       {
         id: '2',
         type: 'mesh',
@@ -354,8 +327,7 @@ export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
         rotation: { pitch: 0, yaw: 0, roll: 0 },
         scale: { x: 10, y: 1, z: 3 },
         properties: {},
-        status: 'pending',
-      },
+        status: 'pending'},
       {
         id: '3',
         type: 'mesh',
@@ -365,8 +337,7 @@ export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
         rotation: { pitch: 0, yaw: 180, roll: 0 },
         scale: { x: 10, y: 1, z: 3 },
         properties: {},
-        status: 'pending',
-      },
+        status: 'pending'},
       {
         id: '4',
         type: 'light',
@@ -376,8 +347,7 @@ export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
         rotation: { pitch: -45, yaw: 0, roll: 0 },
         scale: { x: 1, y: 1, z: 1 },
         properties: { intensity: 5000, color: '#FFF5E6' },
-        status: 'pending',
-      },
+        status: 'pending'},
       {
         id: '5',
         type: 'mesh',
@@ -387,8 +357,7 @@ export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
         rotation: { pitch: 0, yaw: 45, roll: 0 },
         scale: { x: 1, y: 1, z: 1 },
         properties: {},
-        status: 'pending',
-      },
+        status: 'pending'},
       {
         id: '6',
         type: 'mesh',
@@ -398,8 +367,7 @@ export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
         rotation: { pitch: 0, yaw: -90, roll: 0 },
         scale: { x: 1, y: 1, z: 1 },
         properties: {},
-        status: 'pending',
-      },
+        status: 'pending'},
       {
         id: '7',
         type: 'mesh',
@@ -409,8 +377,7 @@ export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
         rotation: { pitch: 0, yaw: 90, roll: 0 },
         scale: { x: 1, y: 1, z: 1 },
         properties: {},
-        status: 'pending',
-      },
+        status: 'pending'},
       {
         id: '8',
         type: 'effect',
@@ -420,8 +387,7 @@ export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
         rotation: { pitch: 0, yaw: 0, roll: 0 },
         scale: { x: 5, y: 5, z: 5 },
         properties: {},
-        status: 'pending',
-      },
+        status: 'pending'},
     ];
 
     const plan: ScenePlan = {
@@ -436,15 +402,12 @@ export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
       lighting: {
         preset: mood === 'dramatic' ? 'dramatic' : 'natural',
         intensity: 1.0,
-        color: '#FFFFFF',
-      },
+        color: '#FFFFFF'},
       postProcess: {
         enabled: true,
-        preset: style === 'stylized' ? 'stylized' : 'cinematic',
-      },
+        preset: style === 'stylized' ? 'stylized' : 'cinematic'},
       estimatedTime: mockObjects.length * 2,
-      totalObjects: mockObjects.length,
-    };
+      totalObjects: mockObjects.length};
 
     setScenePlan(plan);
     setStatus('previewing');
@@ -458,8 +421,7 @@ export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
         status: 'pending',
         progress: 0,
         objectsSpawned: 0,
-        totalObjects: 0,
-      },
+        totalObjects: 0},
       {
         id: 'structure',
         name: 'Structure',
@@ -467,8 +429,7 @@ export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
         status: 'pending',
         progress: 0,
         objectsSpawned: 0,
-        totalObjects: 3,
-      },
+        totalObjects: 3},
       {
         id: 'lighting',
         name: 'Lighting',
@@ -476,8 +437,7 @@ export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
         status: 'pending',
         progress: 0,
         objectsSpawned: 0,
-        totalObjects: 1,
-      },
+        totalObjects: 1},
       {
         id: 'props',
         name: 'Props & Furniture',
@@ -485,8 +445,7 @@ export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
         status: 'pending',
         progress: 0,
         objectsSpawned: 0,
-        totalObjects: 3,
-      },
+        totalObjects: 3},
       {
         id: 'effects',
         name: 'Effects',
@@ -494,8 +453,7 @@ export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
         status: 'pending',
         progress: 0,
         objectsSpawned: 0,
-        totalObjects: 1,
-      },
+        totalObjects: 1},
       {
         id: 'finalize',
         name: 'Finalize',
@@ -503,8 +461,7 @@ export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
         status: 'pending',
         progress: 0,
         objectsSpawned: 0,
-        totalObjects: 0,
-      },
+        totalObjects: 0},
     ]);
   }, [prompt, selectedTemplate, style, mood, timeOfDay, weather]);
 
@@ -556,8 +513,7 @@ export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
                   obj.name.includes('Floor') || obj.name.includes('Wall')
                     ? { ...obj, status: 'spawned' }
                     : obj
-                ),
-              }
+                )}
             : null
         );
       } else if (i === 2) {
@@ -568,8 +524,7 @@ export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
                 ...prev,
                 objects: prev.objects.map((obj) =>
                   obj.type === 'light' ? { ...obj, status: 'spawned' } : obj
-                ),
-              }
+                )}
             : null
         );
       } else if (i === 3) {
@@ -580,8 +535,7 @@ export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
                 ...prev,
                 objects: prev.objects.map((obj) =>
                   obj.name.includes('Prop') ? { ...obj, status: 'spawned' } : obj
-                ),
-              }
+                )}
             : null
         );
       } else if (i === 4) {
@@ -592,8 +546,7 @@ export const AISceneGenerator: React.FC<AISceneGeneratorProps> = ({
                 ...prev,
                 objects: prev.objects.map((obj) =>
                   obj.type === 'effect' ? { ...obj, status: 'spawned' } : obj
-                ),
-              }
+                )}
             : null
         );
       }

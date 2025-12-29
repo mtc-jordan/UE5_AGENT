@@ -9,15 +9,14 @@
  * - Interactive actor list
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState} from 'react';
 import {
   Eye, Scan, AlertTriangle, AlertCircle, Info, CheckCircle,
   Lightbulb, Box, Camera, Sun, Sparkles, Layers, Activity,
   ChevronDown, ChevronRight, RefreshCw, Loader2, Zap,
-  BarChart3, PieChart, Target, Cpu, Triangle, Palette,
-  Play, XCircle, ArrowRight, TrendingUp, Shield, Settings,
-  Search, Filter, SortAsc, Grid3X3, List, Maximize2
-} from 'lucide-react';
+  BarChart3, PieChart, Cpu, Triangle, Palette,
+  Play, XCircle, TrendingUp,
+  Search, Grid3X3, List} from 'lucide-react';
 
 interface SceneMetrics {
   total_actors: number;

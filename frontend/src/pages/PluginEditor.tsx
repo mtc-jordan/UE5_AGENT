@@ -17,24 +17,16 @@ import {
   FileJson,
   TestTube,
   History,
-  Upload,
   ArrowLeft,
   CheckCircle,
   XCircle,
   AlertTriangle,
   Loader,
-  Eye,
-  EyeOff,
-  Copy,
-  Trash2,
-  RefreshCw
-} from 'lucide-react';
+  Trash2} from 'lucide-react';
 import {
-  pluginsApi,
-  executionApi,
+  pluginsAp
   Plugin,
   PluginCategory,
-  ExecutionResult,
   CATEGORY_LABELS,
   CATEGORY_ICONS
 } from '../lib/plugin-api';

@@ -12,14 +12,14 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Play, Pause, Square, SkipBack, SkipForward, Repeat, Repeat1,
-  Search, Filter, Grid, List, Folder, FolderOpen, Film, Clapperboard,
-  User, Users, Swords, Heart, Hand, Footprints, Zap, Wind,
-  Settings, RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
-  Loader2, CheckCircle, AlertCircle, X, Plus, Minus, Copy,
-  Layers, Target, Link, Unlink, Shuffle, ArrowRight, ArrowLeftRight,
-  Volume2, VolumeX, Maximize2, Minimize2, RotateCcw, Download,
-  Sparkles, Wand2, Clock, Tag, Info, Eye, EyeOff, Move3D
+  Play, Pause, SkipBack, SkipForward, Repeat, Repeat1,
+  Search, Grid, List, Folder, Film, Clapperboard,
+  User, Swords, Heart, Hand, Footprints, Zap,
+  Settings, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
+  Loader2, CheckCircle, Plus,
+  Layers, Shuffle,
+  Volume2,
+  Sparkles, Eye, Move3D
 } from 'lucide-react';
 
 // Types
@@ -136,8 +136,7 @@ const AnimationAssistant: React.FC<AnimationAssistantProps> = ({
   authToken,
   isConnected,
   onAnimationApplied,
-  onVoiceCommand,
-}) => {
+  onVoiceCommand}) => {
   // State
   const [animations, setAnimations] = useState<Animation[]>(SAMPLE_ANIMATIONS);
   const [filteredAnimations, setFilteredAnimations] = useState<Animation[]>(SAMPLE_ANIMATIONS);
@@ -153,11 +152,11 @@ const AnimationAssistant: React.FC<AnimationAssistantProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const [isLooping, setIsLooping] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const [ setIsMuted] = useState(false);
   
   // Blend space state
-  const [blendSpaces, setBlendSpaces] = useState<BlendSpace[]>([]);
-  const [selectedBlendSpace, setSelectedBlendSpace] = useState<BlendSpace | null>(null);
+  const [ setBlendSpaces] = useState<BlendSpace[]>([]);
+  const [ setSelectedBlendSpace] = useState<BlendSpace | null>(null);
   const [blendPosition, setBlendPosition] = useState({ x: 0, y: 0 });
   
   // Montage state
@@ -312,14 +311,11 @@ const AnimationAssistant: React.FC<AnimationAssistantProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
+          'Authorization': `Bearer ${authToken}`},
         body: JSON.stringify({
           animation_path: animation.path,
           loop: isLooping,
-          speed: playbackSpeed,
-        }),
-      });
+          speed: playbackSpeed})});
       
       if (response.ok) {
         onAnimationApplied?.(animation);

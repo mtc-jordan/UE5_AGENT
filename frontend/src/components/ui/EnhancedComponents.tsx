@@ -9,8 +9,8 @@
  * - Responsive layouts
  */
 
-import React, { useState, useEffect, useRef, ReactNode } from 'react';
-import { ChevronDown, ChevronRight, Check, Copy, X, Loader2 } from 'lucide-react';
+import React, { useState, useRef, ReactNode } from 'react';
+import { ChevronDown, Check, Copy, X, Loader2 } from 'lucide-react';
 
 // ==================== ANIMATED BACKGROUNDS ====================
 
@@ -22,8 +22,7 @@ export const AnimatedGradientOrbs = ({ colors = ['blue', 'purple', 'cyan'] }: { 
     green: 'bg-green-500/20',
     amber: 'bg-amber-500/20',
     pink: 'bg-pink-500/20',
-    violet: 'bg-violet-500/20',
-  };
+    violet: 'bg-violet-500/20'};
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -46,8 +45,7 @@ export const ParticleField = () => (
           left: `${Math.random() * 100}%`,
           top: `${Math.random() * 100}%`,
           animationDelay: `${Math.random() * 5}s`,
-          animationDuration: `${5 + Math.random() * 10}s`,
-        }}
+          animationDuration: `${5 + Math.random() * 10}s`}}
       />
     ))}
   </div>
@@ -74,8 +72,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   glowColor = 'blue',
   depth = 1,
   onClick,
-  selected = false,
-}) => {
+  selected = false}) => {
   const glowColors = {
     blue: 'shadow-blue-500/20 hover:shadow-blue-500/30',
     green: 'shadow-green-500/20 hover:shadow-green-500/30',
@@ -84,14 +81,12 @@ export const GlassCard: React.FC<GlassCardProps> = ({
     red: 'shadow-red-500/20 hover:shadow-red-500/30',
     cyan: 'shadow-cyan-500/20 hover:shadow-cyan-500/30',
     pink: 'shadow-pink-500/20 hover:shadow-pink-500/30',
-    violet: 'shadow-violet-500/20 hover:shadow-violet-500/30',
-  };
+    violet: 'shadow-violet-500/20 hover:shadow-violet-500/30'};
 
   const depthStyles = {
     1: 'bg-white/5 border-white/10',
     2: 'bg-white/8 border-white/15',
-    3: 'bg-white/10 border-white/20',
-  };
+    3: 'bg-white/10 border-white/20'};
 
   const selectedBorder = {
     blue: 'border-blue-500/50',
@@ -101,8 +96,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
     red: 'border-red-500/50',
     cyan: 'border-cyan-500/50',
     pink: 'border-pink-500/50',
-    violet: 'border-violet-500/50',
-  };
+    violet: 'border-violet-500/50'};
 
   return (
     <div
@@ -134,28 +128,24 @@ export const StatusOrb: React.FC<StatusOrbProps> = ({
   status,
   size = 'md',
   pulse = true,
-  label,
-}) => {
+  label}) => {
   const sizeClasses = {
     xs: 'w-2 h-2',
     sm: 'w-3 h-3',
     md: 'w-4 h-4',
-    lg: 'w-6 h-6',
-  };
+    lg: 'w-6 h-6'};
 
   const statusColors = {
     connected: 'bg-green-500',
     disconnected: 'bg-gray-500',
     warning: 'bg-amber-500',
-    loading: 'bg-blue-500',
-  };
+    loading: 'bg-blue-500'};
 
   const glowColors = {
     connected: 'bg-green-400',
     disconnected: 'bg-gray-400',
     warning: 'bg-amber-400',
-    loading: 'bg-blue-400',
-  };
+    loading: 'bg-blue-400'};
 
   return (
     <div className="flex items-center gap-2">
@@ -195,19 +185,16 @@ export const ConnectionNode: React.FC<ConnectionNodeProps> = ({
   sublabel,
   connected,
   gradient,
-  size = 'md',
-}) => {
+  size = 'md'}) => {
   const sizeClasses = {
     sm: 'w-14 h-14',
     md: 'w-20 h-20',
-    lg: 'w-24 h-24',
-  };
+    lg: 'w-24 h-24'};
 
   const iconSizes = {
     sm: 'w-6 h-6',
     md: 'w-8 h-8',
-    lg: 'w-10 h-10',
-  };
+    lg: 'w-10 h-10'};
 
   return (
     <div className="flex flex-col items-center group">
@@ -243,8 +230,7 @@ export const ConnectionLine: React.FC<ConnectionLineProps> = ({
   active,
   label,
   direction = 'horizontal',
-  animated = true,
-}) => {
+  animated = true}) => {
   const isHorizontal = direction === 'horizontal';
 
   return (
@@ -292,8 +278,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   subtext,
   gradient,
   trend,
-  onClick,
-}) => (
+  onClick}) => (
   <GlassCard className="p-5 group" hover onClick={onClick}>
     <div className="flex items-start justify-between">
       <div className="flex-1">
@@ -344,8 +329,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   tabs,
   activeTab,
   onTabChange,
-  variant = 'pills',
-}) => {
+  variant = 'pills'}) => {
   if (variant === 'cards') {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -441,8 +425,7 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   defaultOpen = false,
   badge,
   gradient = 'from-blue-500 to-cyan-500',
-  actions,
-}) => {
+  actions}) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -472,8 +455,7 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
         ref={contentRef}
         className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'opacity-100' : 'opacity-0'}`}
         style={{
-          maxHeight: isOpen ? contentRef.current?.scrollHeight ? `${contentRef.current.scrollHeight + 100}px` : '2000px' : '0px',
-        }}
+          maxHeight: isOpen ? contentRef.current?.scrollHeight ? `${contentRef.current.scrollHeight + 100}px` : '2000px' : '0px'}}
       >
         <div className="p-4 pt-0 border-t border-white/5">{children}</div>
       </div>
@@ -494,8 +476,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   code,
   language = 'bash',
   showLineNumbers = false,
-  maxHeight = '400px',
-}) => {
+  maxHeight = '400px'}) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -569,13 +550,11 @@ export const Step: React.FC<StepProps> = ({
   title,
   children,
   isLast = false,
-  status = 'pending',
-}) => {
+  status = 'pending'}) => {
   const statusStyles = {
     pending: 'bg-gray-700 text-gray-400',
     active: 'bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25 animate-pulse',
-    completed: 'bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25',
-  };
+    completed: 'bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25'};
 
   return (
     <div className="flex gap-4">
@@ -612,8 +591,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   onChange,
   placeholder = 'Search...',
   onClear,
-  loading = false,
-}) => (
+  loading = false}) => (
   <div className="relative group">
     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
       {loading ? (
@@ -653,16 +631,14 @@ interface TooltipProps {
 export const Tooltip: React.FC<TooltipProps> = ({
   content,
   children,
-  position = 'top',
-}) => {
+  position = 'top'}) => {
   const [isVisible, setIsVisible] = useState(false);
 
   const positionClasses = {
     top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
     bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',
     left: 'right-full top-1/2 -translate-y-1/2 mr-2',
-    right: 'left-full top-1/2 -translate-y-1/2 ml-2',
-  };
+    right: 'left-full top-1/2 -translate-y-1/2 ml-2'};
 
   return (
     <div
@@ -699,20 +675,17 @@ export const Badge: React.FC<BadgeProps> = ({
   children,
   variant = 'default',
   size = 'md',
-  pulse = false,
-}) => {
+  pulse = false}) => {
   const variantStyles = {
     default: 'bg-gray-700 text-gray-300',
     success: 'bg-green-500/20 text-green-400 border border-green-500/30',
     warning: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
     error: 'bg-red-500/20 text-red-400 border border-red-500/30',
-    info: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
-  };
+    info: 'bg-blue-500/20 text-blue-400 border border-blue-500/30'};
 
   const sizeStyles = {
     sm: 'px-2 py-0.5 text-xs',
-    md: 'px-3 py-1 text-sm',
-  };
+    md: 'px-3 py-1 text-sm'};
 
   return (
     <span className={`inline-flex items-center gap-1 rounded-full font-medium ${variantStyles[variant]} ${sizeStyles[size]} ${pulse ? 'animate-pulse' : ''}`}>
@@ -738,8 +711,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   icon: Icon,
   title,
   description,
-  action,
-}) => (
+  action}) => (
   <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
     <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mb-6">
       <Icon className="w-10 h-10 text-gray-500" />
@@ -772,5 +744,4 @@ export default {
   SearchInput,
   Tooltip,
   Badge,
-  EmptyState,
-};
+  EmptyState};

@@ -18,16 +18,15 @@ import {
   ChevronDown, Box, Camera, Map, FolderOpen,
   GitBranch, Palette, Zap, Film, Volume2, Mountain, Puzzle,
   MousePointer, Terminal, Star, StarOff, CheckCircle,
-  XCircle, AlertCircle, Loader2, Copy,
+  XCircle, Loader2, Copy,
   LayoutGrid, List, Key, Trash2, Plus, Eye, EyeOff,
   Monitor, Save, Undo, Redo, X,
-  ArrowRight, Sparkles, History, BookOpen, Command,
+  ArrowRight, Sparkles, History, BookOpen,
   Download, Package, Plug, Shield, ExternalLink, Check,
   HelpCircle,
   Globe, Cloud, CloudOff, Cpu,
   Gauge, Layers, Wrench, Target, Crosshair,
-  Rocket, Gamepad2, Mic
-} from 'lucide-react';
+  Rocket} from 'lucide-react';
 import { MCP_TOOLS, MCP_CATEGORIES, QUICK_ACTIONS, MCPTool } from '../data/mcpTools';
 import ViewportPreview from '../components/ViewportPreview';
 import SceneBuilder from '../components/SceneBuilder';

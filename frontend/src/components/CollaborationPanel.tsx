@@ -17,18 +17,16 @@
  * - "Who's online"
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef} from 'react';
 import {
-  Users, MessageSquare, Activity, Eye, EyeOff,
+  Users, MessageSquare, Activity, Eye,
   Lock, Unlock, UserPlus, UserMinus, Send,
-  Video, VideoOff, Mic, MicOff, Settings,
-  Bell, BellOff, ChevronDown, ChevronUp,
-  Circle, CheckCircle, XCircle, AlertCircle,
-  Camera, Share2, Copy, ExternalLink,
-  Maximize2, Minimize2, MoreVertical,
-  Crown, Shield, User, Clock, Zap,
-  MousePointer, Move, RotateCcw, Trash2,
-  Plus, X, Search, Filter, RefreshCw
+  Video, VideoOff,
+  Bell, BellOff, ChevronDown, CheckCircle,
+  Camera, Copy, Minimize2,
+  Crown, Shield, User,
+  MousePointer, Move, Trash2,
+  Plus, X, Search, RefreshCw
 } from 'lucide-react';
 
 // Types
@@ -113,8 +111,7 @@ const MOCK_TEAM_MEMBERS: TeamMember[] = [
     currentAction: 'Editing Level',
     selectedActors: ['BP_Player', 'SM_Chair'],
     joinedAt: new Date(Date.now() - 3600000),
-    lastActiveAt: new Date(),
-  },
+    lastActiveAt: new Date()},
   {
     id: '2',
     name: 'Sarah Chen',
@@ -126,8 +123,7 @@ const MOCK_TEAM_MEMBERS: TeamMember[] = [
     currentAction: 'Working on Materials',
     selectedActors: ['M_Wood', 'M_Metal'],
     joinedAt: new Date(Date.now() - 7200000),
-    lastActiveAt: new Date(Date.now() - 60000),
-  },
+    lastActiveAt: new Date(Date.now() - 60000)},
   {
     id: '3',
     name: 'Mike Johnson',
@@ -138,8 +134,7 @@ const MOCK_TEAM_MEMBERS: TeamMember[] = [
     color: '#F59E0B',
     currentAction: 'Away',
     joinedAt: new Date(Date.now() - 10800000),
-    lastActiveAt: new Date(Date.now() - 300000),
-  },
+    lastActiveAt: new Date(Date.now() - 300000)},
   {
     id: '4',
     name: 'Emily Davis',
@@ -150,8 +145,7 @@ const MOCK_TEAM_MEMBERS: TeamMember[] = [
     color: '#EF4444',
     currentAction: 'Reviewing Scene',
     joinedAt: new Date(Date.now() - 1800000),
-    lastActiveAt: new Date(Date.now() - 120000),
-  },
+    lastActiveAt: new Date(Date.now() - 120000)},
 ];
 
 const MOCK_ACTIVITIES: ActivityItem[] = [
@@ -163,8 +157,7 @@ const MOCK_ACTIVITIES: ActivityItem[] = [
     action: 'Created new material',
     target: 'M_GlowingMetal',
     timestamp: new Date(Date.now() - 60000),
-    type: 'create',
-  },
+    type: 'create'},
   {
     id: '2',
     userId: '1',
@@ -174,8 +167,7 @@ const MOCK_ACTIVITIES: ActivityItem[] = [
     target: 'BP_Player',
     details: 'Position: (100, 200, 0)',
     timestamp: new Date(Date.now() - 120000),
-    type: 'modify',
-  },
+    type: 'modify'},
   {
     id: '3',
     userId: '3',
@@ -184,8 +176,7 @@ const MOCK_ACTIVITIES: ActivityItem[] = [
     action: 'Locked actor',
     target: 'SM_MainBuilding',
     timestamp: new Date(Date.now() - 180000),
-    type: 'lock',
-  },
+    type: 'lock'},
   {
     id: '4',
     userId: '4',
@@ -193,8 +184,7 @@ const MOCK_ACTIVITIES: ActivityItem[] = [
     userColor: '#EF4444',
     action: 'Joined the session',
     timestamp: new Date(Date.now() - 300000),
-    type: 'join',
-  },
+    type: 'join'},
   {
     id: '5',
     userId: '2',
@@ -202,8 +192,7 @@ const MOCK_ACTIVITIES: ActivityItem[] = [
     userColor: '#10B981',
     action: 'Took viewport screenshot',
     timestamp: new Date(Date.now() - 600000),
-    type: 'viewport',
-  },
+    type: 'viewport'},
 ];
 
 const MOCK_CHAT_MESSAGES: ChatMessage[] = [
@@ -214,8 +203,7 @@ const MOCK_CHAT_MESSAGES: ChatMessage[] = [
     userColor: '#10B981',
     content: 'Hey team! I just finished the new material for the main building.',
     timestamp: new Date(Date.now() - 300000),
-    type: 'text',
-  },
+    type: 'text'},
   {
     id: '2',
     userId: '1',
@@ -223,8 +211,7 @@ const MOCK_CHAT_MESSAGES: ChatMessage[] = [
     userColor: '#3B82F6',
     content: 'Looks great! Can you apply it to the entrance as well?',
     timestamp: new Date(Date.now() - 240000),
-    type: 'text',
-  },
+    type: 'text'},
   {
     id: '3',
     userId: '4',
@@ -232,8 +219,7 @@ const MOCK_CHAT_MESSAGES: ChatMessage[] = [
     userColor: '#EF4444',
     content: 'I\'m reviewing the lighting setup. The shadows look a bit harsh.',
     timestamp: new Date(Date.now() - 180000),
-    type: 'text',
-  },
+    type: 'text'},
   {
     id: '4',
     userId: 'system',
@@ -241,8 +227,7 @@ const MOCK_CHAT_MESSAGES: ChatMessage[] = [
     userColor: '#6B7280',
     content: 'Mike Johnson went away',
     timestamp: new Date(Date.now() - 120000),
-    type: 'system',
-  },
+    type: 'system'},
 ];
 
 const MOCK_LOCKED_ACTORS: LockedActor[] = [
@@ -251,8 +236,7 @@ const MOCK_LOCKED_ACTORS: LockedActor[] = [
     actorName: 'SM_MainBuilding',
     lockedBy: '3',
     lockedByName: 'Mike Johnson',
-    lockedAt: new Date(Date.now() - 180000),
-  },
+    lockedAt: new Date(Date.now() - 180000)},
 ];
 
 // Status colors
@@ -260,15 +244,13 @@ const STATUS_COLORS = {
   online: 'bg-green-500',
   away: 'bg-yellow-500',
   busy: 'bg-red-500',
-  offline: 'bg-gray-500',
-};
+  offline: 'bg-gray-500'};
 
 // Role icons
 const ROLE_ICONS = {
   admin: Crown,
   editor: Shield,
-  viewer: User,
-};
+  viewer: User};
 
 // Activity type icons
 const ACTIVITY_ICONS = {
@@ -281,19 +263,16 @@ const ACTIVITY_ICONS = {
   chat: MessageSquare,
   join: UserPlus,
   leave: UserMinus,
-  viewport: Camera,
-};
+  viewport: Camera};
 
 const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
-  isConnected,
+  
   currentUserId = '1',
   currentUserName = 'You',
   onShareViewport,
   onFollowUser,
-  onLockActor,
   onUnlockActor,
-  onSendChat,
-}) => {
+  onSendChat}) => {
   // State
   const [activeTab, setActiveTab] = useState<'team' | 'activity' | 'chat'>('team');
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(MOCK_TEAM_MEMBERS);
@@ -331,8 +310,7 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
       // Update last active times
       setTeamMembers(prev => prev.map(member => ({
         ...member,
-        lastActiveAt: member.status === 'online' ? new Date() : member.lastActiveAt,
-      })));
+        lastActiveAt: member.status === 'online' ? new Date() : member.lastActiveAt})));
     }, 30000);
 
     return () => clearInterval(interval);
@@ -349,8 +327,7 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
       userColor: '#3B82F6',
       content: newMessage,
       timestamp: new Date(),
-      type: 'text',
-    };
+      type: 'text'};
 
     setChatMessages(prev => [...prev, message]);
     setNewMessage('');
@@ -364,8 +341,7 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
       userColor: '#3B82F6',
       action: 'Sent a message',
       timestamp: new Date(),
-      type: 'chat',
-    };
+      type: 'chat'};
     setActivities(prev => [activity, ...prev]);
   };
 
@@ -429,8 +405,7 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
         userColor: '#3B82F6',
         action: `Invited ${inviteEmail} as ${inviteRole}`,
         timestamp: new Date(),
-        type: 'join',
-      };
+        type: 'join'};
       setActivities(prev => [activity, ...prev]);
 
       setInviteSent(true);

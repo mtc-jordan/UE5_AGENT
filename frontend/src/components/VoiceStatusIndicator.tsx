@@ -9,8 +9,8 @@
  * - Tooltip with status info
  */
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Volume2, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect} from 'react';
+import { Mic, MicOff, AlertCircle } from 'lucide-react';
 
 interface VoiceStatusIndicatorProps {
   isListening: boolean;
@@ -27,8 +27,7 @@ const VoiceStatusIndicator: React.FC<VoiceStatusIndicatorProps> = ({
   isConnected,
   onToggle,
   transcript,
-  error,
-}) => {
+  error}) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
 

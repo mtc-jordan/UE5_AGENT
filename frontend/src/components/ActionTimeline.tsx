@@ -16,8 +16,6 @@ import {
   Redo2,
   ChevronDown,
   ChevronUp,
-  ChevronLeft,
-  ChevronRight,
   Trash2,
   Clock,
   CheckCircle2,
@@ -26,8 +24,6 @@ import {
   Image,
   Layers,
   Move,
-  RotateCw,
-  Maximize2,
   Palette,
   Code,
   Box,
@@ -35,7 +31,6 @@ import {
   ZoomIn,
   ZoomOut,
   RefreshCw,
-  Play,
   Rewind,
   FastForward
 } from 'lucide-react';
@@ -285,7 +280,7 @@ const TimelineItem: React.FC<{
   onSelect: () => void;
   onUndo: () => void;
   isUndoing: boolean;
-}> = ({ action, isFirst, isLast, onSelect, onUndo, isUndoing }) => {
+}> = ({ action, isLast, onSelect, onUndo, isUndoing }) => {
   const Icon = ACTION_ICONS[action.action_type] || History;
   const isUndone = action.status === 'undone';
   const isFailed = action.status === 'failed';
@@ -406,7 +401,7 @@ export const ActionTimeline: React.FC<ActionTimelineProps> = ({
   // State
   const [isExpanded, setIsExpanded] = useState(true);
   const [actions, setActions] = useState<ActionRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [ setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedAction, setSelectedAction] = useState<ActionRecord | null>(null);
   const [undoingAction, setUndoingAction] = useState<string | null>(null);

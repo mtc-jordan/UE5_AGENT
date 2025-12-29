@@ -4,7 +4,7 @@
  * Side-by-side comparison of AI model responses.
  */
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect} from 'react'
 import {
   Scale,
   Play,
@@ -38,15 +38,11 @@ import {
   deleteSession,
   updateSession,
   rateResult,
-  getComparisonStats,
   ModelInfo,
   ComparisonSession,
-  ComparisonResult,
   StreamEvent,
   formatResponseTime,
-  formatTokenCount,
-  getProviderColor
-} from '../lib/comparison-api'
+  formatTokenCount} from '../lib/comparison-api'
 import ComparisonMetrics from '../components/ComparisonMetrics'
 
 // Icon mapping

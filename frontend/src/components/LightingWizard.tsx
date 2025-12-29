@@ -13,14 +13,11 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Sun, Moon, Sunrise, Sunset, Cloud, CloudRain, CloudSnow,
-  Lightbulb, Sparkles, Zap, Camera, Film, Heart, Skull,
-  Building2, TreePine, Mountain, Waves, Star, Flame,
-  Settings, RefreshCw, Play, Pause, ChevronDown, ChevronUp,
-  Loader2, CheckCircle, AlertCircle, Wand2, Eye, EyeOff,
-  SlidersHorizontal, Palette, Clock, Volume2, X, Plus, Minus,
-  RotateCcw, Download, Upload, Copy, Layers, Target
-} from 'lucide-react';
+  Sun, Moon, Sunrise, Sunset, Cloud,
+  Lightbulb, Sparkles, Zap, Camera, Film, Heart, Skull, Waves, Star,
+  Settings, ChevronDown, ChevronUp,
+  Loader2, CheckCircle, Wand2, Eye, EyeOff,
+  SlidersHorizontal, Palette, Clock, Volume2, Layers} from 'lucide-react';
 
 // Types
 interface LightingPreset {
@@ -140,8 +137,7 @@ const LIGHTING_PRESETS: LightingPreset[] = [
       exposure: 1.1,
       contrast: 0.95,
       saturation: 0.95,
-      temperature: 5800,
-    }
+      temperature: 5800}
   },
   {
     id: 'studio-dramatic',
@@ -197,8 +193,7 @@ const LIGHTING_PRESETS: LightingPreset[] = [
       exposure: 1.0,
       contrast: 1.05,
       saturation: 1.1,
-      temperature: 5500,
-    }
+      temperature: 5500}
   },
   {
     id: 'outdoor-golden-hour',
@@ -223,8 +218,7 @@ const LIGHTING_PRESETS: LightingPreset[] = [
       exposure: 1.1,
       contrast: 1.1,
       saturation: 1.2,
-      temperature: 3500,
-    }
+      temperature: 3500}
   },
   {
     id: 'outdoor-overcast',
@@ -249,8 +243,7 @@ const LIGHTING_PRESETS: LightingPreset[] = [
       exposure: 1.0,
       contrast: 0.9,
       saturation: 0.85,
-      temperature: 6500,
-    }
+      temperature: 6500}
   },
   {
     id: 'outdoor-night',
@@ -275,8 +268,7 @@ const LIGHTING_PRESETS: LightingPreset[] = [
       exposure: 0.8,
       contrast: 1.2,
       saturation: 0.7,
-      temperature: 8000,
-    }
+      temperature: 8000}
   },
 
   // Cinematic Presets
@@ -303,8 +295,7 @@ const LIGHTING_PRESETS: LightingPreset[] = [
       exposure: 0.85,
       contrast: 1.5,
       saturation: 0.0,
-      temperature: 5000,
-    }
+      temperature: 5000}
   },
   {
     id: 'cinematic-blockbuster',
@@ -329,8 +320,7 @@ const LIGHTING_PRESETS: LightingPreset[] = [
       exposure: 1.05,
       contrast: 1.2,
       saturation: 1.15,
-      temperature: 4800,
-    }
+      temperature: 4800}
   },
   {
     id: 'cinematic-scifi',
@@ -387,8 +377,7 @@ const LIGHTING_PRESETS: LightingPreset[] = [
       exposure: 1.1,
       contrast: 0.95,
       saturation: 1.1,
-      temperature: 3200,
-    }
+      temperature: 3200}
   },
   {
     id: 'mood-horror',
@@ -413,8 +402,7 @@ const LIGHTING_PRESETS: LightingPreset[] = [
       exposure: 0.7,
       contrast: 1.4,
       saturation: 0.6,
-      temperature: 2500,
-    }
+      temperature: 2500}
   },
   {
     id: 'mood-peaceful',
@@ -439,8 +427,7 @@ const LIGHTING_PRESETS: LightingPreset[] = [
       exposure: 1.05,
       contrast: 1.0,
       saturation: 1.05,
-      temperature: 5800,
-    }
+      temperature: 5800}
   },
   {
     id: 'mood-mysterious',
@@ -465,8 +452,7 @@ const LIGHTING_PRESETS: LightingPreset[] = [
       exposure: 0.9,
       contrast: 1.15,
       saturation: 0.9,
-      temperature: 6500,
-    }
+      temperature: 6500}
   },
 ];
 
@@ -504,8 +490,7 @@ const LightingWizard: React.FC<LightingWizardProps> = ({
   authToken,
   isConnected,
   onLightingApplied,
-  onVoiceCommand,
-}) => {
+  onVoiceCommand}) => {
   // State
   const [selectedPreset, setSelectedPreset] = useState<LightingPreset | null>(null);
   const [currentSettings, setCurrentSettings] = useState<LightingSettings>(LIGHTING_PRESETS[0].settings);
@@ -514,8 +499,8 @@ const LightingWizard: React.FC<LightingWizardProps> = ({
   const [isExpanded, setIsExpanded] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [previewEnabled, setPreviewEnabled] = useState(true);
-  const [recentPresets, setRecentPresets] = useState<string[]>([]);
-  const [customPresets, setCustomPresets] = useState<LightingPreset[]>([]);
+  const [ setRecentPresets] = useState<string[]>([]);
+  const [ setCustomPresets] = useState<LightingPreset[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Categories
@@ -565,13 +550,10 @@ const LightingWizard: React.FC<LightingWizardProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
+          'Authorization': `Bearer ${authToken}`},
         body: JSON.stringify({
           preset_id: preset.id,
-          settings: preset.settings,
-        }),
-      });
+          settings: preset.settings})});
 
       if (response.ok) {
         // Add to recent presets
@@ -596,12 +578,9 @@ const LightingWizard: React.FC<LightingWizardProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
+          'Authorization': `Bearer ${authToken}`},
         body: JSON.stringify({
-          settings: currentSettings,
-        }),
-      });
+          settings: currentSettings})});
 
       if (response.ok) {
         onLightingApplied?.({
@@ -612,8 +591,7 @@ const LightingWizard: React.FC<LightingWizardProps> = ({
           category: 'custom',
           color: 'from-violet-500 to-purple-500',
           tags: ['custom'],
-          settings: currentSettings,
-        });
+          settings: currentSettings});
       }
     } catch (error) {
       console.error('Failed to apply custom settings:', error);
@@ -687,8 +665,7 @@ const LightingWizard: React.FC<LightingWizardProps> = ({
               : 'radial-gradient(circle, #E0E0E0 0%, #A0A0A0 100%)',
             boxShadow: currentSettings.timeOfDay > 6 && currentSettings.timeOfDay < 18
               ? '0 0 20px #FFD700'
-              : '0 0 15px #E0E0E0',
-          }}
+              : '0 0 15px #E0E0E0'}}
         />
         
         {/* Time markers */}

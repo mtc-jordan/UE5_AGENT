@@ -14,7 +14,7 @@
 import React from 'react';
 import { 
   Globe, Cpu, Gamepad2, Wifi, WifiOff, 
-  CheckCircle, AlertCircle, Loader2, Clock,
+  CheckCircle, AlertCircle,
   Server, Plug, Zap
 } from 'lucide-react';
 
@@ -41,8 +41,7 @@ interface EnhancedConnectionStatusProps {
 
 const EnhancedConnectionStatus: React.FC<EnhancedConnectionStatusProps> = ({
   agentStatus,
-  className = '',
-}) => {
+  className = ''}) => {
   const isFullyConnected = agentStatus.connected && agentStatus.mcp_connected;
   const isPartiallyConnected = agentStatus.connected && !agentStatus.mcp_connected;
 

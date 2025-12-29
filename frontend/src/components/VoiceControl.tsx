@@ -24,10 +24,8 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Mic, MicOff, Volume2, Settings, X,
-  Loader2, CheckCircle, AlertCircle,
-  Languages, History, Trash2,
-  ChevronDown, ChevronUp, Sparkles, Zap,
+  Mic, MicOff, Settings,
+  Loader2, CheckCircle, AlertCircle, History, Trash2, ChevronUp, Sparkles,
   Home, Lightbulb, Film, Palette, Image,
   Gauge, Package, Camera, Gamepad2, Navigation,
   MousePointer, RotateCcw, HelpCircle, Users, Wand2
@@ -89,8 +87,7 @@ const CATEGORY_ICONS: Record<CommandCategory, React.ReactNode> = {
   selection: <MousePointer className="w-4 h-4" />,
   transform: <RotateCcw className="w-4 h-4" />,
   collaboration: <Users className="w-4 h-4" />,
-  scene_generation: <Wand2 className="w-4 h-4" />,
-};
+  scene_generation: <Wand2 className="w-4 h-4" />};
 
 // Category colors
 const CATEGORY_COLORS: Record<CommandCategory, string> = {
@@ -108,8 +105,7 @@ const CATEGORY_COLORS: Record<CommandCategory, string> = {
   selection: 'from-fuchsia-500 to-pink-500',
   transform: 'from-orange-500 to-amber-500',
   collaboration: 'from-violet-500 to-purple-500',
-  scene_generation: 'from-violet-500 to-fuchsia-500',
-};
+  scene_generation: 'from-violet-500 to-fuchsia-500'};
 
 // Check if Web Speech API is supported
 const isSpeechRecognitionSupported = () => {
@@ -125,8 +121,7 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
   onCommand,
   isProcessing,
   isConnected,
-  disabled = false,
-}) => {
+  disabled = false}) => {
   // State
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
@@ -299,9 +294,7 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
       confidence: conf,
       timestamp: new Date(),
       status: 'pending',
-      category: parsedCommand?.category,
-      parsedCommand,
-    };
+      category: parsedCommand?.category};
 
     setCommandHistory(prev => [command, ...prev].slice(0, 50));
     

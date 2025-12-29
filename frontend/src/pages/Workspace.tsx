@@ -8,7 +8,7 @@
  * Version: 2.0.0
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileBrowser } from '../components/FileBrowser';
 import { CodeEditor } from '../components/CodeEditor';
@@ -21,8 +21,7 @@ import {
   searchFiles,
   SearchResult,
   formatFileSize,
-  getFile,
-} from '../lib/workspace-api';
+  getFile} from '../lib/workspace-api';
 
 // =============================================================================
 // TYPES
@@ -45,8 +44,7 @@ interface UploadZoneProps {
 const UploadZone: React.FC<UploadZoneProps> = ({
   projectId,
   currentPath,
-  onUploadComplete,
-}) => {
+  onUploadComplete}) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string[]>([]);
@@ -181,8 +179,7 @@ interface SearchPanelProps {
 const SearchPanel: React.FC<SearchPanelProps> = ({
   projectId,
   onResultClick,
-  onClose,
-}) => {
+  onClose}) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);

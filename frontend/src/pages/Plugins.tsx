@@ -12,27 +12,19 @@ import { useNavigate } from 'react-router-dom';
 import {
   Plus,
   Search,
-  Filter,
   Star,
   Download,
   Play,
-  Settings,
   Trash2,
-  Upload,
   Eye,
-  EyeOff,
   Package,
   Code,
   Clock,
-  CheckCircle,
-  XCircle,
   TrendingUp,
   Zap,
   Grid,
   List,
-  ChevronDown,
-  ExternalLink
-} from 'lucide-react';
+  ChevronDown} from 'lucide-react';
 import {
   pluginsApi,
   marketplaceApi,
@@ -42,9 +34,7 @@ import {
   PluginTemplate,
   PluginCategory,
   CATEGORY_LABELS,
-  CATEGORY_ICONS,
-  STATUS_COLORS
-} from '../lib/plugin-api';
+  CATEGORY_ICONS} from '../lib/plugin-api';
 
 // =============================================================================
 // COMPONENTS
@@ -272,7 +262,7 @@ export default function PluginsPage() {
   const [loading, setLoading] = useState(true);
 
   // Dialogs
-  const [showNewPluginDialog, setShowNewPluginDialog] = useState(false);
+  const [ setShowNewPluginDialog] = useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<PluginTemplate | null>(null);
   const [newPluginName, setNewPluginName] = useState('');

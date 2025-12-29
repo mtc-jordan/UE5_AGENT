@@ -31,7 +31,6 @@ import {
   Plug,
   Terminal,
   FileCode,
-  Folder,
   Zap,
   Shield,
   HelpCircle,
@@ -39,8 +38,7 @@ import {
   ArrowRight,
   Loader2,
   AlertTriangle,
-  Info,
-} from 'lucide-react';
+  Info} from 'lucide-react';
 
 // Types
 interface DownloadItem {
@@ -86,8 +84,7 @@ function CollapsibleSection({
   title,
   icon: Icon,
   children,
-  defaultOpen = false,
-}: {
+  defaultOpen = false}: {
   title: string;
   icon: React.ElementType;
   children: React.ReactNode;
@@ -145,8 +142,7 @@ function CodeBlock({ code, language = 'bash' }: { code: string; language?: strin
 function Step({
   number,
   title,
-  children,
-}: {
+  children}: {
   number: number;
   title: string;
   children: React.ReactNode;
@@ -168,8 +164,7 @@ function Step({
 function DownloadCard({
   item,
   onDownload,
-  isDownloading,
-}: {
+  isDownloading}: {
   item: DownloadItem;
   onDownload: (item: DownloadItem) => void;
   isDownloading: boolean;
@@ -488,8 +483,7 @@ function TroubleshootingSection() {
         'Check if the platform server is running and accessible',
         'Ensure your firewall allows outbound connections on port 443',
         'Try disabling VPN if you\'re using one',
-      ],
-    },
+      ]},
     {
       title: 'MCP Bridge plugin not appearing in UE5',
       solutions: [
@@ -497,8 +491,7 @@ function TroubleshootingSection() {
         'Regenerate project files after adding the plugin',
         'Check the Output Log for any plugin loading errors',
         'Verify you\'re using a compatible UE5 version (5.1-5.4)',
-      ],
-    },
+      ]},
     {
       title: 'Agent shows "Connection Lost" frequently',
       solutions: [
@@ -506,8 +499,7 @@ function TroubleshootingSection() {
         'Increase the reconnection timeout in config.json',
         'Enable "autoReconnect" option in settings',
         'Check if the platform server has rate limiting enabled',
-      ],
-    },
+      ]},
     {
       title: 'MCP tools not executing in UE5',
       solutions: [
@@ -515,8 +507,7 @@ function TroubleshootingSection() {
         'Verify the agent is connected to both platform and UE5',
         'Check if the specific tool category is enabled',
         'Look for error messages in the UE5 Output Log',
-      ],
-    },
+      ]},
     {
       title: 'Plugin compilation errors',
       solutions: [
@@ -524,8 +515,7 @@ function TroubleshootingSection() {
         'Clean and rebuild the project',
         'Check if all plugin dependencies are present',
         'Verify your project is a C++ project (not Blueprint-only)',
-      ],
-    },
+      ]},
   ];
 
   return (

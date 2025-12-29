@@ -13,7 +13,7 @@
  * - Real-time build status updates
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef} from 'react';
 import {
   Wand2,
   Play,
@@ -40,7 +40,6 @@ import {
   Layout,
   Eye,
   EyeOff,
-  Maximize2,
   Grid3X3
 } from 'lucide-react';
 

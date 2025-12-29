@@ -8,7 +8,7 @@
  * Version: 2.0.0
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef} from 'react';
 import {
   WorkspaceFile,
   updateFile,
@@ -17,8 +17,7 @@ import {
   FileVersion,
   getLanguageDisplayName,
   formatFileSize,
-  isFileEditable,
-} from '../lib/workspace-api';
+  isFileEditable} from '../lib/workspace-api';
 
 // =============================================================================
 // TYPES
@@ -80,8 +79,7 @@ const KEYWORDS: Record<string, string[]> = {
     'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally',
     'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'nonlocal',
     'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield',
-  ],
-};
+  ]};
 
 const TYPES: Record<string, string[]> = {
   cpp: [
@@ -95,8 +93,7 @@ const TYPES: Record<string, string[]> = {
   typescript: [
     'string', 'number', 'boolean', 'any', 'void', 'never', 'unknown',
     'object', 'symbol', 'bigint', 'undefined', 'null',
-  ],
-};
+  ]};
 
 function highlightLine(line: string, language: string | null): React.ReactNode[] {
   if (!language || !['cpp', 'javascript', 'typescript', 'python'].includes(language)) {
@@ -204,8 +201,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
   fileId,
   projectId,
   onRestore,
-  onClose,
-}) => {
+  onClose}) => {
   const [versions, setVersions] = useState<FileVersion[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -292,8 +288,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   onSave,
   onClose,
   autoSaveInterval = 30,
-  className = '',
-}) => {
+  className = ''}) => {
   const [content, setContent] = useState('');
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -339,8 +334,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     const lines = text.split('\n');
     setCursorPosition({
       line: lines.length,
-      col: lines[lines.length - 1].length + 1,
-    });
+      col: lines[lines.length - 1].length + 1});
   };
   
   // Handle save

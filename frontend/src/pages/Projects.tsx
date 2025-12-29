@@ -14,10 +14,8 @@ import {
   GitBranch,
   FolderOpen,
   Cpu,
-  ExternalLink,
-  MoreVertical,
-} from 'lucide-react'
-import { formatDate, cn, truncate } from '../lib/utils'
+  ExternalLink} from 'lucide-react'
+import { formatDate, cn} from '../lib/utils'
 
 interface Chat {
   id: number
@@ -55,8 +53,7 @@ export default function Projects() {
     name: '',
     description: '',
     ue_version: '5.4',
-    project_path: '',
-  })
+    project_path: ''})
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -138,8 +135,7 @@ export default function Projects() {
         project_id: projectId,
         title: 'New Conversation',
         mode: 'team',
-        model: 'deepseek-chat',
-      })
+        model: 'deepseek-chat'})
       navigate(`/chat/${response.data.id}`)
     } catch (error) {
       console.error('Failed to create chat:', error)
@@ -152,8 +148,7 @@ export default function Projects() {
       name: project.name,
       description: project.description || '',
       ue_version: project.ue_version,
-      project_path: project.project_path || '',
-    })
+      project_path: project.project_path || ''})
   }
 
   const closeModal = () => {
