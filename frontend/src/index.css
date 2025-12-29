@@ -2,7 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom animations */
+/* Design System */
+@import './styles/design-tokens.css';
 @import './styles/animations.css';
 
 @layer base {
