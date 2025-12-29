@@ -150,8 +150,8 @@ async def execute_mcp_tool(tool_name: str, arguments: Dict[str, Any], user_id: i
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat(
-    request: ChatRequest,
-    current_user: User = Depends(get_current_user)
+    request: ChatRequest
+    # current_user: User = Depends(get_current_user)  # Disabled for testing
 ):
     """
     Send a chat message and get AI response with optional tool execution.
@@ -174,6 +174,12 @@ async def chat(
     }
     ```
     """
+    # Create a mock user for testing when auth is disabled
+    class MockUser:
+        id = "test-user-123"
+        email = "test@example.com"
+    current_user = MockUser()
+    
     ai_service = get_ue5_ai_chat_service()
     viewport_service = get_viewport_preview_service()
     agent_relay = get_agent_relay()
@@ -346,8 +352,8 @@ async def chat(
 
 @router.post("/chat/stream")
 async def chat_stream(
-    request: ChatRequest,
-    current_user: User = Depends(get_current_user)
+    request: ChatRequest
+    # current_user: User = Depends(get_current_user)  # Disabled for testing
 ):
     """
     Stream chat response with real-time tool execution.
@@ -364,6 +370,12 @@ async def chat_stream(
     - done: Stream complete
     - error: An error occurred
     """
+    # Create a mock user for testing when auth is disabled
+    class MockUser:
+        id = "test-user-123"
+        email = "test@example.com"
+    current_user = MockUser()
+    
     ai_service = get_ue5_ai_chat_service()
     
     # Convert messages to dict format

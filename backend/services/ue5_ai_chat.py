@@ -20,10 +20,14 @@ Best Practices Applied:
 import json
 import logging
 import asyncio
+import os
 from typing import AsyncGenerator, Optional, List, Dict, Any
 from openai import AsyncOpenAI
 from dataclasses import dataclass
 from enum import Enum
+
+# Import API key management from settings
+from api.api_keys import get_api_key
 
 logger = logging.getLogger(__name__)
 
@@ -787,14 +791,83 @@ class UE5AIChatService:
     
     Uses OpenAI-compatible API with function calling to convert
     natural language commands into MCP tool calls.
+    Supports multiple AI providers: OpenAI, DeepSeek, Google Gemini.
     """
     
     def __init__(self):
-        # Use the pre-configured OpenAI client (API key and base URL from environment)
-        self.client = AsyncOpenAI()
-        self.model = "gpt-4.1-mini"  # Fast and capable model for function calling
+        self.model = "gpt-4.1-mini"  # Default model for function calling
         self.tools = MCP_TOOLS_DEFINITIONS
         self.system_prompt = UE5_SYSTEM_PROMPT
+        
+        # Model to provider mapping
+        self.model_providers = {
+            "deepseek-chat": "deepseek",
+            "deepseek-reasoner": "deepseek",
+            "gpt-4.1-mini": "openai",
+            "gpt-4.1-nano": "openai",
+            "gpt-4o": "openai",
+            "gpt-4o-mini": "openai",
+            "gemini-2.5-flash": "google",
+            "gemini-2.5-flash-lite": "google",
+            "gemini-2.5-pro": "google",
+            "gemini-2.0-flash": "google",
+            "claude-3-5-sonnet": "anthropic",
+            "claude-3-opus": "anthropic",
+            "claude-3-haiku": "anthropic",
+        }
+        
+        # Provider base URLs
+        self.provider_base_urls = {
+            "openai": os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+            "deepseek": os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"),
+            "google": os.getenv("GOOGLE_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai"),
+            "anthropic": os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com/v1"),
+        }
+        
+        # Cache for clients (created on demand)
+        self._clients: Dict[str, AsyncOpenAI] = {}
+    
+    def _get_client_for_model(self, model: str) -> AsyncOpenAI:
+        """
+        Get the appropriate client for the given model.
+        Uses API keys from Settings page configuration.
+        """
+        provider = self.model_providers.get(model, "openai")
+        
+        # Check if we already have a client for this provider
+        if provider in self._clients:
+            return self._clients[provider]
+        
+        # Get API key from Settings (stored in .api_keys.json) or environment
+        api_key = get_api_key(provider)
+        
+        if not api_key:
+            logger.warning(f"No API key found for provider {provider}, falling back to default")
+            # Fall back to default OpenAI client
+            if "openai" not in self._clients:
+                self._clients["openai"] = AsyncOpenAI()
+            return self._clients["openai"]
+        
+        # Create client with the appropriate base URL and API key
+        base_url = self.provider_base_urls.get(provider)
+        
+        # Special handling for Anthropic (doesn't use OpenAI-compatible API for tool calling)
+        # For now, we'll use OpenAI-compatible providers only
+        if provider == "anthropic":
+            logger.warning(f"Anthropic models don't support OpenAI-compatible tool calling, falling back to OpenAI")
+            if "openai" not in self._clients:
+                openai_key = get_api_key("openai")
+                self._clients["openai"] = AsyncOpenAI(api_key=openai_key) if openai_key else AsyncOpenAI()
+            return self._clients["openai"]
+        
+        # Create and cache the client
+        self._clients[provider] = AsyncOpenAI(
+            api_key=api_key,
+            base_url=base_url
+        )
+        
+        logger.info(f"Created client for provider {provider} with base URL {base_url}")
+        return self._clients[provider]
     
     async def chat(
         self,
@@ -818,6 +891,9 @@ class UE5AIChatService:
         # Determine which model to use
         model_to_use = model or self.model
         
+        # Get the appropriate client for this model
+        client = self._get_client_for_model(model_to_use)
+        
         # Prepare messages with system prompt
         full_messages = [
             {"role": "system", "content": self.system_prompt}
@@ -825,7 +901,7 @@ class UE5AIChatService:
         
         try:
             # Call the AI model with tools
-            response = await self.client.chat.completions.create(
+            response = await client.chat.completions.create(
                 model=model_to_use,
                 messages=full_messages,
                 tools=self.tools,

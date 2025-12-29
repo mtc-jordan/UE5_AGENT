@@ -683,15 +683,18 @@ export default function UE5Connection() {
     }
   };
 
-  const processAiCommand = async () => {
-    if (!aiCommand.trim()) return;
+  const processAiCommand = async (messageOverride?: string, modelOverride?: string) => {
+    const commandToProcess = messageOverride || aiCommand;
+    const modelToUse = modelOverride || selectedModel;
+    
+    if (!commandToProcess.trim()) return;
 
     setIsAiProcessing(true);
     setAiResponse(null);
     setAiToolCalls([]);
 
     // Add user message to chat history
-    const userMessage = { role: 'user', content: aiCommand };
+    const userMessage = { role: 'user', content: commandToProcess, timestamp: new Date() };
     setChatHistory(prev => [...prev, userMessage]);
 
     try {
@@ -706,7 +709,7 @@ export default function UE5Connection() {
             role: m.role,
             content: m.content
           })),
-          model: autoSelectModel ? null : selectedModel,
+          model: autoSelectModel ? null : modelToUse,
           auto_select_model: autoSelectModel,
           execute_tools: true,
           auto_capture: autoCapture
@@ -1779,9 +1782,10 @@ export default function UE5Connection() {
             <div className="lg:col-span-1">
               <VoiceControl
                 onCommand={(command, parsedCommand) => {
+                  let commandToExecute = command;
                   if (parsedCommand) {
-                    const contextualCommand = `[Voice Command - ${parsedCommand.category}] ${command}`;
-                    setAiCommand(contextualCommand);
+                    commandToExecute = `[Voice Command - ${parsedCommand.category}] ${command}`;
+                    setAiCommand(commandToExecute);
                     setChatHistory(prev => [...prev, {
                       role: 'assistant',
                       content: `🎙️ Voice command recognized: "${command}" → ${parsedCommand.category}/${parsedCommand.action}`,
@@ -1790,7 +1794,7 @@ export default function UE5Connection() {
                   } else {
                     setAiCommand(command);
                   }
-                  processAiCommand();
+                  processAiCommand(commandToExecute);
                 }}
                 isProcessing={isAiProcessing}
                 isConnected={agentStatus.mcp_connected}
@@ -1804,7 +1808,7 @@ export default function UE5Connection() {
                 onSendMessage={(message, model) => {
                   setAiCommand(message);
                   setSelectedModel(model);
-                  processAiCommand();
+                  processAiCommand(message, model);
                 }}
                 onClearHistory={() => setChatHistory([])}
                 isProcessing={isAiProcessing}
@@ -1826,7 +1830,7 @@ export default function UE5Connection() {
               const exec = commandExecutions.find(e => e.id === executionId);
               if (exec) {
                 setAiCommand(exec.command);
-                processAiCommand();
+                processAiCommand(exec.command);
               }
             }}
             onCancel={() => {
@@ -1845,10 +1849,11 @@ export default function UE5Connection() {
             redoHistory={redoHistory}
             onRetry={(modifiedCommand) => {
               setCurrentError(null);
+              const commandToExecute = modifiedCommand || failedCommand || aiCommand;
               if (modifiedCommand) {
                 setAiCommand(modifiedCommand);
               }
-              processAiCommand();
+              processAiCommand(commandToExecute);
             }}
             onUndo={() => {
               if (undoHistory.length > 0) {
@@ -1857,7 +1862,7 @@ export default function UE5Connection() {
                 setRedoHistory(prev => [...prev, action]);
                 if (action.undoCommand) {
                   setAiCommand(action.undoCommand);
-                  processAiCommand();
+                  processAiCommand(action.undoCommand);
                 }
               }
             }}
@@ -1867,7 +1872,7 @@ export default function UE5Connection() {
                 setRedoHistory(prev => prev.slice(0, -1));
                 setUndoHistory(prev => [...prev, action]);
                 setAiCommand(action.command);
-                processAiCommand();
+                processAiCommand(action.command);
               }
             }}
             onDismiss={() => {
@@ -1877,7 +1882,7 @@ export default function UE5Connection() {
             onApplySuggestion={(suggestion) => {
               if (suggestion.autoFix) {
                 setAiCommand(suggestion.autoFix);
-                processAiCommand();
+                processAiCommand(suggestion.autoFix);
               }
             }}
             isConnected={agentStatus.mcp_connected}
@@ -1991,7 +1996,7 @@ export default function UE5Connection() {
             isConnected={agentStatus.mcp_connected}
             onExecuteCommand={(command) => {
               setAiCommand(command);
-              processAiCommand();
+              processAiCommand(command);
             }}
           />
 
@@ -1999,7 +2004,7 @@ export default function UE5Connection() {
           <SceneQuickActions
             onExecuteAction={(action) => {
               setAiCommand(action);
-              processAiCommand();
+              processAiCommand(action);
             }}
             isConnected={agentStatus.mcp_connected}
           />
@@ -2123,7 +2128,7 @@ export default function UE5Connection() {
                 command = command.replace(`{{${param.name}}}`, String(value));
               });
               setAiCommand(command);
-              processAiCommand();
+              processAiCommand(command);
               setChatHistory(prev => [...prev, {
                 role: 'assistant',
                 content: `Executing template: ${template.name}`,
@@ -2139,7 +2144,7 @@ export default function UE5Connection() {
               
               for (const step of workflow.steps) {
                 setAiCommand(step.command);
-                await processAiCommand();
+                await processAiCommand(step.command);
                 if (step.waitForCompletion) {
                   await new Promise(resolve => setTimeout(resolve, 1000));
                 }
