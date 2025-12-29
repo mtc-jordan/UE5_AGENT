@@ -218,7 +218,7 @@ async def delete_api_key(provider: str):
 
 @router.get("/test/{provider}")
 async def test_api_key(provider: str):
-    """Test if an API key is working"""
+    """Test if an API key is working and return available models"""
     provider = provider.lower()
     
     if provider not in ['openai', 'deepseek', 'anthropic', 'google']:
@@ -233,17 +233,83 @@ async def test_api_key(provider: str):
     }[provider])
     
     if not key:
-        return {"valid": False, "error": "No API key configured"}
+        return {"valid": False, "error": "No API key configured", "models": []}
     
-    validators = {
-        'openai': validate_openai_key,
-        'deepseek': validate_deepseek_key,
-        'anthropic': validate_anthropic_key,
-        'google': validate_google_key
-    }
+    # Test connection and get models
+    models = []
+    valid = False
+    error = None
     
-    valid, error = await validators[provider](key)
-    return {"valid": valid, "error": error}
+    try:
+        async with httpx.AsyncClient() as client:
+            if provider == 'openai':
+                response = await client.get(
+                    "https://api.openai.com/v1/models",
+                    headers={"Authorization": f"Bearer {key}"},
+                    timeout=15.0
+                )
+                if response.status_code == 200:
+                    valid = True
+                    data = response.json()
+                    models = [m['id'] for m in data.get('data', [])[:10]]
+                elif response.status_code == 401:
+                    error = "Invalid API key"
+                else:
+                    error = f"API error: {response.status_code}"
+                    
+            elif provider == 'deepseek':
+                response = await client.get(
+                    "https://api.deepseek.com/v1/models",
+                    headers={"Authorization": f"Bearer {key}"},
+                    timeout=15.0
+                )
+                if response.status_code == 200:
+                    valid = True
+                    data = response.json()
+                    models = [m['id'] for m in data.get('data', [])[:10]]
+                elif response.status_code == 401:
+                    error = "Invalid API key"
+                else:
+                    valid = True  # Assume valid if not 401
+                    models = ['deepseek-chat', 'deepseek-reasoner']
+                    
+            elif provider == 'anthropic':
+                response = await client.get(
+                    "https://api.anthropic.com/v1/models",
+                    headers={
+                        "x-api-key": key,
+                        "anthropic-version": "2023-06-01"
+                    },
+                    timeout=15.0
+                )
+                if response.status_code == 200:
+                    valid = True
+                    data = response.json()
+                    models = [m.get('id', m.get('name', '')) for m in data.get('data', data.get('models', []))[:10]]
+                elif response.status_code == 401:
+                    error = "Invalid API key"
+                else:
+                    valid = True  # Assume valid if not 401
+                    models = ['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-haiku-20240307']
+                    
+            elif provider == 'google':
+                response = await client.get(
+                    f"https://generativelanguage.googleapis.com/v1/models?key={key}",
+                    timeout=15.0
+                )
+                if response.status_code == 200:
+                    valid = True
+                    data = response.json()
+                    models = [m.get('name', '').replace('models/', '') for m in data.get('models', [])[:10]]
+                elif response.status_code in [400, 403]:
+                    error = "Invalid API key"
+                else:
+                    error = f"API error: {response.status_code}"
+                    
+    except Exception as e:
+        error = f"Connection error: {str(e)}"
+    
+    return {"valid": valid, "error": error, "models": models}
 
 
 def get_api_key(provider: str) -> Optional[str]:

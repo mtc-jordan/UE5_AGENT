@@ -2,8 +2,12 @@ import { useState, useEffect } from 'react'
 import { useAuthStore, useSettingsStore } from '../lib/store'
 import { agentsApi, preferencesApi } from '../lib/api'
 import { toast } from 'sonner'
-import {
+import { 
   Settings as SettingsIcon,
+  Wifi,
+  Clock,
+  CheckCircle,
+  XCircle,
   User,
   Cpu,
   Code,
@@ -25,7 +29,8 @@ import {
   Check,
   X,
   AlertCircle,
-  ExternalLink
+  ExternalLink,
+  Zap
 } from 'lucide-react'
 import { cn, agentColors } from '../lib/utils'
 
@@ -127,6 +132,15 @@ export default function Settings() {
     google: 'unconfigured'
   })
   const [savingApiKey, setSavingApiKey] = useState<string | null>(null)
+  const [testingApiKey, setTestingApiKey] = useState<string | null>(null)
+  const [testResults, setTestResults] = useState<{
+    provider: string;
+    success: boolean;
+    message: string;
+    latency?: number;
+    models?: string[];
+  } | null>(null)
+  const [showTestModal, setShowTestModal] = useState(false)
 
   useEffect(() => {
     loadAgents()
@@ -243,6 +257,55 @@ export default function Settings() {
 
   const toggleApiKeyVisibility = (provider: 'openai' | 'deepseek' | 'anthropic' | 'google') => {
     setApiKeyVisibility(prev => ({ ...prev, [provider]: !prev[provider] }))
+  }
+
+  const handleTestApiKey = async (provider: 'openai' | 'deepseek' | 'anthropic' | 'google') => {
+    setTestingApiKey(provider)
+    const startTime = Date.now()
+    
+    try {
+      const response = await fetch(`/api/settings/api-keys/test/${provider}`)
+      const latency = Date.now() - startTime
+      
+      if (response.ok) {
+        const data = await response.json()
+        setTestResults({
+          provider,
+          success: data.valid,
+          message: data.valid ? 'Connection successful! API key is valid.' : (data.error || 'API key validation failed'),
+          latency,
+          models: data.models
+        })
+        setShowTestModal(true)
+        
+        if (data.valid) {
+          toast.success(`${provider.charAt(0).toUpperCase() + provider.slice(1)} API connection successful!`)
+        } else {
+          toast.error(data.error || 'API key validation failed')
+        }
+      } else {
+        setTestResults({
+          provider,
+          success: false,
+          message: 'Failed to test API connection',
+          latency
+        })
+        setShowTestModal(true)
+        toast.error('Failed to test API connection')
+      }
+    } catch (error) {
+      const latency = Date.now() - startTime
+      setTestResults({
+        provider,
+        success: false,
+        message: 'Network error: Could not reach the server',
+        latency
+      })
+      setShowTestModal(true)
+      toast.error('Network error: Could not reach the server')
+    } finally {
+      setTestingApiKey(null)
+    }
   }
 
   const getStatusBadge = (status: string) => {
@@ -534,12 +597,22 @@ export default function Settings() {
                       {savingApiKey === 'openai' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     </button>
                     {apiKeyStatus.openai === 'configured' && (
-                      <button
-                        onClick={() => handleDeleteApiKey('openai')}
-                        className="btn-ghost px-3 text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleTestApiKey('openai')}
+                          disabled={testingApiKey === 'openai'}
+                          className="btn-ghost px-3 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 disabled:opacity-50"
+                          title="Test API Connection"
+                        >
+                          {testingApiKey === 'openai' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteApiKey('openai')}
+                          className="btn-ghost px-3 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </>
                     )}
                   </div>
                   <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-xs text-ue-accent hover:underline mt-2 inline-flex items-center gap-1">
@@ -583,12 +656,22 @@ export default function Settings() {
                       {savingApiKey === 'deepseek' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     </button>
                     {apiKeyStatus.deepseek === 'configured' && (
-                      <button
-                        onClick={() => handleDeleteApiKey('deepseek')}
-                        className="btn-ghost px-3 text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleTestApiKey('deepseek')}
+                          disabled={testingApiKey === 'deepseek'}
+                          className="btn-ghost px-3 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 disabled:opacity-50"
+                          title="Test API Connection"
+                        >
+                          {testingApiKey === 'deepseek' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteApiKey('deepseek')}
+                          className="btn-ghost px-3 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </>
                     )}
                   </div>
                   <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener noreferrer" className="text-xs text-ue-accent hover:underline mt-2 inline-flex items-center gap-1">
@@ -632,12 +715,22 @@ export default function Settings() {
                       {savingApiKey === 'anthropic' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     </button>
                     {apiKeyStatus.anthropic === 'configured' && (
-                      <button
-                        onClick={() => handleDeleteApiKey('anthropic')}
-                        className="btn-ghost px-3 text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleTestApiKey('anthropic')}
+                          disabled={testingApiKey === 'anthropic'}
+                          className="btn-ghost px-3 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 disabled:opacity-50"
+                          title="Test API Connection"
+                        >
+                          {testingApiKey === 'anthropic' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteApiKey('anthropic')}
+                          className="btn-ghost px-3 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </>
                     )}
                   </div>
                   <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-xs text-ue-accent hover:underline mt-2 inline-flex items-center gap-1">
@@ -681,12 +774,22 @@ export default function Settings() {
                       {savingApiKey === 'google' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     </button>
                     {apiKeyStatus.google === 'configured' && (
-                      <button
-                        onClick={() => handleDeleteApiKey('google')}
-                        className="btn-ghost px-3 text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleTestApiKey('google')}
+                          disabled={testingApiKey === 'google'}
+                          className="btn-ghost px-3 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 disabled:opacity-50"
+                          title="Test API Connection"
+                        >
+                          {testingApiKey === 'google' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteApiKey('google')}
+                          className="btn-ghost px-3 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </>
                     )}
                   </div>
                   <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-xs text-ue-accent hover:underline mt-2 inline-flex items-center gap-1">
@@ -1071,6 +1174,95 @@ export default function Settings() {
           </div>
         )}
       </div>
+
+      {/* API Test Result Modal */}
+      {showTestModal && testResults && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-ue-surface border border-ue-border rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Wifi className="w-5 h-5" />
+                API Connection Test
+              </h3>
+              <button
+                onClick={() => setShowTestModal(false)}
+                className="text-ue-muted hover:text-ue-text"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className={`p-4 rounded-lg mb-4 ${
+              testResults.success 
+                ? 'bg-green-500/10 border border-green-500/30' 
+                : 'bg-red-500/10 border border-red-500/30'
+            }`}>
+              <div className="flex items-center gap-3 mb-2">
+                {testResults.success ? (
+                  <CheckCircle className="w-8 h-8 text-green-400" />
+                ) : (
+                  <XCircle className="w-8 h-8 text-red-400" />
+                )}
+                <div>
+                  <div className={`font-semibold ${
+                    testResults.success ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    {testResults.success ? 'Connection Successful' : 'Connection Failed'}
+                  </div>
+                  <div className="text-sm text-ue-muted capitalize">
+                    {testResults.provider} API
+                  </div>
+                </div>
+              </div>
+              <p className="text-sm text-ue-text mt-2">
+                {testResults.message}
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-ue-bg rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-ue-muted">
+                  <Clock className="w-4 h-4" />
+                  Response Time
+                </div>
+                <div className="font-mono text-sm">
+                  {testResults.latency}ms
+                </div>
+              </div>
+
+              {testResults.models && testResults.models.length > 0 && (
+                <div className="p-3 bg-ue-bg rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-ue-muted mb-2">
+                    <Cpu className="w-4 h-4" />
+                    Available Models
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {testResults.models.slice(0, 5).map((model, i) => (
+                      <span key={i} className="px-2 py-1 text-xs bg-ue-surface rounded">
+                        {model}
+                      </span>
+                    ))}
+                    {testResults.models.length > 5 && (
+                      <span className="px-2 py-1 text-xs bg-ue-surface rounded text-ue-muted">
+                        +{testResults.models.length - 5} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setShowTestModal(false)}
+                className="btn-primary px-4 py-2"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
