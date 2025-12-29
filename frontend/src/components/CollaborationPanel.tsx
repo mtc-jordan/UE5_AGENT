@@ -308,6 +308,13 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
   const [notifications, setNotifications] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showLockedActors, setShowLockedActors] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<'editor' | 'viewer'>('editor');
+  const [inviteLink, setInviteLink] = useState('');
+  const [inviteSending, setInviteSending] = useState(false);
+  const [inviteSent, setInviteSent] = useState(false);
+  const [inviteError, setInviteError] = useState('');
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -376,6 +383,98 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
   const handleShareViewport = () => {
     setIsSharingViewport(!isSharingViewport);
     onShareViewport?.();
+  };
+
+  // Generate invite link
+  const generateInviteLink = () => {
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const link = `https://ue5-ai.studio/join/${code}`;
+    setInviteLink(link);
+    return link;
+  };
+
+  // Initialize invite link when modal opens
+  useEffect(() => {
+    if (showInviteModal && !inviteLink) {
+      generateInviteLink();
+    }
+  }, [showInviteModal]);
+
+  // Handle send invite
+  const handleSendInvite = async () => {
+    // Validate email
+    if (!inviteEmail.trim()) {
+      setInviteError('Please enter an email address');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(inviteEmail)) {
+      setInviteError('Please enter a valid email address');
+      return;
+    }
+
+    setInviteError('');
+    setInviteSending(true);
+
+    try {
+      // Simulate API call to send invite
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Add activity for the invite
+      const activity: ActivityItem = {
+        id: Date.now().toString(),
+        userId: currentUserId,
+        userName: currentUserName,
+        userColor: '#3B82F6',
+        action: `Invited ${inviteEmail} as ${inviteRole}`,
+        timestamp: new Date(),
+        type: 'join',
+      };
+      setActivities(prev => [activity, ...prev]);
+
+      setInviteSent(true);
+      setInviteSending(false);
+
+      // Reset after showing success
+      setTimeout(() => {
+        setInviteSent(false);
+        setInviteEmail('');
+        setShowInviteModal(false);
+      }, 2000);
+    } catch (error) {
+      setInviteError('Failed to send invitation. Please try again.');
+      setInviteSending(false);
+    }
+  };
+
+  // Handle copy invite link
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (error) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = inviteLink;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    }
+  };
+
+  // Reset invite modal state when closed
+  const handleCloseInviteModal = () => {
+    setShowInviteModal(false);
+    setInviteEmail('');
+    setInviteRole('editor');
+    setInviteError('');
+    setInviteSent(false);
+    setLinkCopied(false);
   };
 
   // Format time ago
@@ -777,62 +876,168 @@ const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
       {/* Invite Modal */}
       {showInviteModal && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md mx-4 border border-white/10">
+          <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md mx-4 border border-white/10 shadow-2xl">
+            {/* Header */}
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">Invite Team Member</h3>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <UserPlus className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Invite Team Member</h3>
+                  <p className="text-xs text-gray-400">Add collaborators to your session</p>
+                </div>
+              </div>
               <button
-                onClick={() => setShowInviteModal(false)}
-                className="p-1 rounded-lg hover:bg-white/10 text-gray-400"
+                onClick={handleCloseInviteModal}
+                className="p-2 rounded-lg hover:bg-white/10 text-gray-400 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm text-gray-400 mb-1 block">Email Address</label>
-                <input
-                  type="email"
-                  placeholder="colleague@example.com"
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50"
-                />
-              </div>
-              
-              <div>
-                <label className="text-sm text-gray-400 mb-1 block">Role</label>
-                <select className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500/50">
-                  <option value="editor">Editor - Can edit</option>
-                  <option value="viewer">Viewer - View only</option>
-                </select>
-              </div>
 
-              <div className="pt-2">
-                <p className="text-sm text-gray-400 mb-2">Or share invite link:</p>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value="https://ue5-ai.studio/join/abc123"
-                    readOnly
-                    className="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400 text-sm"
-                  />
-                  <button className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors">
-                    <Copy className="w-5 h-5" />
+            {/* Success State */}
+            {inviteSent ? (
+              <div className="py-8 text-center">
+                <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-green-400" />
+                </div>
+                <h4 className="text-lg font-semibold text-white mb-2">Invitation Sent!</h4>
+                <p className="text-gray-400 text-sm">An invitation has been sent to {inviteEmail}</p>
+              </div>
+            ) : (
+              <>
+                {/* Form */}
+                <div className="space-y-4">
+                  {/* Email Input */}
+                  <div>
+                    <label className="text-sm text-gray-400 mb-2 block">Email Address</label>
+                    <input
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => {
+                        setInviteEmail(e.target.value);
+                        setInviteError('');
+                      }}
+                      placeholder="colleague@example.com"
+                      className={`w-full px-4 py-3 bg-white/5 border rounded-xl text-white placeholder-gray-500 focus:outline-none transition-colors ${
+                        inviteError ? 'border-red-500/50 focus:border-red-500' : 'border-white/10 focus:border-purple-500/50'
+                      }`}
+                    />
+                    {inviteError && (
+                      <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {inviteError}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Role Selection */}
+                  <div>
+                    <label className="text-sm text-gray-400 mb-2 block">Role</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setInviteRole('editor')}
+                        className={`p-3 rounded-xl border transition-all ${
+                          inviteRole === 'editor'
+                            ? 'bg-purple-500/20 border-purple-500/50 text-purple-300'
+                            : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                        }`}
+                      >
+                        <Shield className="w-5 h-5 mx-auto mb-1" />
+                        <div className="text-sm font-medium">Editor</div>
+                        <div className="text-xs opacity-70">Can edit</div>
+                      </button>
+                      <button
+                        onClick={() => setInviteRole('viewer')}
+                        className={`p-3 rounded-xl border transition-all ${
+                          inviteRole === 'viewer'
+                            ? 'bg-purple-500/20 border-purple-500/50 text-purple-300'
+                            : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                        }`}
+                      >
+                        <Eye className="w-5 h-5 mx-auto mb-1" />
+                        <div className="text-sm font-medium">Viewer</div>
+                        <div className="text-xs opacity-70">View only</div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="relative py-2">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-white/10"></div>
+                    </div>
+                    <div className="relative flex justify-center">
+                      <span className="px-3 bg-gray-900 text-xs text-gray-500">OR SHARE LINK</span>
+                    </div>
+                  </div>
+
+                  {/* Invite Link */}
+                  <div>
+                    <label className="text-sm text-gray-400 mb-2 block">Invite Link</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={inviteLink}
+                        readOnly
+                        className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-gray-300 text-sm font-mono"
+                      />
+                      <button
+                        onClick={handleCopyLink}
+                        className={`px-4 py-3 rounded-xl transition-all flex items-center gap-2 ${
+                          linkCopied
+                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                            : 'bg-white/10 hover:bg-white/20 text-white'
+                        }`}
+                      >
+                        {linkCopied ? (
+                          <>
+                            <CheckCircle className="w-4 h-4" />
+                            <span className="text-sm">Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4" />
+                            <span className="text-sm">Copy</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Anyone with this link can join as a {inviteRole}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={handleCloseInviteModal}
+                    className="flex-1 px-4 py-3 rounded-xl border border-white/10 text-white hover:bg-white/5 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSendInvite}
+                    disabled={inviteSending}
+                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {inviteSending ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        Send Invitation
+                      </>
+                    )}
                   </button>
                 </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowInviteModal(false)}
-                className="flex-1 px-4 py-2 rounded-lg border border-white/10 text-white hover:bg-white/5 transition-colors"
-              >
-                Cancel
-              </button>
-              <button className="flex-1 px-4 py-2 rounded-lg bg-purple-500 text-white hover:bg-purple-600 transition-colors">
-                Send Invite
-              </button>
-            </div>
+              </>
+            )}
           </div>
         </div>
       )}
