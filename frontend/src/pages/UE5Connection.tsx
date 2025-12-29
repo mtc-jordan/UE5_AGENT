@@ -39,6 +39,8 @@ import EnhancedAIChat from '../components/EnhancedAIChat';
 import EnhancedConnectionStatus from '../components/EnhancedConnectionStatus';
 import SceneAnalyzer from '../components/SceneAnalyzer';
 import SceneQuickActions from '../components/SceneQuickActions';
+import PerformanceOptimizer from '../components/PerformanceOptimizer';
+import AssetManager from '../components/AssetManager';
 
 // ==================== TYPES ====================
 
@@ -1809,6 +1811,18 @@ export default function UE5Connection() {
           setAiCommand(command);
           processAiCommand();
         }}
+      />
+
+      {/* Performance Optimizer */}
+      <PerformanceOptimizer
+        authToken={authToken || ''}
+        isConnected={agentStatus.mcp_connected}
+      />
+
+      {/* Asset Manager */}
+      <AssetManager
+        authToken={authToken || ''}
+        isConnected={agentStatus.mcp_connected}
       />
 
       {/* Execution History */}
