@@ -44,6 +44,7 @@ import AssetManager from '../components/AssetManager';
 import VoiceControl from '../components/VoiceControl';
 import LightingWizard from '../components/LightingWizard';
 import AnimationAssistant from '../components/AnimationAssistant';
+import CollaborationPanel from '../components/CollaborationPanel';
 import { ParsedCommand } from '../lib/voiceCommandParser';
 
 // ==================== TYPES ====================
@@ -1888,6 +1889,18 @@ export default function UE5Connection() {
       <AssetManager
         authToken={authToken || ''}
         isConnected={agentStatus.mcp_connected}
+      />
+
+      {/* Real-time Collaboration */}
+      <CollaborationPanel
+        isConnected={agentStatus.mcp_connected}
+        currentUserId="user_1"
+        currentUserName="You"
+        onShareViewport={() => console.log('Share viewport')}
+        onFollowUser={(userId) => console.log('Follow user:', userId)}
+        onLockActor={(actorId) => console.log('Lock actor:', actorId)}
+        onUnlockActor={(actorId) => console.log('Unlock actor:', actorId)}
+        onSendChat={(message) => console.log('Send chat:', message)}
       />
 
       {/* Execution History */}

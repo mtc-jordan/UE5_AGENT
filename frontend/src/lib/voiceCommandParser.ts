@@ -27,7 +27,8 @@ export type CommandCategory =
   | 'general'
   | 'navigation'
   | 'selection'
-  | 'transform';
+  | 'transform'
+  | 'collaboration';
 
 // Parsed command result
 export interface ParsedCommand {
@@ -672,6 +673,80 @@ const COMMAND_PATTERNS: CommandPattern[] = [
     action: 'focusSelection',
     extractParams: () => ({})
   },
+
+  // ==================== COLLABORATION ====================
+  {
+    pattern: /(?:who'?s|who\s+is)\s+online/i,
+    category: 'collaboration',
+    action: 'listOnlineUsers',
+    extractParams: () => ({})
+  },
+  {
+    pattern: /(?:share|stream)\s+(?:my\s+)?viewport/i,
+    category: 'collaboration',
+    action: 'shareViewport',
+    extractParams: () => ({})
+  },
+  {
+    pattern: /(?:stop\s+)?sharing\s+(?:my\s+)?viewport/i,
+    category: 'collaboration',
+    action: 'stopSharingViewport',
+    extractParams: () => ({})
+  },
+  {
+    pattern: /follow\s+(\w+)/i,
+    category: 'collaboration',
+    action: 'followUser',
+    extractParams: (match) => ({ userName: match[1] })
+  },
+  {
+    pattern: /stop\s+following/i,
+    category: 'collaboration',
+    action: 'stopFollowing',
+    extractParams: () => ({})
+  },
+  {
+    pattern: /(?:lock|claim)\s+(?:this\s+)?(?:actor|selection)/i,
+    category: 'collaboration',
+    action: 'lockActor',
+    extractParams: () => ({})
+  },
+  {
+    pattern: /unlock\s+(?:this\s+)?(?:actor|selection)/i,
+    category: 'collaboration',
+    action: 'unlockActor',
+    extractParams: () => ({})
+  },
+  {
+    pattern: /(?:send|share)\s+screenshot\s+(?:to\s+)?(?:the\s+)?team/i,
+    category: 'collaboration',
+    action: 'shareScreenshot',
+    extractParams: () => ({})
+  },
+  {
+    pattern: /(?:show|view)\s+(?:team\s+)?activity/i,
+    category: 'collaboration',
+    action: 'showActivity',
+    extractParams: () => ({})
+  },
+  {
+    pattern: /(?:open|show)\s+(?:team\s+)?chat/i,
+    category: 'collaboration',
+    action: 'openChat',
+    extractParams: () => ({})
+  },
+  {
+    pattern: /(?:invite|add)\s+(?:a\s+)?(?:team\s+)?member/i,
+    category: 'collaboration',
+    action: 'inviteMember',
+    extractParams: () => ({})
+  },
+  {
+    pattern: /(?:highlight|show)\s+(?:my\s+)?selection\s+(?:to\s+)?(?:the\s+)?team/i,
+    category: 'collaboration',
+    action: 'highlightSelection',
+    extractParams: () => ({})
+  },
 ];
 
 // ==================== VOICE COMMAND EXAMPLES BY CATEGORY ====================
@@ -761,6 +836,19 @@ export const VOICE_COMMAND_EXAMPLES: Record<CommandCategory, string[]> = {
     "Scale by 2",
     "Reset transform",
   ],
+  collaboration: [
+    "Who's online",
+    "Share my viewport",
+    "Follow Sarah",
+    "Stop following",
+    "Lock this actor",
+    "Unlock actor",
+    "Send screenshot to team",
+    "Show team activity",
+    "Open team chat",
+    "Invite team member",
+    "Highlight my selection",
+  ],
 };
 
 // ==================== PARSER FUNCTION ====================
@@ -818,6 +906,7 @@ export const CATEGORY_DISPLAY_NAMES: Record<CommandCategory, string> = {
   navigation: '🧭 Navigation',
   selection: '✅ Selection',
   transform: '🔄 Transform',
+  collaboration: '👥 Collaboration',
 };
 
 // ==================== SUGGEST SIMILAR COMMANDS ====================
