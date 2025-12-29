@@ -26,7 +26,7 @@ import {
   HelpCircle,
   Globe, Cloud, CloudOff, Cpu,
   Gauge, Layers, Wrench, Target, Crosshair,
-  Rocket, Gamepad2
+  Rocket, Gamepad2, Mic
 } from 'lucide-react';
 import { MCP_TOOLS, MCP_CATEGORIES, QUICK_ACTIONS, MCPTool } from '../data/mcpTools';
 import ViewportPreview from '../components/ViewportPreview';
@@ -41,6 +41,7 @@ import SceneAnalyzer from '../components/SceneAnalyzer';
 import SceneQuickActions from '../components/SceneQuickActions';
 import PerformanceOptimizer from '../components/PerformanceOptimizer';
 import AssetManager from '../components/AssetManager';
+import VoiceControl from '../components/VoiceControl';
 
 // ==================== TYPES ====================
 
@@ -1668,9 +1669,23 @@ export default function UE5Connection() {
   // AI Commands Tab
   const renderAiCommands = () => (
     <div className="space-y-6">
-      {/* Enhanced AI Chat Interface */}
-      <div className="h-[600px]">
-        <EnhancedAIChat
+      {/* Voice Control Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Voice Control Panel */}
+        <div className="lg:col-span-1">
+          <VoiceControl
+            onCommand={(command) => {
+              setAiCommand(command);
+              processAiCommand();
+            }}
+            isProcessing={isAiProcessing}
+            isConnected={agentStatus.mcp_connected}
+          />
+        </div>
+        
+        {/* Enhanced AI Chat Interface */}
+        <div className="lg:col-span-2 h-[600px]">
+          <EnhancedAIChat
           chatHistory={chatHistory}
           onSendMessage={(message, model) => {
             setAiCommand(message);
@@ -1685,6 +1700,7 @@ export default function UE5Connection() {
           autoSelectModel={autoSelectModel}
           onAutoSelectChange={setAutoSelectModel}
         />
+        </div>
       </div>
 
       {/* Tool Calls in Progress */}
