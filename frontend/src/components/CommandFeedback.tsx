@@ -15,7 +15,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
-import { FixedSizeList as List } from 'react-window';
+import { List } from 'react-window';
 import {
   CheckCircle, XCircle, Clock, Loader2, ChevronDown, ChevronRight,
   Camera, ArrowRight, Eye, EyeOff, Maximize2, X, RefreshCw,
