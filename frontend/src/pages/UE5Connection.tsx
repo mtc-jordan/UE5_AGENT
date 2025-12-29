@@ -433,6 +433,7 @@ export default function UE5Connection() {
 
   // UI state
   const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [aiSubTab, setAiSubTab] = useState<'chat' | 'scene' | 'assets' | 'lighting' | 'advanced'>('chat');
 
   const resultRef = useRef<HTMLDivElement>(null);
   const statusPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -1672,58 +1673,69 @@ export default function UE5Connection() {
     </div>
   );
 
+  // AI Commands Sub-tabs configuration
+  const AI_SUB_TABS = [
+    { id: 'chat' as const, label: 'Chat & Voice', icon: Terminal, gradient: 'from-violet-500 to-purple-500', description: 'AI chat and voice commands' },
+    { id: 'scene' as const, label: 'Scene Tools', icon: Box, gradient: 'from-blue-500 to-cyan-500', description: 'Build and analyze scenes' },
+    { id: 'assets' as const, label: 'Assets', icon: Palette, gradient: 'from-green-500 to-emerald-500', description: 'Materials, textures & blueprints' },
+    { id: 'lighting' as const, label: 'Lighting & Animation', icon: Zap, gradient: 'from-amber-500 to-orange-500', description: 'Lighting presets and animations' },
+    { id: 'advanced' as const, label: 'Advanced', icon: Rocket, gradient: 'from-rose-500 to-red-500', description: 'Analytics, collaboration & more' },
+  ];
+
   // AI Commands Tab
   const renderAiCommands = () => (
     <div className="space-y-6">
-      {/* Voice Control Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Voice Control Panel */}
-        <div className="lg:col-span-1">
-          <VoiceControl
-            onCommand={(command, parsedCommand) => {
-              // Handle parsed voice commands with feature routing
-              if (parsedCommand) {
-                // Add context about the parsed command to help AI
-                const contextualCommand = `[Voice Command - ${parsedCommand.category}] ${command}`;
-                setAiCommand(contextualCommand);
-                
-                // Add to chat history with category info
-                setChatHistory(prev => [...prev, {
-                  role: 'assistant',
-                  content: `🎙️ Voice command recognized: "${command}" → ${parsedCommand.category}/${parsedCommand.action}`,
-                  timestamp: new Date().toISOString()
-                }]);
-              } else {
-                setAiCommand(command);
-              }
-              processAiCommand();
-            }}
-            isProcessing={isAiProcessing}
-            isConnected={agentStatus.mcp_connected}
-          />
-        </div>
-        
-        {/* Enhanced AI Chat Interface */}
-        <div className="lg:col-span-2 h-[600px]">
-          <EnhancedAIChat
-          chatHistory={chatHistory}
-          onSendMessage={(message, model) => {
-            setAiCommand(message);
-            setSelectedModel(model);
-            processAiCommand();
-          }}
-          onClearHistory={() => setChatHistory([])}
-          isProcessing={isAiProcessing}
-          isConnected={agentStatus.mcp_connected}
-          selectedModel={selectedModel}
-          onModelChange={setSelectedModel}
-          autoSelectModel={autoSelectModel}
-          onAutoSelectChange={setAutoSelectModel}
-        />
-        </div>
+      {/* Sub-navigation Pills */}
+      <div className="flex flex-wrap gap-2 p-1 bg-white/5 rounded-2xl border border-white/10">
+        {AI_SUB_TABS.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = aiSubTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setAiSubTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all ${
+                isActive
+                  ? `bg-gradient-to-r ${tab.gradient} text-white shadow-lg`
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span className="text-sm font-medium">{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Tool Calls in Progress */}
+      {/* Quick Actions Bar */}
+      <GlassCard className="p-4" hover={false}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-purple-400" />
+            <span className="text-sm font-medium text-white">Quick Actions</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { label: 'Screenshot', icon: Camera, action: () => captureScreenshot() },
+              { label: 'Analyze Scene', icon: Search, action: () => setAiSubTab('scene') },
+              { label: 'New Light', icon: Zap, action: () => setAiSubTab('lighting') },
+              { label: 'Generate Texture', icon: Palette, action: () => setAiSubTab('assets') },
+            ].map((action, i) => (
+              <button
+                key={i}
+                onClick={action.action}
+                disabled={!agentStatus.mcp_connected}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-xs text-gray-300 hover:text-white transition-all border border-white/10 hover:border-white/20"
+              >
+                <action.icon className="w-3.5 h-3.5" />
+                {action.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </GlassCard>
+
+      {/* Tool Calls in Progress - Always visible when executing */}
       {aiToolCalls.length > 0 && isAiProcessing && (
         <GlassCard className="p-5 border-cyan-500/20">
           <div className="flex items-center gap-2 text-cyan-400 mb-3">
@@ -1746,202 +1758,311 @@ export default function UE5Connection() {
         </GlassCard>
       )}
 
-      {/* Viewport Preview */}
-      {agentStatus.mcp_connected && (
-        <ViewportPreview
-          screenshots={screenshots}
-          pairs={beforeAfterPairs}
-          onCapture={captureScreenshot}
-          onRefresh={loadScreenshots}
-          isCapturing={isCapturing}
-          autoCapture={autoCapture}
-          onToggleAutoCapture={setAutoCapture}
-          onDeleteScreenshot={deleteScreenshot}
-        />
+      {/* Chat & Voice Tab Content */}
+      {aiSubTab === 'chat' && (
+        <div className="space-y-6">
+          {/* Voice Control Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Voice Control Panel */}
+            <div className="lg:col-span-1">
+              <VoiceControl
+                onCommand={(command, parsedCommand) => {
+                  if (parsedCommand) {
+                    const contextualCommand = `[Voice Command - ${parsedCommand.category}] ${command}`;
+                    setAiCommand(contextualCommand);
+                    setChatHistory(prev => [...prev, {
+                      role: 'assistant',
+                      content: `🎙️ Voice command recognized: "${command}" → ${parsedCommand.category}/${parsedCommand.action}`,
+                      timestamp: new Date().toISOString()
+                    }]);
+                  } else {
+                    setAiCommand(command);
+                  }
+                  processAiCommand();
+                }}
+                isProcessing={isAiProcessing}
+                isConnected={agentStatus.mcp_connected}
+              />
+            </div>
+            
+            {/* Enhanced AI Chat Interface */}
+            <div className="lg:col-span-2 h-[600px]">
+              <EnhancedAIChat
+                chatHistory={chatHistory}
+                onSendMessage={(message, model) => {
+                  setAiCommand(message);
+                  setSelectedModel(model);
+                  processAiCommand();
+                }}
+                onClearHistory={() => setChatHistory([])}
+                isProcessing={isAiProcessing}
+                isConnected={agentStatus.mcp_connected}
+                selectedModel={selectedModel}
+                onModelChange={setSelectedModel}
+                autoSelectModel={autoSelectModel}
+                onAutoSelectChange={setAutoSelectModel}
+              />
+            </div>
+          </div>
+
+          {/* Viewport Preview */}
+          {agentStatus.mcp_connected && (
+            <ViewportPreview
+              screenshots={screenshots}
+              pairs={beforeAfterPairs}
+              onCapture={captureScreenshot}
+              onRefresh={loadScreenshots}
+              isCapturing={isCapturing}
+              autoCapture={autoCapture}
+              onToggleAutoCapture={setAutoCapture}
+              onDeleteScreenshot={deleteScreenshot}
+            />
+          )}
+
+          {/* Execution History */}
+          {executionHistory.length > 0 && (
+            <GlassCard className="p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center">
+                    <History className="w-4 h-4 text-white" />
+                  </div>
+                  <h4 className="font-medium text-white">Execution Results</h4>
+                </div>
+                <button
+                  onClick={() => setExecutionHistory([])}
+                  className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  Clear All
+                </button>
+              </div>
+              <div className="space-y-3 max-h-[300px] overflow-y-auto" ref={resultRef}>
+                {executionHistory.slice(0, 10).map((exec) => (
+                  <div
+                    key={exec.id}
+                    className={`rounded-xl border overflow-hidden ${
+                      exec.success
+                        ? 'bg-green-500/5 border-green-500/20'
+                        : 'bg-red-500/5 border-red-500/20'
+                    }`}
+                  >
+                    <div className={`px-4 py-2 flex items-center justify-between ${
+                      exec.success ? 'bg-green-500/10' : 'bg-red-500/10'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        {exec.success ? (
+                          <CheckCircle className="w-4 h-4 text-green-400" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-red-400" />
+                        )}
+                        <span className="font-medium text-white text-sm">{exec.tool}</span>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        exec.success ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                      }`}>
+                        {exec.duration}ms
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </GlassCard>
+          )}
+        </div>
       )}
 
-      {/* Scene Builder */}
-      <SceneBuilder
-        authToken={authToken || ''}
-        isConnected={agentStatus.mcp_connected}
-        onSceneBuilt={(plan) => {
-          // Refresh screenshots after scene is built
-          loadScreenshots();
-          // Add to chat history
-          setChatHistory(prev => [...prev, {
-            role: 'assistant',
-            content: `Scene built successfully! Created ${plan.objects.length} objects: ${plan.objects.map(o => o.name).join(', ')}`,
-            timestamp: new Date().toISOString()
-          }]);
-        }}
-      />
+      {/* Scene Tools Tab Content */}
+      {aiSubTab === 'scene' && (
+        <div className="space-y-6">
+          {/* Scene Builder */}
+          <SceneBuilder
+            authToken={authToken || ''}
+            isConnected={agentStatus.mcp_connected}
+            onSceneBuilt={(plan) => {
+              loadScreenshots();
+              setChatHistory(prev => [...prev, {
+                role: 'assistant',
+                content: `Scene built successfully! Created ${plan.objects.length} objects: ${plan.objects.map(o => o.name).join(', ')}`,
+                timestamp: new Date().toISOString()
+              }]);
+            }}
+          />
 
-      {/* AI Scene Generator */}
-      <AISceneGenerator
-        onGenerate={(plan) => {
-          // Refresh screenshots after scene is generated
-          loadScreenshots();
-          // Add to chat history
-          setChatHistory(prev => [...prev, {
-            role: 'assistant',
-            content: `AI Scene generated: "${plan.name}" with ${plan.totalObjects} objects. Style: ${plan.style}, Mood: ${plan.mood}`,
-            timestamp: new Date().toISOString()
-          }]);
-        }}
-        onCancel={() => {
-          setChatHistory(prev => [...prev, {
-            role: 'assistant',
-            content: 'Scene generation cancelled.',
-            timestamp: new Date().toISOString()
-          }]);
-        }}
-      />
+          {/* AI Scene Generator */}
+          <AISceneGenerator
+            onGenerate={(plan) => {
+              loadScreenshots();
+              setChatHistory(prev => [...prev, {
+                role: 'assistant',
+                content: `AI Scene generated: "${plan.name}" with ${plan.totalObjects} objects. Style: ${plan.style}, Mood: ${plan.mood}`,
+                timestamp: new Date().toISOString()
+              }]);
+            }}
+            onCancel={() => {
+              setChatHistory(prev => [...prev, {
+                role: 'assistant',
+                content: 'Scene generation cancelled.',
+                timestamp: new Date().toISOString()
+              }]);
+            }}
+          />
 
-      {/* Lighting Wizard */}
-      <LightingWizard
-        authToken={authToken || ''}
-        isConnected={agentStatus.mcp_connected}
-        onLightingApplied={(preset) => {
-          // Refresh screenshots after lighting is applied
-          loadScreenshots();
-          // Add to chat history
-          setChatHistory(prev => [...prev, {
-            role: 'assistant',
-            content: `Applied lighting preset: ${preset.name} - ${preset.description}`,
-            timestamp: new Date().toISOString()
-          }]);
-        }}
-      />
+          {/* Scene Analyzer */}
+          <SceneAnalyzer
+            authToken={authToken || ''}
+            isConnected={agentStatus.mcp_connected}
+            onExecuteCommand={(command) => {
+              setAiCommand(command);
+              processAiCommand();
+            }}
+          />
 
-      {/* Animation Assistant */}
-      <AnimationAssistant
-        authToken={authToken || ''}
-        isConnected={agentStatus.mcp_connected}
-        onAnimationApplied={(animation) => {
-          // Refresh screenshots after animation is applied
-          loadScreenshots();
-          // Add to chat history
-          setChatHistory(prev => [...prev, {
-            role: 'assistant',
-            content: `Playing animation: ${animation.name} (${animation.duration.toFixed(1)}s)`,
-            timestamp: new Date().toISOString()
-          }]);
-        }}
-      />
+          {/* Scene Quick Actions */}
+          <SceneQuickActions
+            onExecuteAction={(action) => {
+              setAiCommand(action);
+              processAiCommand();
+            }}
+            isConnected={agentStatus.mcp_connected}
+          />
 
-      {/* Blueprint & Material Assistant */}
-      <BlueprintMaterialAssistant
-        authToken={authToken || ''}
-        isConnected={agentStatus.mcp_connected}
-        onAssetCreated={(asset) => {
-          // Refresh screenshots after asset is created
-          loadScreenshots();
-          // Add to chat history
-          setChatHistory(prev => [...prev, {
-            role: 'assistant',
-            content: `Created ${asset.graph.asset_type}: ${asset.graph.name}`,
-            timestamp: new Date().toISOString()
-          }]);
-        }}
-      />
+          {/* Action Timeline (Undo/Redo) */}
+          <ActionTimeline
+            authToken={authToken || ''}
+            isConnected={agentStatus.mcp_connected}
+            onActionUndone={(action) => {
+              loadScreenshots();
+              setChatHistory(prev => [...prev, {
+                role: 'assistant',
+                content: `Undone: ${action.description}`,
+                timestamp: new Date().toISOString()
+              }]);
+            }}
+            onActionRedone={(action) => {
+              loadScreenshots();
+              setChatHistory(prev => [...prev, {
+                role: 'assistant',
+                content: `Redone: ${action.description}`,
+                timestamp: new Date().toISOString()
+              }]);
+            }}
+          />
+        </div>
+      )}
 
-      {/* AI Texture Generator */}
-      <TextureGenerator
-        onTextureGenerated={(texture) => {
-          // Add to chat history
-          setChatHistory(prev => [...prev, {
-            role: 'assistant',
-            content: `Generated PBR texture: ${texture.prompt}`,
-            timestamp: new Date().toISOString()
-          }]);
-        }}
-        onApplyToActor={(_texture, actorName) => {
-          // Apply texture to actor via MCP
-          setChatHistory(prev => [...prev, {
-            role: 'assistant',
-            content: `Applied texture to actor: ${actorName}`,
-            timestamp: new Date().toISOString()
-          }]);
-        }}
-      />
+      {/* Assets Tab Content */}
+      {aiSubTab === 'assets' && (
+        <div className="space-y-6">
+          {/* Blueprint & Material Assistant */}
+          <BlueprintMaterialAssistant
+            authToken={authToken || ''}
+            isConnected={agentStatus.mcp_connected}
+            onAssetCreated={(asset) => {
+              loadScreenshots();
+              setChatHistory(prev => [...prev, {
+                role: 'assistant',
+                content: `Created ${asset.graph.asset_type}: ${asset.graph.name}`,
+                timestamp: new Date().toISOString()
+              }]);
+            }}
+          />
 
-      {/* Action Timeline (Undo/Redo) */}
-      <ActionTimeline
-        authToken={authToken || ''}
-        isConnected={agentStatus.mcp_connected}
-        onActionUndone={(action) => {
-          // Refresh screenshots after undo
-          loadScreenshots();
-          // Add to chat history
-          setChatHistory(prev => [...prev, {
-            role: 'assistant',
-            content: `Undone: ${action.description}`,
-            timestamp: new Date().toISOString()
-          }]);
-        }}
-        onActionRedone={(action) => {
-          // Refresh screenshots after redo
-          loadScreenshots();
-          // Add to chat history
-          setChatHistory(prev => [...prev, {
-            role: 'assistant',
-            content: `Redone: ${action.description}`,
-            timestamp: new Date().toISOString()
-          }]);
-        }}
-      />
+          {/* AI Texture Generator */}
+          <TextureGenerator
+            onTextureGenerated={(texture) => {
+              setChatHistory(prev => [...prev, {
+                role: 'assistant',
+                content: `Generated PBR texture: ${texture.prompt}`,
+                timestamp: new Date().toISOString()
+              }]);
+            }}
+            onApplyToActor={(_texture, actorName) => {
+              setChatHistory(prev => [...prev, {
+                role: 'assistant',
+                content: `Applied texture to actor: ${actorName}`,
+                timestamp: new Date().toISOString()
+              }]);
+            }}
+          />
 
-      {/* Scene Analyzer */}
-      <SceneAnalyzer
-        authToken={authToken || ''}
-        isConnected={agentStatus.mcp_connected}
-        onExecuteCommand={(command) => {
-          // Execute command via AI chat
-          setAiCommand(command);
-          processAiCommand();
-        }}
-      />
+          {/* Asset Manager */}
+          <AssetManager
+            authToken={authToken || ''}
+            isConnected={agentStatus.mcp_connected}
+          />
+        </div>
+      )}
 
-      {/* Performance Optimizer */}
-      <PerformanceOptimizer
-        authToken={authToken || ''}
-        isConnected={agentStatus.mcp_connected}
-      />
+      {/* Lighting & Animation Tab Content */}
+      {aiSubTab === 'lighting' && (
+        <div className="space-y-6">
+          {/* Lighting Wizard */}
+          <LightingWizard
+            authToken={authToken || ''}
+            isConnected={agentStatus.mcp_connected}
+            onLightingApplied={(preset) => {
+              loadScreenshots();
+              setChatHistory(prev => [...prev, {
+                role: 'assistant',
+                content: `Applied lighting preset: ${preset.name} - ${preset.description}`,
+                timestamp: new Date().toISOString()
+              }]);
+            }}
+          />
 
-      {/* Asset Manager */}
-      <AssetManager
-        authToken={authToken || ''}
-        isConnected={agentStatus.mcp_connected}
-      />
+          {/* Animation Assistant */}
+          <AnimationAssistant
+            authToken={authToken || ''}
+            isConnected={agentStatus.mcp_connected}
+            onAnimationApplied={(animation) => {
+              loadScreenshots();
+              setChatHistory(prev => [...prev, {
+                role: 'assistant',
+                content: `Playing animation: ${animation.name} (${animation.duration.toFixed(1)}s)`,
+                timestamp: new Date().toISOString()
+              }]);
+            }}
+          />
 
-      {/* Real-time Collaboration */}
-      <CollaborationPanel
-        isConnected={agentStatus.mcp_connected}
-        currentUserId="user_1"
-        currentUserName="You"
-        onShareViewport={() => console.log('Share viewport')}
-        onFollowUser={(userId) => console.log('Follow user:', userId)}
-        onLockActor={(actorId) => console.log('Lock actor:', actorId)}
-        onUnlockActor={(actorId) => console.log('Unlock actor:', actorId)}
-        onSendChat={(message) => console.log('Send chat:', message)}
-      />
+          {/* Performance Optimizer */}
+          <PerformanceOptimizer
+            authToken={authToken || ''}
+            isConnected={agentStatus.mcp_connected}
+          />
+        </div>
+      )}
 
-      {/* Analytics Dashboard */}
-      <AnalyticsDashboard
-        onExport={(format) => console.log('Export analytics:', format)}
-      />
+      {/* Advanced Tab Content */}
+      {aiSubTab === 'advanced' && (
+        <div className="space-y-6">
+          {/* Advanced AI Features */}
+          <AdvancedAIFeatures
+            onExecuteCommand={(cmd) => console.log('Execute command:', cmd)}
+            onExecuteChain={(chain) => console.log('Execute chain:', chain)}
+            onExecuteMacro={(macro) => console.log('Execute macro:', macro)}
+          />
 
-      {/* Advanced AI Features */}
-      <AdvancedAIFeatures
-        onExecuteCommand={(cmd) => console.log('Execute command:', cmd)}
-        onExecuteChain={(chain) => console.log('Execute chain:', chain)}
-        onExecuteMacro={(macro) => console.log('Execute macro:', macro)}
-      />
+          {/* Real-time Collaboration */}
+          <CollaborationPanel
+            isConnected={agentStatus.mcp_connected}
+            currentUserId="user_1"
+            currentUserName="You"
+            onShareViewport={() => console.log('Share viewport')}
+            onFollowUser={(userId) => console.log('Follow user:', userId)}
+            onLockActor={(actorId) => console.log('Lock actor:', actorId)}
+            onUnlockActor={(actorId) => console.log('Unlock actor:', actorId)}
+            onSendChat={(message) => console.log('Send chat:', message)}
+          />
 
-      {/* Execution History */}
-      {executionHistory.length > 0 && (
-        <GlassCard className="p-5">
-          <div className="flex items-center justify-between mb-4">
+          {/* Analytics Dashboard */}
+          <AnalyticsDashboard
+            onExport={(format) => console.log('Export analytics:', format)}
+          />
+
+          {/* Full Execution History */}
+          {executionHistory.length > 0 && (
+            <GlassCard className="p-5">
+              <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center">
                 <History className="w-4 h-4 text-white" />
@@ -2025,6 +2146,8 @@ export default function UE5Connection() {
             ))}
           </div>
         </GlassCard>
+          )}
+        </div>
       )}
     </div>
   );
