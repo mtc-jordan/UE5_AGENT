@@ -35,6 +35,7 @@ from api.animation import router as animation_router
 from api.collaboration import router as collaboration_router
 from api.collaboration_ws import router as collaboration_ws_router
 from api.scene_generator import router as scene_generator_router
+from api.advanced_ai import router as advanced_ai_router
 
 api_router = APIRouter(prefix="/api")
 
@@ -74,5 +75,6 @@ api_router.include_router(animation_router)
 api_router.include_router(collaboration_router)
 api_router.include_router(collaboration_ws_router)
 api_router.include_router(scene_generator_router)
+api_router.include_router(advanced_ai_router)
 
 __all__ = ["api_router"]

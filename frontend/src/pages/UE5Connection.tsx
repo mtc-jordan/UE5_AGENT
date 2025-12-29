@@ -47,6 +47,7 @@ import AnimationAssistant from '../components/AnimationAssistant';
 import CollaborationPanel from '../components/CollaborationPanel';
 import AISceneGenerator from '../components/AISceneGenerator';
 import AnalyticsDashboard from '../components/AnalyticsDashboard';
+import AdvancedAIFeatures from '../components/AdvancedAIFeatures';
 import { ParsedCommand } from '../lib/voiceCommandParser';
 
 // ==================== TYPES ====================
@@ -1929,6 +1930,13 @@ export default function UE5Connection() {
       {/* Analytics Dashboard */}
       <AnalyticsDashboard
         onExport={(format) => console.log('Export analytics:', format)}
+      />
+
+      {/* Advanced AI Features */}
+      <AdvancedAIFeatures
+        onExecuteCommand={(cmd) => console.log('Execute command:', cmd)}
+        onExecuteChain={(chain) => console.log('Execute chain:', chain)}
+        onExecuteMacro={(macro) => console.log('Execute macro:', macro)}
       />
 
       {/* Execution History */}
