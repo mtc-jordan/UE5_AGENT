@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom animations */
+@import './styles/animations.css';
+
 @layer base {
   * {
     @apply border-ue-border;

@@ -35,6 +35,8 @@ import ActionTimeline from '../components/ActionTimeline';
 import BlueprintMaterialAssistant from '../components/BlueprintMaterialAssistant';
 import TextureGenerator from '../components/TextureGenerator';
 import ModelSelector from '../components/ModelSelector';
+import EnhancedAIChat from '../components/EnhancedAIChat';
+import EnhancedConnectionStatus from '../components/EnhancedConnectionStatus';
 
 // ==================== TYPES ====================
 
@@ -887,78 +889,8 @@ export default function UE5Connection() {
   // Overview Tab - Hero Section with Connection Visualization
   const renderOverview = () => (
     <div className="space-y-8">
-      {/* Hero Connection Status */}
-      <GlassCard className="p-8 relative overflow-hidden" hover={false} glow glowColor={agentStatus.connected && agentStatus.mcp_connected ? 'green' : 'blue'}>
-        <AnimatedBackground />
-        
-        <div className="relative z-10">
-          {/* Connection Visualization */}
-          <div className="flex flex-col items-center mb-8">
-            <h2 className="text-2xl font-bold text-white mb-8">Connection Status</h2>
-            
-            <div className="flex items-center justify-center flex-wrap gap-2">
-              {/* Cloud Node */}
-              <div className="flex flex-col items-center">
-                <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex flex-col items-center justify-center shadow-lg shadow-blue-500/30 transform hover:scale-105 transition-transform`}>
-                  <Cloud className="w-8 h-8 text-white mb-1" />
-                </div>
-                <span className="text-white font-medium mt-2">Cloud</span>
-                <span className="text-xs text-gray-400">UE5 AI Studio</span>
-              </div>
-
-              <ConnectionLine active={agentStatus.connected} label="WebSocket" />
-
-              {/* Agent Node */}
-              <div className="flex flex-col items-center">
-                <div className={`w-20 h-20 rounded-2xl ${agentStatus.connected ? 'bg-gradient-to-br from-green-500 to-emerald-500 shadow-lg shadow-green-500/30' : 'bg-gray-700'} flex flex-col items-center justify-center transform hover:scale-105 transition-all`}>
-                  <Cpu className="w-8 h-8 text-white mb-1" />
-                </div>
-                <span className="text-white font-medium mt-2">Agent</span>
-                <span className="text-xs text-gray-400">{agentStatus.agent_hostname || 'Desktop'}</span>
-              </div>
-
-              <ConnectionLine active={agentStatus.mcp_connected} label="MCP" />
-
-              {/* UE5 Node */}
-              <div className="flex flex-col items-center">
-                <div className={`w-20 h-20 rounded-2xl ${agentStatus.mcp_connected ? 'bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/30' : 'bg-gray-700'} flex flex-col items-center justify-center transform hover:scale-105 transition-all`}>
-                  <Gamepad2 className="w-8 h-8 text-white mb-1" />
-                </div>
-                <span className="text-white font-medium mt-2">Unreal</span>
-                <span className="text-xs text-gray-400">{agentStatus.mcp_engine_version || 'Engine 5'}</span>
-              </div>
-            </div>
-
-            {/* Status Badge */}
-            <div className="mt-6">
-              {agentStatus.connected && agentStatus.mcp_connected ? (
-                <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-500/30 rounded-full">
-                  <StatusOrb connected={true} size="sm" />
-                  <span className="text-green-400 font-medium">Fully Connected</span>
-                </div>
-              ) : agentStatus.connected ? (
-                <div className="flex items-center gap-2 px-4 py-2 bg-yellow-500/20 border border-yellow-500/30 rounded-full">
-                  <StatusOrb connected={true} size="sm" />
-                  <span className="text-yellow-400 font-medium">Agent Connected • Waiting for UE5</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 px-4 py-2 bg-gray-500/20 border border-gray-500/30 rounded-full">
-                  <StatusOrb connected={false} size="sm" />
-                  <span className="text-gray-400 font-medium">Disconnected</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Project Info (when connected) */}
-          {agentStatus.mcp_connected && agentStatus.mcp_project_name && (
-            <div className="text-center mb-6 p-4 bg-white/5 rounded-xl border border-white/10">
-              <p className="text-gray-400 text-sm">Currently Editing</p>
-              <p className="text-xl font-bold text-white">{agentStatus.mcp_project_name}</p>
-            </div>
-          )}
-        </div>
-      </GlassCard>
+      {/* Enhanced Connection Status */}
+      <EnhancedConnectionStatus agentStatus={agentStatus} />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1713,192 +1645,24 @@ export default function UE5Connection() {
   // AI Commands Tab
   const renderAiCommands = () => (
     <div className="space-y-6">
-      <GlassCard className="p-6 relative overflow-hidden" hover={false} glow glowColor="purple">
-        <AnimatedBackground />
-        <div className="relative z-10">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-white">AI Command Interface</h3>
-                <p className="text-gray-400">Describe what you want to do in natural language</p>
-              </div>
-            </div>
-            {/* Model Selector */}
-            <ModelSelector
-              selectedModel={selectedModel}
-              onModelChange={setSelectedModel}
-              autoSelect={autoSelectModel}
-              onAutoSelectChange={setAutoSelectModel}
-              disabled={isAiProcessing}
-              compact={true}
-            />
-          </div>
-
-          <div className="relative">
-            <textarea
-              value={aiCommand}
-              onChange={(e) => setAiCommand(e.target.value)}
-              placeholder="e.g., 'Spawn 10 cubes in a circle pattern at the center of the level'"
-              className="w-full h-32 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-gray-500 resize-none focus:border-purple-500 focus:outline-none transition-colors"
-            />
-            <button
-              onClick={processAiCommand}
-              disabled={!aiCommand.trim() || isAiProcessing || !agentStatus.mcp_connected}
-              className="absolute bottom-4 right-4 px-5 py-2.5 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed rounded-xl text-white text-sm font-medium flex items-center gap-2 transition-all shadow-lg shadow-purple-500/25"
-            >
-              {isAiProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              Execute
-            </button>
-          </div>
-
-          {!agentStatus.mcp_connected && (
-            <p className="text-yellow-400 text-sm mt-3 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" />
-              Connect to UE5 to use AI commands
-            </p>
-          )}
-        </div>
-      </GlassCard>
-
-      {/* Chat History */}
-      {chatHistory.length > 0 && (
-        <GlassCard className="p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
-                <History className="w-4 h-4 text-white" />
-              </div>
-              <h4 className="font-medium text-white">Conversation</h4>
-            </div>
-            <button
-              onClick={() => setChatHistory([])}
-              className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-            >
-              Clear Chat
-            </button>
-          </div>
-          <div className="space-y-4 max-h-[400px] overflow-y-auto">
-            {chatHistory.map((msg, index) => (
-              <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  msg.role === 'user' 
-                    ? 'bg-gradient-to-r from-violet-500 to-purple-500 text-white' 
-                    : 'bg-white/10 text-gray-300'
-                }`}>
-                  {/* Model badge for assistant messages */}
-                  {msg.role === 'assistant' && msg.modelUsed && (
-                    <div className="flex items-center gap-1.5 mb-2 pb-2 border-b border-white/10">
-                      <span className="text-xs">
-                        {msg.modelUsed.provider === 'openai' ? '🤖' : 
-                         msg.modelUsed.provider === 'anthropic' ? '🧠' :
-                         msg.modelUsed.provider === 'google' ? '🔮' :
-                         msg.modelUsed.provider === 'deepseek' ? '🔍' : '🤖'}
-                      </span>
-                      <span className="text-xs text-gray-400">{msg.modelUsed.name}</span>
-                    </div>
-                  )}
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                  
-                  {/* Show tool calls */}
-                  {msg.toolCalls && msg.toolCalls.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-white/10">
-                      <div className="text-xs text-gray-400 mb-2">Tools executed:</div>
-                      <div className="space-y-2">
-                        {msg.toolCalls.map((tc: any, tcIndex: number) => (
-                          <div key={tcIndex} className="flex items-center gap-2 text-xs">
-                            <Wrench className="w-3 h-3 text-cyan-400" />
-                            <span className="text-cyan-400 font-mono">{tc.function?.name || tc.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Show tool results summary */}
-                  {msg.toolResults && msg.toolResults.length > 0 && (
-                    <div className="mt-2">
-                      {msg.toolResults.map((tr: any, trIndex: number) => (
-                        <div key={trIndex} className={`text-xs flex items-center gap-1 ${
-                          tr.success ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                          {tr.success ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                          <span>{tr.tool_name}: {tr.success ? 'Success' : tr.error}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* Show screenshot thumbnail */}
-                  {msg.screenshot && (
-                    <div className="mt-3 pt-3 border-t border-white/10">
-                      <div className="text-xs text-gray-400 mb-2 flex items-center gap-1">
-                        <Camera className="w-3 h-3" />
-                        Viewport Capture
-                      </div>
-                      <img
-                        src={msg.screenshot.base64_data 
-                          ? `data:image/png;base64,${msg.screenshot.base64_data}`
-                          : msg.screenshot.file_path}
-                        alt="Viewport screenshot"
-                        className="w-full max-w-[200px] rounded-lg border border-white/10 cursor-pointer hover:border-purple-500/50 transition-colors"
-                        onClick={() => {
-                          // Could open a modal here
-                        }}
-                      />
-                    </div>
-                  )}
-                  
-                  {/* Show before/after comparison */}
-                  {msg.beforeAfter && (
-                    <div className="mt-3 pt-3 border-t border-white/10">
-                      <div className="text-xs text-gray-400 mb-2 flex items-center gap-1">
-                        <Layers className="w-3 h-3" />
-                        Before / After: {msg.beforeAfter.tool_name}
-                      </div>
-                      <div className="flex gap-2">
-                        <div className="relative">
-                          <img
-                            src={msg.beforeAfter.before.base64_data 
-                              ? `data:image/png;base64,${msg.beforeAfter.before.base64_data}`
-                              : msg.beforeAfter.before.file_path}
-                            alt="Before"
-                            className="w-24 h-14 object-cover rounded border border-white/10"
-                          />
-                          <span className="absolute bottom-0 left-0 bg-orange-500 text-white text-[10px] px-1 rounded-tr">Before</span>
-                        </div>
-                        <div className="relative">
-                          <img
-                            src={msg.beforeAfter.after.base64_data 
-                              ? `data:image/png;base64,${msg.beforeAfter.after.base64_data}`
-                              : msg.beforeAfter.after.file_path}
-                            alt="After"
-                            className="w-24 h-14 object-cover rounded border border-white/10"
-                          />
-                          <span className="absolute bottom-0 left-0 bg-green-500 text-white text-[10px] px-1 rounded-tr">After</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </GlassCard>
-      )}
-
-      {/* AI Response (Current) */}
-      {aiResponse && !chatHistory.length && (
-        <GlassCard className="p-5 border-green-500/20">
-          <div className="flex items-center gap-2 text-green-400 mb-2">
-            <CheckCircle className="w-5 h-5" />
-            <span className="font-medium">Response</span>
-          </div>
-          <p className="text-gray-300">{aiResponse}</p>
-        </GlassCard>
-      )}
+      {/* Enhanced AI Chat Interface */}
+      <div className="h-[600px]">
+        <EnhancedAIChat
+          chatHistory={chatHistory}
+          onSendMessage={(message, model) => {
+            setAiCommand(message);
+            setSelectedModel(model);
+            processAiCommand();
+          }}
+          onClearHistory={() => setChatHistory([])}
+          isProcessing={isAiProcessing}
+          isConnected={agentStatus.mcp_connected}
+          selectedModel={selectedModel}
+          onModelChange={setSelectedModel}
+          autoSelectModel={autoSelectModel}
+          onAutoSelectChange={setAutoSelectModel}
+        />
+      </div>
 
       {/* Tool Calls in Progress */}
       {aiToolCalls.length > 0 && isAiProcessing && (
@@ -1922,27 +1686,6 @@ export default function UE5Connection() {
           </div>
         </GlassCard>
       )}
-
-      {/* Command Suggestions */}
-      <GlassCard className="p-5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-            <Command className="w-4 h-4 text-white" />
-          </div>
-          <h4 className="font-medium text-white">Suggestions</h4>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {aiSuggestions.map((suggestion) => (
-            <button
-              key={suggestion}
-              onClick={() => setAiCommand(suggestion)}
-              className="text-left p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/50 rounded-xl text-sm text-gray-400 hover:text-white transition-all"
-            >
-              {suggestion}
-            </button>
-          ))}
-        </div>
-      </GlassCard>
 
       {/* Viewport Preview */}
       {agentStatus.mcp_connected && (

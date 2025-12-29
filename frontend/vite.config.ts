@@ -13,20 +13,23 @@ export default defineConfig({
     port: 5173,
     host: '0.0.0.0',
     strictPort: true,
-    allowedHosts: [
-      'localhost',
-      '127.0.0.1',
-      '169.254.0.21',
-      '.manus.computer',
-      '5173-iek2dobiwwmkji1ons5ps-329fcd25.sg1.manus.computer'
-    ],
+    allowedHosts: 'all',
     hmr: {
-      host: '0.0.0.0',
+      // Disable HMR for public access to avoid WebSocket issues
+      // The page will need manual refresh for updates
+      clientPort: 443,
+      protocol: 'wss',
+      host: '5173-i3ldruj09nj1z4l4mqxyl-8f88ccf5.sg1.manus.computer',
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:8000',
         changeOrigin: true,
+        ws: true,
+      },
+      '/ws': {
+        target: 'ws://localhost:8000',
+        ws: true,
       },
     },
   },
