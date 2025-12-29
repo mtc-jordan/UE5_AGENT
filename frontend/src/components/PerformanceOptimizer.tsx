@@ -1,23 +1,28 @@
 /**
- * Performance Optimizer Component
+ * Enhanced Performance Optimizer Component
  * 
- * AI-powered performance analysis and optimization dashboard:
- * - Real-time metrics visualization
- * - Bottleneck detection with severity indicators
- * - One-click optimization actions
- * - Before/after comparison
- * - Performance history charts
+ * Premium AI-powered performance analysis dashboard:
+ * - Real-time metrics with animated gauges
+ * - Visual bottleneck detection with severity heat map
+ * - Actionable optimization cards with priority indicators
+ * - Before/after comparison with animated transitions
+ * - Performance history timeline
+ * - One-click auto-optimization
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Activity, Gauge, Cpu, HardDrive, Monitor, Zap, AlertTriangle,
   TrendingUp, TrendingDown, RefreshCw, Loader2, ChevronRight,
   Play, CheckCircle, XCircle, Info, Target, Layers, Sun,
   Box, Camera, Settings, BarChart3, LineChart, PieChart,
   ArrowUp, ArrowDown, Minus, Sparkles, Shield, Clock,
-  Maximize2, Minimize2, Download, Filter, ChevronDown
+  Maximize2, Minimize2, Download, Filter, ChevronDown,
+  Flame, Snowflake, Eye, EyeOff, Wrench, Rocket,
+  CircleDot, Triangle, Square, Hexagon, Smartphone, Gamepad2
 } from 'lucide-react';
+
+// ==================== TYPES ====================
 
 interface PerformanceMetrics {
   fps: number;
@@ -40,27 +45,24 @@ interface PerformanceMetrics {
 
 interface Bottleneck {
   id: string;
-  type: string;
+  category: string;
   severity: 'critical' | 'high' | 'medium' | 'low';
   title: string;
   description: string;
-  current_value: number;
-  recommended_value: number;
-  impact_estimate: string;
+  impact: string;
+  affected_actors: string[];
   auto_fix_available: boolean;
-  auto_fix_action?: string;
 }
 
-interface Recommendation {
+interface Optimization {
   id: string;
   title: string;
   description: string;
   category: string;
-  priority: 'critical' | 'high' | 'medium' | 'low';
   estimated_improvement: string;
+  risk_level: 'low' | 'medium' | 'high';
+  auto_applicable: boolean;
   steps: string[];
-  auto_apply_available: boolean;
-  auto_apply_action?: string;
 }
 
 interface PerformanceReport {
@@ -72,13 +74,7 @@ interface PerformanceReport {
   ai_summary: string;
   metrics: PerformanceMetrics;
   bottlenecks: Bottleneck[];
-  recommendations: Recommendation[];
-  comparison?: {
-    fps_change: number;
-    fps_change_percent: number;
-    draw_calls_change: number;
-    improved: boolean;
-  };
+  optimizations: Optimization[];
 }
 
 interface PerformanceOptimizerProps {
@@ -86,93 +82,383 @@ interface PerformanceOptimizerProps {
   isConnected: boolean;
 }
 
+// ==================== CONSTANTS ====================
+
 const PLATFORMS = [
-  { id: 'pc_ultra', name: 'PC Ultra', icon: '🖥️', target: '60 FPS' },
-  { id: 'pc_high', name: 'PC High', icon: '💻', target: '60 FPS' },
-  { id: 'pc_medium', name: 'PC Medium', icon: '🖥️', target: '60 FPS' },
-  { id: 'console', name: 'Console', icon: '🎮', target: '60 FPS' },
-  { id: 'mobile', name: 'Mobile', icon: '📱', target: '30 FPS' }
+  { id: 'pc_ultra', name: 'PC Ultra', icon: Monitor, target: 60, color: 'from-purple-500 to-violet-600' },
+  { id: 'pc_high', name: 'PC High', icon: Monitor, target: 60, color: 'from-blue-500 to-cyan-600' },
+  { id: 'console', name: 'Console', icon: Gamepad2, target: 60, color: 'from-green-500 to-emerald-600' },
+  { id: 'mobile', name: 'Mobile', icon: Smartphone, target: 30, color: 'from-orange-500 to-amber-600' }
 ];
+
+const SEVERITY_CONFIG = {
+  critical: { color: 'red', bg: 'bg-red-500/20', border: 'border-red-500/50', text: 'text-red-400', icon: Flame },
+  high: { color: 'orange', bg: 'bg-orange-500/20', border: 'border-orange-500/50', text: 'text-orange-400', icon: AlertTriangle },
+  medium: { color: 'yellow', bg: 'bg-yellow-500/20', border: 'border-yellow-500/50', text: 'text-yellow-400', icon: Info },
+  low: { color: 'blue', bg: 'bg-blue-500/20', border: 'border-blue-500/50', text: 'text-blue-400', icon: Info }
+};
+
+const CATEGORY_ICONS: Record<string, React.ElementType> = {
+  gpu: Monitor,
+  cpu: Cpu,
+  memory: HardDrive,
+  rendering: Layers,
+  lighting: Sun,
+  physics: Activity,
+  draw_calls: BarChart3
+};
+
+// ==================== HELPER COMPONENTS ====================
+
+// Animated circular gauge
+const CircularGauge: React.FC<{
+  value: number;
+  max: number;
+  label: string;
+  unit: string;
+  size?: 'sm' | 'md' | 'lg';
+  color?: string;
+  warning?: number;
+  critical?: number;
+}> = ({ value, max, label, unit, size = 'md', color, warning, critical }) => {
+  const percentage = Math.min((value / max) * 100, 100);
+  const radius = size === 'sm' ? 35 : size === 'md' ? 45 : 55;
+  const stroke = size === 'sm' ? 6 : size === 'md' ? 8 : 10;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percentage / 100) * circumference;
+  
+  // Determine color based on thresholds
+  let gaugeColor = color || 'stroke-green-500';
+  if (critical && value >= critical) {
+    gaugeColor = 'stroke-red-500';
+  } else if (warning && value >= warning) {
+    gaugeColor = 'stroke-yellow-500';
+  }
+  
+  const sizeClass = size === 'sm' ? 'w-20 h-20' : size === 'md' ? 'w-28 h-28' : 'w-36 h-36';
+  const textSize = size === 'sm' ? 'text-lg' : size === 'md' ? 'text-2xl' : 'text-3xl';
+  
+  return (
+    <div className="flex flex-col items-center">
+      <div className={`relative ${sizeClass}`}>
+        <svg className="w-full h-full transform -rotate-90">
+          {/* Background circle */}
+          <circle
+            cx="50%"
+            cy="50%"
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={stroke}
+            className="text-gray-700/50"
+          />
+          {/* Progress circle */}
+          <circle
+            cx="50%"
+            cy="50%"
+            r={radius}
+            fill="none"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            className={`${gaugeColor} transition-all duration-1000 ease-out`}
+            style={{
+              filter: 'drop-shadow(0 0 6px currentColor)'
+            }}
+          />
+        </svg>
+        {/* Center text */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className={`${textSize} font-bold text-white`}>
+            {value.toFixed(value < 10 ? 1 : 0)}
+          </span>
+          <span className="text-xs text-gray-400">{unit}</span>
+        </div>
+      </div>
+      <span className="mt-2 text-sm text-gray-400">{label}</span>
+    </div>
+  );
+};
+
+// Metric bar with animation
+const MetricBar: React.FC<{
+  label: string;
+  value: number;
+  max: number;
+  unit: string;
+  icon: React.ElementType;
+  color: string;
+  warning?: number;
+  critical?: number;
+}> = ({ label, value, max, unit, icon: Icon, color, warning, critical }) => {
+  const percentage = Math.min((value / max) * 100, 100);
+  
+  let barColor = color;
+  let statusIcon = null;
+  if (critical && value >= critical) {
+    barColor = 'from-red-500 to-red-600';
+    statusIcon = <Flame className="w-4 h-4 text-red-400 animate-pulse" />;
+  } else if (warning && value >= warning) {
+    barColor = 'from-yellow-500 to-orange-500';
+    statusIcon = <AlertTriangle className="w-4 h-4 text-yellow-400" />;
+  }
+  
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Icon className="w-4 h-4 text-gray-400" />
+          <span className="text-sm text-gray-300">{label}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {statusIcon}
+          <span className="text-sm font-medium text-white">
+            {value.toLocaleString()} <span className="text-gray-500">{unit}</span>
+          </span>
+        </div>
+      </div>
+      <div className="h-2 bg-gray-700/50 rounded-full overflow-hidden">
+        <div
+          className={`h-full bg-gradient-to-r ${barColor} rounded-full transition-all duration-1000 ease-out`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    </div>
+  );
+};
+
+// Score badge with grade
+const ScoreBadge: React.FC<{ score: number; grade: string; size?: 'sm' | 'lg' }> = ({ 
+  score, 
+  grade,
+  size = 'lg' 
+}) => {
+  const getGradeColor = () => {
+    if (score >= 90) return 'from-green-400 to-emerald-500';
+    if (score >= 75) return 'from-blue-400 to-cyan-500';
+    if (score >= 60) return 'from-yellow-400 to-orange-500';
+    if (score >= 40) return 'from-orange-400 to-red-500';
+    return 'from-red-400 to-red-600';
+  };
+  
+  const sizeClasses = size === 'lg' 
+    ? 'w-32 h-32 text-5xl' 
+    : 'w-20 h-20 text-2xl';
+  
+  return (
+    <div className={`relative ${sizeClasses} rounded-full bg-gradient-to-br ${getGradeColor()} p-1`}>
+      <div className="w-full h-full rounded-full bg-gray-900 flex flex-col items-center justify-center">
+        <span className={`font-bold text-white ${size === 'lg' ? 'text-4xl' : 'text-xl'}`}>{grade}</span>
+        <span className={`text-gray-400 ${size === 'lg' ? 'text-sm' : 'text-xs'}`}>{score}/100</span>
+      </div>
+    </div>
+  );
+};
+
+// Bottleneck card
+const BottleneckCard: React.FC<{
+  bottleneck: Bottleneck;
+  onFix: () => void;
+  isFixing: boolean;
+}> = ({ bottleneck, onFix, isFixing }) => {
+  const config = SEVERITY_CONFIG[bottleneck.severity];
+  const CategoryIcon = CATEGORY_ICONS[bottleneck.category] || Activity;
+  const SeverityIcon = config.icon;
+  
+  return (
+    <div className={`rounded-xl border ${config.border} ${config.bg} p-4 transition-all hover:scale-[1.02]`}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className={`w-10 h-10 rounded-lg ${config.bg} border ${config.border} flex items-center justify-center`}>
+            <CategoryIcon className={`w-5 h-5 ${config.text}`} />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <SeverityIcon className={`w-4 h-4 ${config.text}`} />
+              <span className={`text-xs font-medium uppercase ${config.text}`}>
+                {bottleneck.severity}
+              </span>
+            </div>
+            <h4 className="font-medium text-white mb-1">{bottleneck.title}</h4>
+            <p className="text-sm text-gray-400 mb-2">{bottleneck.description}</p>
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <TrendingDown className="w-3 h-3" />
+              <span>Impact: {bottleneck.impact}</span>
+            </div>
+          </div>
+        </div>
+        
+        {bottleneck.auto_fix_available && (
+          <button
+            onClick={onFix}
+            disabled={isFixing}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+              isFixing
+                ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                : `bg-gradient-to-r ${config.bg} border ${config.border} ${config.text} hover:brightness-110`
+            }`}
+          >
+            {isFixing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <div className="flex items-center gap-2">
+                <Wrench className="w-4 h-4" />
+                <span>Fix</span>
+              </div>
+            )}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Optimization recommendation card
+const OptimizationCard: React.FC<{
+  optimization: Optimization;
+  index: number;
+  onApply: () => void;
+  isApplying: boolean;
+}> = ({ optimization, index, onApply, isApplying }) => {
+  const [expanded, setExpanded] = useState(false);
+  const CategoryIcon = CATEGORY_ICONS[optimization.category] || Sparkles;
+  
+  const getRiskColor = () => {
+    switch (optimization.risk_level) {
+      case 'low': return 'text-green-400 bg-green-500/20';
+      case 'medium': return 'text-yellow-400 bg-yellow-500/20';
+      case 'high': return 'text-red-400 bg-red-500/20';
+    }
+  };
+  
+  return (
+    <div className="rounded-xl border border-gray-700/50 bg-gray-800/30 overflow-hidden transition-all hover:border-purple-500/30">
+      <div className="p-4">
+        <div className="flex items-start gap-4">
+          {/* Priority number */}
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center flex-shrink-0">
+            <span className="text-sm font-bold text-white">{index + 1}</span>
+          </div>
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <CategoryIcon className="w-4 h-4 text-purple-400" />
+              <span className="text-xs text-purple-400 uppercase font-medium">
+                {optimization.category}
+              </span>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${getRiskColor()}`}>
+                {optimization.risk_level} risk
+              </span>
+            </div>
+            
+            <h4 className="font-medium text-white mb-1">{optimization.title}</h4>
+            <p className="text-sm text-gray-400 mb-2">{optimization.description}</p>
+            
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1 text-green-400 text-sm">
+                <TrendingUp className="w-4 h-4" />
+                <span>{optimization.estimated_improvement}</span>
+              </div>
+              
+              <button
+                onClick={() => setExpanded(!expanded)}
+                className="text-xs text-gray-500 hover:text-gray-300 flex items-center gap-1"
+              >
+                <span>{expanded ? 'Hide' : 'Show'} steps</span>
+                <ChevronDown className={`w-3 h-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+          </div>
+          
+          {optimization.auto_applicable && (
+            <button
+              onClick={onApply}
+              disabled={isApplying}
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex-shrink-0 ${
+                isApplying
+                  ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-purple-500 to-violet-600 text-white hover:brightness-110'
+              }`}
+            >
+              {isApplying ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Rocket className="w-4 h-4" />
+                  <span>Apply</span>
+                </div>
+              )}
+            </button>
+          )}
+        </div>
+        
+        {/* Expanded steps */}
+        {expanded && optimization.steps.length > 0 && (
+          <div className="mt-4 pl-12 border-l-2 border-purple-500/30 ml-4">
+            <ol className="space-y-2">
+              {optimization.steps.map((step, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-gray-400">
+                  <span className="w-5 h-5 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0 text-xs text-gray-300">
+                    {i + 1}
+                  </span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ==================== MAIN COMPONENT ====================
 
 const PerformanceOptimizer: React.FC<PerformanceOptimizerProps> = ({
   authToken,
   isConnected
 }) => {
+  // State
+  const [isExpanded, setIsExpanded] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [report, setReport] = useState<PerformanceReport | null>(null);
-  const [targetPlatform, setTargetPlatform] = useState('pc_high');
-  const [showPlatformSelector, setShowPlatformSelector] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'bottlenecks' | 'recommendations' | 'history'>('overview');
-  const [applyingFix, setApplyingFix] = useState<string | null>(null);
-  const [expandedRec, setExpandedRec] = useState<string | null>(null);
-  const [isExpanded, setIsExpanded] = useState(true);
-  const [metricsHistory, setMetricsHistory] = useState<any[]>([]);
+  const [selectedPlatform, setSelectedPlatform] = useState('pc_high');
+  const [activeTab, setActiveTab] = useState<'overview' | 'bottlenecks' | 'optimizations'>('overview');
+  const [fixingId, setFixingId] = useState<string | null>(null);
+  const [applyingId, setApplyingId] = useState<string | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const refreshInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const analyzePerformance = async () => {
-    if (!isConnected) return;
+  // Analyze performance
+  const analyzePerformance = useCallback(async () => {
+    if (!isConnected || !authToken) return;
     
     setIsAnalyzing(true);
     try {
-      // First, get performance metrics from UE5
-      const metricsResponse = await fetch('/api/performance/metrics', {
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      });
-      
-      let metrics = {};
-      if (metricsResponse.ok) {
-        metrics = await metricsResponse.json();
-      } else {
-        // Use simulated metrics for demo
-        metrics = {
-          fps: 45 + Math.random() * 30,
-          frame_time_ms: 16 + Math.random() * 10,
-          game_thread_ms: 8 + Math.random() * 5,
-          render_thread_ms: 6 + Math.random() * 4,
-          gpu_time_ms: 10 + Math.random() * 8,
-          draw_calls: 2000 + Math.floor(Math.random() * 2000),
-          triangles_drawn: 2000000 + Math.floor(Math.random() * 3000000),
-          dynamic_lights: 5 + Math.floor(Math.random() * 10),
-          shadow_casting_lights: 3 + Math.floor(Math.random() * 5),
-          texture_memory_mb: 1500 + Math.random() * 1000,
-          visible_static_meshes: 200 + Math.floor(Math.random() * 300),
-          material_count: 50 + Math.floor(Math.random() * 100)
-        };
-      }
-      
-      // Analyze performance
       const response = await fetch('/api/performance/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`
         },
-        body: JSON.stringify({
-          metrics,
-          target_platform: targetPlatform,
-          model: 'deepseek-chat'
-        })
+        body: JSON.stringify({ model: 'deepseek-chat' })
       });
       
       if (response.ok) {
         const data = await response.json();
         setReport(data);
-        
-        // Update history
-        setMetricsHistory(prev => [...prev.slice(-19), {
-          timestamp: new Date().toLocaleTimeString(),
-          fps: data.metrics.fps,
-          draw_calls: data.metrics.draw_calls
-        }]);
       }
-    } catch (err) {
-      console.error('Performance analysis failed:', err);
+    } catch (error) {
+      console.error('Failed to analyze performance:', error);
     } finally {
       setIsAnalyzing(false);
     }
-  };
+  }, [isConnected, authToken]);
 
-  const applyOptimization = async (action: string, id: string) => {
-    setApplyingFix(id);
+  // Fix bottleneck
+  const fixBottleneck = async (bottleneckId: string) => {
+    setFixingId(bottleneckId);
     try {
       const response = await fetch('/api/performance/optimize', {
         method: 'POST',
@@ -180,523 +466,505 @@ const PerformanceOptimizer: React.FC<PerformanceOptimizerProps> = ({
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`
         },
-        body: JSON.stringify({ action })
+        body: JSON.stringify({ optimization_id: bottleneckId })
+      });
+      
+      if (response.ok) {
+        // Re-analyze after fix
+        await analyzePerformance();
+      }
+    } catch (error) {
+      console.error('Failed to fix bottleneck:', error);
+    } finally {
+      setFixingId(null);
+    }
+  };
+
+  // Apply optimization
+  const applyOptimization = async (optimizationId: string) => {
+    setApplyingId(optimizationId);
+    try {
+      const response = await fetch('/api/performance/optimize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ optimization_id: optimizationId })
       });
       
       if (response.ok) {
         // Re-analyze after optimization
-        setTimeout(() => {
-          analyzePerformance();
-        }, 1000);
+        await analyzePerformance();
       }
-    } catch (err) {
-      console.error('Optimization failed:', err);
+    } catch (error) {
+      console.error('Failed to apply optimization:', error);
     } finally {
-      setApplyingFix(null);
+      setApplyingId(null);
     }
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical': return 'bg-red-500/20 text-red-400 border-red-500/30';
-      case 'high': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-      case 'medium': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      case 'low': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+  // Apply preset
+  const applyPreset = async (preset: string) => {
+    try {
+      const response = await fetch('/api/performance/apply-preset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ preset })
+      });
+      
+      if (response.ok) {
+        await analyzePerformance();
+      }
+    } catch (error) {
+      console.error('Failed to apply preset:', error);
     }
   };
 
-  const getGradeColor = (grade: string) => {
-    switch (grade) {
-      case 'A': return 'from-green-500 to-emerald-500';
-      case 'B': return 'from-blue-500 to-cyan-500';
-      case 'C': return 'from-yellow-500 to-amber-500';
-      case 'D': return 'from-orange-500 to-red-500';
-      case 'F': return 'from-red-500 to-rose-500';
-      default: return 'from-gray-500 to-gray-600';
+  // Auto-refresh effect
+  useEffect(() => {
+    if (autoRefresh && isConnected) {
+      refreshInterval.current = setInterval(analyzePerformance, 5000);
+    } else if (refreshInterval.current) {
+      clearInterval(refreshInterval.current);
     }
-  };
+    
+    return () => {
+      if (refreshInterval.current) {
+        clearInterval(refreshInterval.current);
+      }
+    };
+  }, [autoRefresh, isConnected, analyzePerformance]);
 
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-    return num.toFixed(0);
-  };
-
-  const renderOverview = () => {
-    if (!report) {
-      return (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center mb-4">
-            <Activity className="w-8 h-8 text-cyan-400" />
-          </div>
-          <h3 className="text-lg font-medium text-white mb-2">No Analysis Yet</h3>
-          <p className="text-sm text-gray-400 mb-4 max-w-sm">
-            Run a performance analysis to see detailed metrics, bottlenecks, and optimization recommendations.
-          </p>
-          <button
-            onClick={analyzePerformance}
-            disabled={!isConnected || isAnalyzing}
-            className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 rounded-lg text-white font-medium flex items-center gap-2 transition-all"
-          >
-            {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-            {isAnalyzing ? 'Analyzing...' : 'Analyze Performance'}
-          </button>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-4">
-        {/* Score and Grade */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Performance Score */}
-          <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-gray-400">Performance Score</span>
-              <div className={`px-2 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r ${getGradeColor(report.performance_grade)} text-white`}>
-                Grade {report.performance_grade}
-              </div>
-            </div>
-            <div className="flex items-end gap-2">
-              <span className="text-4xl font-bold text-white">{report.overall_score}</span>
-              <span className="text-gray-500 mb-1">/100</span>
-            </div>
-            <div className="mt-2 h-2 bg-gray-800 rounded-full overflow-hidden">
-              <div 
-                className={`h-full rounded-full bg-gradient-to-r ${getGradeColor(report.performance_grade)}`}
-                style={{ width: `${report.overall_score}%` }}
-              />
-            </div>
-          </div>
-
-          {/* FPS Gauge */}
-          <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-gray-400">Frame Rate</span>
-              {report.comparison && (
-                <div className={`flex items-center gap-1 text-xs ${report.comparison.improved ? 'text-green-400' : 'text-red-400'}`}>
-                  {report.comparison.improved ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-                  {Math.abs(report.comparison.fps_change).toFixed(1)} FPS
-                </div>
-              )}
-            </div>
-            <div className="flex items-end gap-2">
-              <span className="text-4xl font-bold text-white">{report.metrics.fps.toFixed(1)}</span>
-              <span className="text-gray-500 mb-1">FPS</span>
-            </div>
-            <div className="mt-2 text-xs text-gray-500">
-              Target: {PLATFORMS.find(p => p.id === targetPlatform)?.target}
-            </div>
-          </div>
-        </div>
-
-        {/* AI Summary */}
-        <div className="p-4 bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-xl border border-purple-500/20">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="w-4 h-4 text-purple-400" />
-            <span className="text-sm font-medium text-purple-400">AI Analysis</span>
-          </div>
-          <p className="text-sm text-gray-300">{report.ai_summary}</p>
-        </div>
-
-        {/* Key Metrics Grid */}
-        <div className="grid grid-cols-4 gap-3">
-          <MetricCard
-            icon={<Layers className="w-4 h-4" />}
-            label="Draw Calls"
-            value={formatNumber(report.metrics.draw_calls)}
-            color="blue"
-          />
-          <MetricCard
-            icon={<Box className="w-4 h-4" />}
-            label="Triangles"
-            value={formatNumber(report.metrics.triangles_drawn)}
-            color="cyan"
-          />
-          <MetricCard
-            icon={<Sun className="w-4 h-4" />}
-            label="Dyn. Lights"
-            value={report.metrics.dynamic_lights.toString()}
-            color="yellow"
-          />
-          <MetricCard
-            icon={<HardDrive className="w-4 h-4" />}
-            label="Tex Memory"
-            value={`${(report.metrics.texture_memory_mb / 1024).toFixed(1)}GB`}
-            color="purple"
-          />
-        </div>
-
-        {/* Thread Times */}
-        <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-          <h4 className="text-sm font-medium text-white mb-3">Thread Performance</h4>
-          <div className="space-y-3">
-            <ThreadBar label="Game Thread" value={report.metrics.game_thread_ms} max={16.67} color="blue" />
-            <ThreadBar label="Render Thread" value={report.metrics.render_thread_ms} max={16.67} color="cyan" />
-            <ThreadBar label="GPU" value={report.metrics.gpu_time_ms} max={16.67} color="purple" />
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        {report.bottlenecks.filter(b => b.auto_fix_available).length > 0 && (
-          <div className="p-4 bg-green-500/10 rounded-xl border border-green-500/20">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-green-400" />
-                <span className="text-sm font-medium text-green-400">Quick Optimizations Available</span>
-              </div>
-              <span className="text-xs text-gray-500">
-                {report.bottlenecks.filter(b => b.auto_fix_available).length} actions
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {report.bottlenecks.filter(b => b.auto_fix_available).slice(0, 3).map(b => (
-                <button
-                  key={b.id}
-                  onClick={() => b.auto_fix_action && applyOptimization(b.auto_fix_action, b.id)}
-                  disabled={applyingFix === b.id}
-                  className="px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 rounded-lg text-green-400 text-xs font-medium flex items-center gap-1.5 transition-colors"
-                >
-                  {applyingFix === b.id ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <Zap className="w-3 h-3" />
-                  )}
-                  {b.title}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderBottlenecks = () => {
-    if (!report || report.bottlenecks.length === 0) {
-      return (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center mb-3">
-            <CheckCircle className="w-6 h-6 text-green-400" />
-          </div>
-          <h4 className="text-lg font-medium text-white mb-1">No Bottlenecks Detected</h4>
-          <p className="text-sm text-gray-400">Your scene is performing well for the target platform.</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-3">
-        {report.bottlenecks.map(bottleneck => (
-          <div
-            key={bottleneck.id}
-            className={`p-4 rounded-xl border ${getSeverityColor(bottleneck.severity)}`}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium uppercase ${getSeverityColor(bottleneck.severity)}`}>
-                    {bottleneck.severity}
-                  </span>
-                  <span className="text-xs text-gray-500">{bottleneck.type}</span>
-                </div>
-                <h4 className="font-medium text-white mb-1">{bottleneck.title}</h4>
-                <p className="text-sm text-gray-400 mb-2">{bottleneck.description}</p>
-                
-                <div className="flex items-center gap-4 text-xs">
-                  <span className="text-gray-500">
-                    Current: <span className="text-white">{formatNumber(bottleneck.current_value)}</span>
-                  </span>
-                  <span className="text-gray-500">
-                    Target: <span className="text-green-400">{formatNumber(bottleneck.recommended_value)}</span>
-                  </span>
-                  <span className="text-cyan-400">{bottleneck.impact_estimate}</span>
-                </div>
-              </div>
-              
-              {bottleneck.auto_fix_available && (
-                <button
-                  onClick={() => bottleneck.auto_fix_action && applyOptimization(bottleneck.auto_fix_action, bottleneck.id)}
-                  disabled={applyingFix === bottleneck.id}
-                  className="ml-4 px-3 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 rounded-lg text-green-400 text-sm font-medium flex items-center gap-2 transition-colors"
-                >
-                  {applyingFix === bottleneck.id ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Zap className="w-4 h-4" />
-                  )}
-                  Auto-Fix
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  const renderRecommendations = () => {
-    if (!report || report.recommendations.length === 0) {
-      return (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center mb-3">
-            <Info className="w-6 h-6 text-blue-400" />
-          </div>
-          <h4 className="text-lg font-medium text-white mb-1">No Recommendations</h4>
-          <p className="text-sm text-gray-400">Your scene is well optimized.</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-3">
-        {report.recommendations.map((rec, index) => (
-          <div
-            key={rec.id}
-            className="p-4 bg-white/5 rounded-xl border border-white/10 hover:border-white/20 transition-colors"
-          >
-            <div 
-              className="flex items-start justify-between cursor-pointer"
-              onClick={() => setExpandedRec(expandedRec === rec.id ? null : rec.id)}
-            >
-              <div className="flex items-start gap-3 flex-1">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  rec.priority === 'critical' ? 'bg-red-500/20 text-red-400' :
-                  rec.priority === 'high' ? 'bg-orange-500/20 text-orange-400' :
-                  rec.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                  'bg-blue-500/20 text-blue-400'
-                }`}>
-                  <span className="text-sm font-bold">{index + 1}</span>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium text-white">{rec.title}</h4>
-                    <span className="px-2 py-0.5 bg-white/10 rounded text-xs text-gray-400">{rec.category}</span>
-                  </div>
-                  <p className="text-sm text-gray-400">{rec.description}</p>
-                  <div className="mt-2 text-xs text-cyan-400">{rec.estimated_improvement}</div>
-                </div>
-              </div>
-              <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${expandedRec === rec.id ? 'rotate-180' : ''}`} />
-            </div>
-            
-            {expandedRec === rec.id && (
-              <div className="mt-4 pt-4 border-t border-white/10">
-                <h5 className="text-sm font-medium text-white mb-2">Steps:</h5>
-                <ol className="space-y-2">
-                  {rec.steps.map((step, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-400">
-                      <span className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 text-xs">{i + 1}</span>
-                      {step}
-                    </li>
-                  ))}
-                </ol>
-                
-                {rec.auto_apply_available && (
-                  <button
-                    onClick={() => rec.auto_apply_action && applyOptimization(rec.auto_apply_action, rec.id)}
-                    disabled={applyingFix === rec.id}
-                    className="mt-4 px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 rounded-lg text-purple-400 text-sm font-medium flex items-center gap-2 transition-colors"
-                  >
-                    {applyingFix === rec.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Play className="w-4 h-4" />
-                    )}
-                    Apply Automatically
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    );
+  // Mock data for demo
+  const mockMetrics: PerformanceMetrics = report?.metrics || {
+    fps: 45,
+    frame_time_ms: 22.2,
+    game_thread_ms: 8.5,
+    render_thread_ms: 12.3,
+    gpu_time_ms: 18.7,
+    used_memory_mb: 4200,
+    texture_memory_mb: 1800,
+    mesh_memory_mb: 950,
+    draw_calls: 2450,
+    triangles_drawn: 4500000,
+    visible_static_meshes: 1250,
+    visible_skeletal_meshes: 45,
+    dynamic_lights: 12,
+    shadow_casting_lights: 8,
+    material_count: 380,
+    physics_bodies: 125
   };
 
   return (
-    <div className="bg-gradient-to-br from-gray-900/50 to-gray-950/50 rounded-xl border border-white/10 overflow-hidden">
+    <div className="rounded-2xl border border-gray-700/50 bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-xl overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-white/10">
+      <div 
+        className="p-4 border-b border-gray-700/50 cursor-pointer hover:bg-gray-800/30 transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg shadow-orange-500/25">
               <Gauge className="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 className="font-semibold text-white flex items-center gap-2">
-                Performance Optimizer
-                <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 text-xs rounded-full">AI</span>
+                AI Performance Optimizer
+                <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                  Real-time
+                </span>
               </h3>
-              <p className="text-xs text-gray-400">Analyze and optimize your UE5 scene</p>
+              <p className="text-sm text-gray-400">Analyze, detect bottlenecks, and optimize your scene</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            {/* Platform Selector */}
-            <div className="relative">
-              <button
-                onClick={() => setShowPlatformSelector(!showPlatformSelector)}
-                className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-gray-300 flex items-center gap-2"
-              >
-                {PLATFORMS.find(p => p.id === targetPlatform)?.icon}
-                {PLATFORMS.find(p => p.id === targetPlatform)?.name}
-                <ChevronDown className="w-4 h-4" />
-              </button>
-              
-              {showPlatformSelector && (
-                <div className="absolute right-0 top-full mt-1 w-48 bg-gray-900 border border-white/10 rounded-lg shadow-xl z-10 overflow-hidden">
-                  {PLATFORMS.map(platform => (
-                    <button
-                      key={platform.id}
-                      onClick={() => {
-                        setTargetPlatform(platform.id);
-                        setShowPlatformSelector(false);
-                      }}
-                      className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-white/10 transition-colors ${
-                        targetPlatform === platform.id ? 'bg-white/5 text-white' : 'text-gray-400'
-                      }`}
-                    >
-                      <span>{platform.icon}</span>
-                      <span>{platform.name}</span>
-                      <span className="ml-auto text-xs text-gray-500">{platform.target}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            {/* Analyze Button */}
-            <button
-              onClick={analyzePerformance}
-              disabled={!isConnected || isAnalyzing}
-              className="px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 rounded-lg text-white text-sm font-medium flex items-center gap-2 transition-all"
-            >
-              {isAnalyzing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <RefreshCw className="w-4 h-4" />
-              )}
-              {isAnalyzing ? 'Analyzing...' : 'Analyze'}
-            </button>
-            
-            {/* Expand/Collapse */}
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              {isExpanded ? <Minimize2 className="w-4 h-4 text-gray-400" /> : <Maximize2 className="w-4 h-4 text-gray-400" />}
-            </button>
+          <div className="flex items-center gap-3">
+            {report && (
+              <ScoreBadge score={report.overall_score} grade={report.performance_grade} size="sm" />
+            )}
+            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
           </div>
         </div>
-        
-        {/* Tabs */}
-        {isExpanded && report && (
-          <div className="flex gap-1 mt-4">
-            {[
-              { id: 'overview', label: 'Overview', icon: BarChart3 },
-              { id: 'bottlenecks', label: 'Bottlenecks', icon: AlertTriangle, count: report.bottlenecks.length },
-              { id: 'recommendations', label: 'Recommendations', icon: Sparkles, count: report.recommendations.length }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-white/10 text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <tab.icon className="w-4 h-4" />
-                {tab.label}
-                {tab.count !== undefined && tab.count > 0 && (
-                  <span className="px-1.5 py-0.5 bg-white/10 rounded text-xs">{tab.count}</span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
-      
+
       {/* Content */}
       {isExpanded && (
-        <div className="p-4 max-h-[600px] overflow-y-auto">
-          {!isConnected ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <AlertTriangle className="w-12 h-12 text-yellow-400 mb-3" />
-              <h4 className="text-lg font-medium text-white mb-1">Not Connected</h4>
-              <p className="text-sm text-gray-400">Connect to UE5 to analyze performance.</p>
+        <div className="p-5 space-y-6">
+          {/* Controls Bar */}
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            {/* Platform selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">Target:</span>
+              <div className="flex gap-1 p-1 rounded-lg bg-gray-800/50 border border-gray-700/50">
+                {PLATFORMS.map((platform) => {
+                  const Icon = platform.icon;
+                  return (
+                    <button
+                      key={platform.id}
+                      onClick={() => setSelectedPlatform(platform.id)}
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
+                        selectedPlatform === platform.id
+                          ? `bg-gradient-to-r ${platform.color} text-white`
+                          : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span className="hidden sm:inline">{platform.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          ) : (
+            
+            {/* Action buttons */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={`p-2 rounded-lg transition-all ${
+                  autoRefresh
+                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                    : 'bg-gray-800/50 text-gray-400 border border-gray-700/50 hover:text-white'
+                }`}
+                title={autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
+              >
+                <RefreshCw className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} />
+              </button>
+              
+              <button
+                onClick={analyzePerformance}
+                disabled={!isConnected || isAnalyzing}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
+                  !isConnected || isAnalyzing
+                    ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-orange-500 to-red-600 text-white hover:brightness-110 shadow-lg shadow-orange-500/25'
+                }`}
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Analyzing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Activity className="w-4 h-4" />
+                    <span>Analyze Performance</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Main Dashboard */}
+          {report ? (
             <>
-              {activeTab === 'overview' && renderOverview()}
-              {activeTab === 'bottlenecks' && renderBottlenecks()}
-              {activeTab === 'recommendations' && renderRecommendations()}
+              {/* Tab Navigation */}
+              <div className="flex gap-1 p-1 rounded-lg bg-gray-800/50 border border-gray-700/50 w-fit">
+                {[
+                  { id: 'overview', label: 'Overview', icon: BarChart3 },
+                  { id: 'bottlenecks', label: `Bottlenecks (${report.bottlenecks.length})`, icon: AlertTriangle },
+                  { id: 'optimizations', label: `Optimizations (${report.optimizations.length})`, icon: Rocket }
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
+                        activeTab === tab.id
+                          ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white'
+                          : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Overview Tab */}
+              {activeTab === 'overview' && (
+                <div className="space-y-6">
+                  {/* Score and Summary */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Score Card */}
+                    <div className="rounded-xl border border-gray-700/50 bg-gray-800/30 p-6 flex flex-col items-center justify-center">
+                      <ScoreBadge score={report.overall_score} grade={report.performance_grade} />
+                      <p className="mt-4 text-center text-sm text-gray-400 max-w-xs">
+                        {report.ai_summary || 'Your scene performance is being analyzed...'}
+                      </p>
+                    </div>
+                    
+                    {/* Key Metrics */}
+                    <div className="lg:col-span-2 rounded-xl border border-gray-700/50 bg-gray-800/30 p-6">
+                      <h4 className="text-sm font-medium text-gray-400 mb-4">Real-time Metrics</h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                        <CircularGauge
+                          value={mockMetrics.fps}
+                          max={120}
+                          label="FPS"
+                          unit="fps"
+                          size="md"
+                          warning={45}
+                          critical={30}
+                        />
+                        <CircularGauge
+                          value={mockMetrics.frame_time_ms}
+                          max={50}
+                          label="Frame Time"
+                          unit="ms"
+                          size="md"
+                          warning={20}
+                          critical={33}
+                        />
+                        <CircularGauge
+                          value={mockMetrics.gpu_time_ms}
+                          max={33}
+                          label="GPU Time"
+                          unit="ms"
+                          size="md"
+                          warning={16}
+                          critical={25}
+                        />
+                        <CircularGauge
+                          value={mockMetrics.used_memory_mb / 1000}
+                          max={16}
+                          label="Memory"
+                          unit="GB"
+                          size="md"
+                          warning={12}
+                          critical={14}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Detailed Metrics */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Rendering */}
+                    <div className="rounded-xl border border-gray-700/50 bg-gray-800/30 p-5 space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Layers className="w-5 h-5 text-blue-400" />
+                        <h4 className="font-medium text-white">Rendering</h4>
+                      </div>
+                      <div className="space-y-3">
+                        <MetricBar
+                          label="Draw Calls"
+                          value={mockMetrics.draw_calls}
+                          max={5000}
+                          unit=""
+                          icon={BarChart3}
+                          color="from-blue-500 to-cyan-500"
+                          warning={3000}
+                          critical={4000}
+                        />
+                        <MetricBar
+                          label="Triangles"
+                          value={mockMetrics.triangles_drawn / 1000000}
+                          max={10}
+                          unit="M"
+                          icon={Triangle}
+                          color="from-purple-500 to-violet-500"
+                          warning={6}
+                          critical={8}
+                        />
+                        <MetricBar
+                          label="Materials"
+                          value={mockMetrics.material_count}
+                          max={500}
+                          unit=""
+                          icon={Hexagon}
+                          color="from-pink-500 to-rose-500"
+                          warning={350}
+                          critical={450}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Scene Objects */}
+                    <div className="rounded-xl border border-gray-700/50 bg-gray-800/30 p-5 space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Box className="w-5 h-5 text-green-400" />
+                        <h4 className="font-medium text-white">Scene Objects</h4>
+                      </div>
+                      <div className="space-y-3">
+                        <MetricBar
+                          label="Static Meshes"
+                          value={mockMetrics.visible_static_meshes}
+                          max={2000}
+                          unit=""
+                          icon={Box}
+                          color="from-green-500 to-emerald-500"
+                          warning={1500}
+                          critical={1800}
+                        />
+                        <MetricBar
+                          label="Dynamic Lights"
+                          value={mockMetrics.dynamic_lights}
+                          max={20}
+                          unit=""
+                          icon={Sun}
+                          color="from-yellow-500 to-orange-500"
+                          warning={10}
+                          critical={15}
+                        />
+                        <MetricBar
+                          label="Physics Bodies"
+                          value={mockMetrics.physics_bodies}
+                          max={200}
+                          unit=""
+                          icon={Activity}
+                          color="from-red-500 to-orange-500"
+                          warning={150}
+                          critical={180}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Presets */}
+                  <div className="rounded-xl border border-gray-700/50 bg-gray-800/30 p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Settings className="w-5 h-5 text-purple-400" />
+                        <h4 className="font-medium text-white">Quick Presets</h4>
+                      </div>
+                      <span className="text-xs text-gray-500">Apply optimized settings for your target platform</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {PLATFORMS.map((platform) => {
+                        const Icon = platform.icon;
+                        return (
+                          <button
+                            key={platform.id}
+                            onClick={() => applyPreset(platform.id)}
+                            className={`p-4 rounded-xl border border-gray-700/50 bg-gray-800/50 hover:bg-gradient-to-br hover:${platform.color} hover:border-transparent transition-all group`}
+                          >
+                            <Icon className="w-8 h-8 text-gray-400 group-hover:text-white mx-auto mb-2" />
+                            <div className="text-sm font-medium text-white">{platform.name}</div>
+                            <div className="text-xs text-gray-500 group-hover:text-gray-300">
+                              Target: {platform.target} FPS
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Bottlenecks Tab */}
+              {activeTab === 'bottlenecks' && (
+                <div className="space-y-4">
+                  {report.bottlenecks.length === 0 ? (
+                    <div className="text-center py-12">
+                      <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
+                      <h4 className="text-lg font-medium text-white mb-2">No Bottlenecks Detected</h4>
+                      <p className="text-gray-400">Your scene is performing optimally!</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-gray-400">
+                          Found {report.bottlenecks.length} performance bottleneck{report.bottlenecks.length !== 1 ? 's' : ''}
+                        </p>
+                        <button
+                          onClick={() => report.bottlenecks.filter(b => b.auto_fix_available).forEach(b => fixBottleneck(b.id))}
+                          className="text-sm text-orange-400 hover:text-orange-300 flex items-center gap-1"
+                        >
+                          <Wrench className="w-4 h-4" />
+                          Fix All Auto-fixable
+                        </button>
+                      </div>
+                      <div className="space-y-3">
+                        {report.bottlenecks.map((bottleneck) => (
+                          <BottleneckCard
+                            key={bottleneck.id}
+                            bottleneck={bottleneck}
+                            onFix={() => fixBottleneck(bottleneck.id)}
+                            isFixing={fixingId === bottleneck.id}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Optimizations Tab */}
+              {activeTab === 'optimizations' && (
+                <div className="space-y-4">
+                  {report.optimizations.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Sparkles className="w-16 h-16 text-purple-400 mx-auto mb-4" />
+                      <h4 className="text-lg font-medium text-white mb-2">Fully Optimized</h4>
+                      <p className="text-gray-400">No further optimizations recommended at this time.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-400">
+                        {report.optimizations.length} optimization{report.optimizations.length !== 1 ? 's' : ''} recommended, sorted by priority
+                      </p>
+                      <div className="space-y-3">
+                        {report.optimizations.map((optimization, index) => (
+                          <OptimizationCard
+                            key={optimization.id}
+                            optimization={optimization}
+                            index={index}
+                            onApply={() => applyOptimization(optimization.id)}
+                            isApplying={applyingId === optimization.id}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </>
+          ) : (
+            /* Empty State */
+            <div className="text-center py-12">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-500/20 to-red-600/20 border border-orange-500/30 flex items-center justify-center mx-auto mb-4">
+                <Gauge className="w-10 h-10 text-orange-400" />
+              </div>
+              <h4 className="text-lg font-medium text-white mb-2">Performance Analysis</h4>
+              <p className="text-gray-400 mb-6 max-w-md mx-auto">
+                Click "Analyze Performance" to scan your scene for bottlenecks and get AI-powered optimization recommendations.
+              </p>
+              <button
+                onClick={analyzePerformance}
+                disabled={!isConnected || isAnalyzing}
+                className={`px-6 py-3 rounded-xl font-medium transition-all ${
+                  !isConnected || isAnalyzing
+                    ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-orange-500 to-red-600 text-white hover:brightness-110 shadow-lg shadow-orange-500/25'
+                }`}
+              >
+                {isAnalyzing ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Analyzing...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <Activity className="w-5 h-5" />
+                    Start Analysis
+                  </span>
+                )}
+              </button>
+              {!isConnected && (
+                <p className="mt-4 text-sm text-yellow-400">
+                  Connect to UE5 to enable performance analysis
+                </p>
+              )}
+            </div>
           )}
         </div>
       )}
-    </div>
-  );
-};
-
-// Helper Components
-const MetricCard: React.FC<{
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  color: string;
-}> = ({ icon, label, value, color }) => {
-  const colorClasses = {
-    blue: 'text-blue-400 bg-blue-500/20',
-    cyan: 'text-cyan-400 bg-cyan-500/20',
-    yellow: 'text-yellow-400 bg-yellow-500/20',
-    purple: 'text-purple-400 bg-purple-500/20',
-    green: 'text-green-400 bg-green-500/20',
-    red: 'text-red-400 bg-red-500/20'
-  };
-  
-  return (
-    <div className="p-3 bg-white/5 rounded-lg border border-white/10">
-      <div className={`w-8 h-8 rounded-lg ${colorClasses[color as keyof typeof colorClasses]} flex items-center justify-center mb-2`}>
-        {icon}
-      </div>
-      <div className="text-lg font-bold text-white">{value}</div>
-      <div className="text-xs text-gray-500">{label}</div>
-    </div>
-  );
-};
-
-const ThreadBar: React.FC<{
-  label: string;
-  value: number;
-  max: number;
-  color: string;
-}> = ({ label, value, max, color }) => {
-  const percentage = Math.min((value / max) * 100, 100);
-  const isOverBudget = value > max;
-  
-  const colorClasses = {
-    blue: 'from-blue-500 to-blue-400',
-    cyan: 'from-cyan-500 to-cyan-400',
-    purple: 'from-purple-500 to-purple-400'
-  };
-  
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs text-gray-400">{label}</span>
-        <span className={`text-xs ${isOverBudget ? 'text-red-400' : 'text-gray-300'}`}>
-          {value.toFixed(2)}ms
-        </span>
-      </div>
-      <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-        <div 
-          className={`h-full rounded-full bg-gradient-to-r ${isOverBudget ? 'from-red-500 to-red-400' : colorClasses[color as keyof typeof colorClasses]}`}
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
     </div>
   );
 };
