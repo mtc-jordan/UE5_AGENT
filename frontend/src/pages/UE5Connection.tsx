@@ -33,7 +33,6 @@ import SceneBuilder from '../components/SceneBuilder';
 import ActionTimeline from '../components/ActionTimeline';
 import BlueprintMaterialAssistant from '../components/BlueprintMaterialAssistant';
 import TextureGenerator from '../components/TextureGenerator';
-import ModelSelector from '../components/ModelSelector';
 import EnhancedAIChat from '../components/EnhancedAIChat';
 import EnhancedConnectionStatus from '../components/EnhancedConnectionStatus';
 import SceneAnalyzer from '../components/SceneAnalyzer';
@@ -422,7 +421,7 @@ export default function UE5Connection() {
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [aiToolCalls, setAiToolCalls] = useState<Array<{id: string; name: string; arguments: any}>>([]);
-  const [chatHistory, setChatHistory] = useState<Array<{role: string; content: string; toolCalls?: any[]; toolResults?: any[]; screenshot?: Screenshot; beforeAfter?: BeforeAfterPair; modelUsed?: {id: string; name: string; provider: string}}>>([]);
+  const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'assistant' | 'system'; content: string; timestamp?: Date; toolCalls?: any[]; toolResults?: any[]; screenshot?: Screenshot; beforeAfter?: BeforeAfterPair; modelUsed?: {id: string; name: string; provider: string}; isStreaming?: boolean}>>([]);
   
   // AI Model selection state
   const [selectedModel, setSelectedModel] = useState('deepseek-chat');
@@ -694,7 +693,7 @@ export default function UE5Connection() {
     setAiToolCalls([]);
 
     // Add user message to chat history
-    const userMessage = { role: 'user', content: commandToProcess, timestamp: new Date() };
+    const userMessage = { role: 'user' as const, content: commandToProcess, timestamp: new Date() };
     setChatHistory(prev => [...prev, userMessage]);
 
     try {
@@ -772,8 +771,9 @@ export default function UE5Connection() {
 
       // Add assistant message to chat history with screenshot info
       setChatHistory(prev => [...prev, {
-        role: 'assistant',
+        role: 'assistant' as const,
         content: data.content || '',
+        timestamp: new Date(),
         toolCalls: data.tool_calls,
         toolResults: data.tool_results,
         screenshot: data.screenshot,
@@ -787,8 +787,9 @@ export default function UE5Connection() {
     } catch (error: any) {
       setAiResponse(`Error: ${error.message}`);
       setChatHistory(prev => [...prev, {
-        role: 'assistant',
-        content: `Error: ${error.message}`
+        role: 'assistant' as const,
+        content: `Error: ${error.message}`,
+        timestamp: new Date()
       }]);
     } finally {
       setIsAiProcessing(false);
@@ -1787,9 +1788,9 @@ export default function UE5Connection() {
                     commandToExecute = `[Voice Command - ${parsedCommand.category}] ${command}`;
                     setAiCommand(commandToExecute);
                     setChatHistory(prev => [...prev, {
-                      role: 'assistant',
+                      role: 'assistant' as const,
                       content: `🎙️ Voice command recognized: "${command}" → ${parsedCommand.category}/${parsedCommand.action}`,
-                      timestamp: new Date().toISOString()
+                      timestamp: new Date()
                     }]);
                   } else {
                     setAiCommand(command);
@@ -1964,9 +1965,9 @@ export default function UE5Connection() {
             onSceneBuilt={(plan) => {
               loadScreenshots();
               setChatHistory(prev => [...prev, {
-                role: 'assistant',
+                role: 'assistant' as const,
                 content: `Scene built successfully! Created ${plan.objects.length} objects: ${plan.objects.map(o => o.name).join(', ')}`,
-                timestamp: new Date().toISOString()
+                timestamp: new Date()
               }]);
             }}
           />
@@ -1976,16 +1977,16 @@ export default function UE5Connection() {
             onGenerate={(plan) => {
               loadScreenshots();
               setChatHistory(prev => [...prev, {
-                role: 'assistant',
+                role: 'assistant' as const,
                 content: `AI Scene generated: "${plan.name}" with ${plan.totalObjects} objects. Style: ${plan.style}, Mood: ${plan.mood}`,
-                timestamp: new Date().toISOString()
+                timestamp: new Date()
               }]);
             }}
             onCancel={() => {
               setChatHistory(prev => [...prev, {
-                role: 'assistant',
+                role: 'assistant' as const,
                 content: 'Scene generation cancelled.',
-                timestamp: new Date().toISOString()
+                timestamp: new Date()
               }]);
             }}
           />
@@ -2016,17 +2017,17 @@ export default function UE5Connection() {
             onActionUndone={(action) => {
               loadScreenshots();
               setChatHistory(prev => [...prev, {
-                role: 'assistant',
+                role: 'assistant' as const,
                 content: `Undone: ${action.description}`,
-                timestamp: new Date().toISOString()
+                timestamp: new Date()
               }]);
             }}
             onActionRedone={(action) => {
               loadScreenshots();
               setChatHistory(prev => [...prev, {
-                role: 'assistant',
+                role: 'assistant' as const,
                 content: `Redone: ${action.description}`,
-                timestamp: new Date().toISOString()
+                timestamp: new Date()
               }]);
             }}
           />
@@ -2151,9 +2152,9 @@ export default function UE5Connection() {
               }
               
               setChatHistory(prev => [...prev, {
-                role: 'assistant',
-                content: `Workflow completed: ${workflow.name}`,
-                timestamp: new Date().toISOString()
+                role: 'assistant' as const,
+                content: `Workflow completed`,
+                timestamp: new Date()
               }]);
             }}
             onSaveTemplate={(template) => {
