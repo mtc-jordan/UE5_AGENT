@@ -864,8 +864,8 @@ class UE5AIChatService:
             
             # Google Gemini Models - Native API format (verified Dec 2025)
             # https://ai.google.dev/gemini-api/docs/models
-            "gemini-3-pro": "gemini-2.5-pro",  # Gemini 3 Pro not yet available
-            "gemini-3-flash": "gemini-2.5-flash",  # Gemini 3 Flash not yet available
+            "gemini-3-pro": "gemini-3-pro-preview",  # Gemini 3 Pro Preview (launched Nov 18, 2025)
+            "gemini-3-flash": "gemini-3-flash-preview",  # Gemini 3 Flash Preview (launched Dec 17, 2025)
             "gemini-2.5-pro": "gemini-2.5-pro",  # Stable
             "gemini-2.5-flash": "gemini-2.5-flash",  # Stable - recommended
             "gemini-2.0-flash": "gemini-2.0-flash",  # Previous gen stable
