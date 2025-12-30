@@ -102,36 +102,56 @@ const settingsCategories = [
 
 const apiProviders = [
   { 
-    id: 'openai' as const, 
-    name: 'OpenAI', 
-    description: 'GPT-4, GPT-3.5, DALL-E',
-    color: 'emerald',
-    icon: '🤖',
-    docsUrl: 'https://platform.openai.com/api-keys'
-  },
-  { 
     id: 'deepseek' as const, 
     name: 'DeepSeek', 
-    description: 'DeepSeek V3, DeepSeek R1',
-    color: 'blue',
-    icon: '🔮',
-    docsUrl: 'https://platform.deepseek.com/api_keys'
-  },
-  { 
-    id: 'anthropic' as const, 
-    name: 'Anthropic', 
-    description: 'Claude 3.5 Sonnet, Claude 3 Opus',
-    color: 'orange',
-    icon: '🧠',
-    docsUrl: 'https://console.anthropic.com/settings/keys'
+    description: 'V3.2, R1-0528, Coder-V2 • Reasoning-first & coding-specialist',
+    color: 'indigo',
+    icon: '🔍',
+    docsUrl: 'https://platform.deepseek.com/api_keys',
+    freeAccess: 'Fully free with unlimited use in official chat',
+    models: ['DeepSeek V3.2', 'DeepSeek R1-0528', 'DeepSeek Coder V2'],
+    recommended: true
   },
   { 
     id: 'google' as const, 
     name: 'Google Gemini', 
-    description: 'Gemini 2.5 Flash, Gemini Pro',
+    description: 'Gemini 3 Pro/Flash, 2.5 Pro/Flash • Multimodal models',
+    color: 'blue',
+    icon: '🔮',
+    docsUrl: 'https://aistudio.google.com/app/apikey',
+    freeAccess: 'Free tier with daily limits • 100 daily requests for Gemini 2.5 Pro via CLI',
+    models: ['Gemini 3 Pro', 'Gemini 3 Flash', 'Gemini 2.5 Pro', 'Gemini 2.5 Flash']
+  },
+  { 
+    id: 'openai' as const, 
+    name: 'OpenAI', 
+    description: 'GPT-5, GPT-5 mini, GPT-4o • Frontier reasoning models',
+    color: 'emerald',
+    icon: '🤖',
+    docsUrl: 'https://platform.openai.com/api-keys',
+    freeAccess: 'Limited free access to GPT-4o mini • Free credits in coding tools',
+    models: ['GPT-5', 'GPT-5 Mini', 'GPT-4o', 'GPT-4o Mini', 'GPT-4.1 Mini']
+  },
+  { 
+    id: 'anthropic' as const, 
+    name: 'Anthropic Claude', 
+    description: 'Claude 4 Sonnet/Opus/Haiku • Strong reasoning & long-context',
+    color: 'orange',
+    icon: '🧠',
+    docsUrl: 'https://console.anthropic.com/settings/keys',
+    freeAccess: '~30-50 free messages/day in official chat',
+    models: ['Claude 4 Sonnet 4.5', 'Claude 4 Opus', 'Claude 4 Haiku 4.5']
+  },
+  { 
+    id: 'ollama' as const, 
+    name: 'Open-Source (Ollama)', 
+    description: 'Llama 3, Mistral, Qwen • Run locally on your hardware',
     color: 'purple',
-    icon: '✨',
-    docsUrl: 'https://aistudio.google.com/app/apikey'
+    icon: '🌐',
+    docsUrl: 'https://ollama.ai/',
+    freeAccess: 'Completely free • Open-source (Apache/MIT license)',
+    models: ['Llama 3 405B', 'Llama 3 70B', 'Qwen3 Coder 480B', 'Mistral 8x7B'],
+    isLocal: true
   },
 ]
 
@@ -562,19 +582,42 @@ export default function Settings() {
               }}
               className="w-full px-4 py-3 bg-ue-bg border border-ue-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-ue-accent/50 focus:border-ue-accent transition-all appearance-none cursor-pointer"
             >
-              <optgroup label="DeepSeek">
-                <option value="deepseek-chat">DeepSeek V3 (Fast)</option>
-                <option value="deepseek-reasoner">DeepSeek R1 (Reasoning)</option>
+              <optgroup label="🔍 DeepSeek (Recommended)">
+                <option value="deepseek-chat">⭐ DeepSeek V3.2 (Free, Fast)</option>
+                <option value="deepseek-v3.2-speciale">DeepSeek V3.2 Speciale</option>
+                <option value="deepseek-reasoner">DeepSeek R1-0528 (Reasoning)</option>
+                <option value="deepseek-coder-v2">DeepSeek Coder V2 (Code)</option>
               </optgroup>
-              <optgroup label="Anthropic">
+              <optgroup label="🔮 Google Gemini">
+                <option value="gemini-3-pro">🆕 Gemini 3 Pro (Latest)</option>
+                <option value="gemini-3-flash">🆕 Gemini 3 Flash (Fast)</option>
+                <option value="gemini-2.5-pro">Gemini 2.5 Pro (Reasoning)</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Balanced)</option>
+                <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+              </optgroup>
+              <optgroup label="🤖 OpenAI">
+                <option value="gpt-5">🆕 GPT-5 (Frontier)</option>
+                <option value="gpt-5-mini">🆕 GPT-5 Mini (Fast)</option>
+                <option value="gpt-4o">GPT-4o (Multimodal)</option>
+                <option value="gpt-4o-mini">GPT-4o Mini (Free Tier)</option>
+                <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
+                <option value="gpt-4.1-nano">GPT-4.1 Nano (Fastest)</option>
+              </optgroup>
+              <optgroup label="🧠 Anthropic Claude">
+                <option value="claude-4-sonnet">🆕 Claude 4 Sonnet 4.5</option>
+                <option value="claude-4-opus">🆕 Claude 4 Opus (Best)</option>
+                <option value="claude-4-haiku">🆕 Claude 4 Haiku 4.5 (Fast)</option>
                 <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
                 <option value="claude-3-opus">Claude 3 Opus</option>
               </optgroup>
-              <optgroup label="Google Gemini">
-                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Balanced)</option>
-                <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite (Fastest)</option>
-                <option value="gemini-2.5-pro">Gemini 2.5 Pro (Best Reasoning)</option>
-                <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+              <optgroup label="🌐 Open-Source (Local)">
+                <option value="llama-3-405b">Llama 3 405B (Largest)</option>
+                <option value="llama-3-70b">Llama 3 70B (Balanced)</option>
+                <option value="llama-3-8b">Llama 3 8B (Lightweight)</option>
+                <option value="qwen3-coder-480b">🆕 Qwen3 Coder 480B (Code)</option>
+                <option value="mistral-8x7b">Mistral 8x7B (Mixtral)</option>
+                <option value="mistral-devstral-24b">🆕 Mistral Devstral 24B (Dev)</option>
+                <option value="mistral-7b">Mistral 7B (Fast)</option>
               </optgroup>
             </select>
           </div>
@@ -642,7 +685,15 @@ export default function Settings() {
                   <div className="flex items-center gap-4">
                     <div className="text-2xl">{provider.icon}</div>
                     <div className="text-left">
-                      <div className="font-medium text-white">{provider.name}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-white">{provider.name}</span>
+                        {(provider as any).recommended && (
+                          <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded">RECOMMENDED</span>
+                        )}
+                        {(provider as any).isLocal && (
+                          <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded">LOCAL</span>
+                        )}
+                      </div>
                       <div className="text-xs text-ue-muted">{provider.description}</div>
                     </div>
                   </div>
@@ -692,6 +743,28 @@ export default function Settings() {
                         Save
                       </button>
                     </div>
+
+                    {/* Free Access Info */}
+                    {(provider as any).freeAccess && (
+                      <div className="flex items-start gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                        <Info className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs font-medium text-green-400">Free Access Available</p>
+                          <p className="text-xs text-green-300/80 mt-0.5">{(provider as any).freeAccess}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Available Models */}
+                    {(provider as any).models && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {(provider as any).models.map((m: string) => (
+                          <span key={m} className="px-2 py-0.5 text-xs bg-ue-bg border border-ue-border rounded text-ue-muted">
+                            {m}
+                          </span>
+                        ))}
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-between">
                       <a

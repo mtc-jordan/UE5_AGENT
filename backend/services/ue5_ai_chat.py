@@ -799,21 +799,46 @@ class UE5AIChatService:
         self.tools = MCP_TOOLS_DEFINITIONS
         self.system_prompt = UE5_SYSTEM_PROMPT
         
-        # Model to provider mapping
+        # Model to provider mapping - Updated December 2025
         self.model_providers = {
+            # DeepSeek Models
             "deepseek-chat": "deepseek",
+            "deepseek-v3.2-speciale": "deepseek",
             "deepseek-reasoner": "deepseek",
-            "gpt-4.1-mini": "openai",
-            "gpt-4.1-nano": "openai",
-            "gpt-4o": "openai",
-            "gpt-4o-mini": "openai",
+            "deepseek-coder-v2": "deepseek",
+            
+            # Google Gemini Models
+            "gemini-3-pro": "google",
+            "gemini-3-flash": "google",
+            "gemini-2.5-pro": "google",
             "gemini-2.5-flash": "google",
             "gemini-2.5-flash-lite": "google",
-            "gemini-2.5-pro": "google",
             "gemini-2.0-flash": "google",
+            
+            # OpenAI Models
+            "gpt-5": "openai",
+            "gpt-5-mini": "openai",
+            "gpt-4o": "openai",
+            "gpt-4o-mini": "openai",
+            "gpt-4.1-mini": "openai",
+            "gpt-4.1-nano": "openai",
+            
+            # Anthropic Claude Models
+            "claude-4-sonnet": "anthropic",
+            "claude-4-opus": "anthropic",
+            "claude-4-haiku": "anthropic",
             "claude-3-5-sonnet": "anthropic",
             "claude-3-opus": "anthropic",
             "claude-3-haiku": "anthropic",
+            
+            # Open-Source Models (via Ollama or compatible API)
+            "llama-3-405b": "ollama",
+            "llama-3-70b": "ollama",
+            "llama-3-8b": "ollama",
+            "qwen3-coder-480b": "ollama",
+            "mistral-7b": "ollama",
+            "mistral-8x7b": "ollama",
+            "mistral-devstral-24b": "ollama",
         }
         
         # Provider base URLs
@@ -822,6 +847,7 @@ class UE5AIChatService:
             "deepseek": os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"),
             "google": os.getenv("GOOGLE_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai"),
             "anthropic": os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com/v1"),
+            "ollama": os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1"),
         }
         
         # Cache for clients (created on demand)
