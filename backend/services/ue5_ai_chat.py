@@ -29,6 +29,9 @@ from enum import Enum
 # Import API key management from settings
 from api.api_keys import get_api_key
 
+# Import native AI clients
+from services.native_ai_clients import NativeAIClientFactory, BaseAIClient
+
 logger = logging.getLogger(__name__)
 
 
@@ -901,73 +904,39 @@ class UE5AIChatService:
             "mistral-devstral-24b": "codestral:22b",
         }
     
-    def _get_client_for_model(self, model: str) -> tuple[AsyncOpenAI, str]:
+    def _get_native_client(self, model: str) -> tuple[Optional[BaseAIClient], str, str]:
         """
-        Get the appropriate client and API model name for the given model.
-        Uses API keys from Settings page configuration.
+        Get the native AI client for the given model.
+        Uses native SDKs for each provider (OpenAI, Anthropic, Google, DeepSeek).
         
         Returns:
-            Tuple of (client, api_model_name)
+            Tuple of (client, api_model_name, provider)
         """
         # Get provider and API model name for the requested model
         provider = self.model_providers.get(model, "openai")
-        api_model_name = self.model_api_names.get(model, model)  # Get actual API model name
+        api_model_name = self.model_api_names.get(model, model)
         
-        logger.info(f"=== Model Routing ===")
+        logger.info(f"=== Native Model Routing ===")
         logger.info(f"  Requested model: '{model}'")
         logger.info(f"  Provider: '{provider}'")
         logger.info(f"  API model name: '{api_model_name}'")
         
-        # Get API key from Settings (stored in .api_keys.json) or environment
-        api_key = get_api_key(provider)
+        # Get native client from factory
+        client = NativeAIClientFactory.get_client(provider)
         
-        if not api_key:
-            logger.warning(f"No API key found for provider '{provider}'")
-            
-            # Try to fall back to OpenAI if available
-            openai_key = get_api_key("openai")
-            if openai_key:
-                logger.info(f"Falling back to OpenAI with gpt-4.1-mini")
-                if "openai" not in self._clients:
-                    self._clients["openai"] = AsyncOpenAI(api_key=openai_key)
-                return self._clients["openai"], "gpt-4.1-mini"
-            else:
-                # Last resort: use default OpenAI client (may use OPENAI_API_KEY env var)
-                logger.info(f"Using default OpenAI client")
-                if "openai" not in self._clients:
-                    self._clients["openai"] = AsyncOpenAI()
-                return self._clients["openai"], "gpt-4.1-mini"
+        if client:
+            logger.info(f"  Native {provider} client ready")
+            return client, api_model_name, provider
         
-        logger.info(f"  API key found: {api_key[:8]}...{api_key[-4:]}")
+        # Fallback to OpenAI if provider client not available
+        logger.warning(f"No API key for {provider}, falling back to OpenAI")
+        fallback_client = NativeAIClientFactory.get_client("openai")
         
-        # Create client with the appropriate base URL and API key
-        base_url = self.provider_base_urls.get(provider)
-        logger.info(f"  Base URL: {base_url}")
+        if fallback_client:
+            return fallback_client, "gpt-4.1-mini", "openai"
         
-        # Special handling for Anthropic (doesn't use OpenAI-compatible API for tool calling)
-        # TODO: Implement native Anthropic API support for tool calling
-        if provider == "anthropic":
-            logger.warning(f"Anthropic models don't support OpenAI-compatible tool calling")
-            logger.warning(f"Falling back to OpenAI. To use Claude, we need to implement native Anthropic API.")
-            openai_key = get_api_key("openai")
-            if "openai" not in self._clients:
-                self._clients["openai"] = AsyncOpenAI(api_key=openai_key) if openai_key else AsyncOpenAI()
-            return self._clients["openai"], "gpt-4.1-mini"
-        
-        # Check if we already have a client for this provider
-        if provider in self._clients:
-            logger.info(f"  Using cached client for provider '{provider}'")
-            return self._clients[provider], api_model_name
-        
-        # Create and cache the client
-        logger.info(f"  Creating new client for provider '{provider}'")
-        self._clients[provider] = AsyncOpenAI(
-            api_key=api_key,
-            base_url=base_url
-        )
-        
-        logger.info(f"=== Model Routing Complete ===")
-        return self._clients[provider], api_model_name
+        logger.error("No AI provider available - please configure API keys in Settings")
+        return None, api_model_name, provider
     
     async def chat(
         self,
@@ -978,6 +947,7 @@ class UE5AIChatService:
     ) -> Dict[str, Any]:
         """
         Process a chat message and optionally execute tool calls.
+        Uses native API clients for each provider.
         
         Args:
             messages: List of chat messages (user, assistant, tool)
@@ -991,78 +961,70 @@ class UE5AIChatService:
         # Determine which model to use
         model_to_use = model or self.model
         
-        # Get the appropriate client and API model name for this model
-        client, api_model_name = self._get_client_for_model(model_to_use)
+        # Get the native client for this model
+        client, api_model_name, provider = self._get_native_client(model_to_use)
         
-        logger.info(f"Using client for model '{model_to_use}' with API model name '{api_model_name}'")
-        
-        # Prepare messages with system prompt
-        full_messages = [
-            {"role": "system", "content": self.system_prompt}
-        ] + messages
-        
-        try:
-            # Call the AI model with tools
-            response = await client.chat.completions.create(
-                model=api_model_name,  # Use the actual API model name
-                messages=full_messages,
-                tools=self.tools,
-                tool_choice="auto",
-                temperature=0.7,
-                max_tokens=2048
-            )
-            
-            message = response.choices[0].message
-            
-            result = {
-                "content": message.content or "",
+        if not client:
+            return {
+                "content": "No AI provider available. Please configure API keys in Settings.",
                 "tool_calls": [],
                 "tool_results": [],
-                "finish_reason": response.choices[0].finish_reason
+                "error": "no_api_key",
+                "error_type": "configuration_error"
+            }
+        
+        logger.info(f"Using native {provider} client for model '{model_to_use}' -> '{api_model_name}'")
+        
+        try:
+            # Call the native client with tools
+            response = await client.chat_with_tools(
+                messages=messages,
+                tools=self.tools,
+                model=api_model_name,
+                system_prompt=self.system_prompt
+            )
+            
+            result = {
+                "content": response.get("content", ""),
+                "tool_calls": response.get("tool_calls", []),
+                "tool_results": [],
+                "finish_reason": response.get("finish_reason", "stop"),
+                "provider": provider,
+                "model": api_model_name
             }
             
-            # Process tool calls if present
-            if message.tool_calls:
-                for tool_call in message.tool_calls:
-                    tc = {
-                        "id": tool_call.id,
-                        "name": tool_call.function.name,
-                        "arguments": json.loads(tool_call.function.arguments)
-                    }
-                    result["tool_calls"].append(tc)
-                    
-                    # Execute the tool if requested
-                    if execute_tools and tool_executor:
-                        try:
-                            tool_result = await tool_executor(
-                                tc["name"],
-                                tc["arguments"]
-                            )
-                            result["tool_results"].append({
-                                "tool_call_id": tc["id"],
-                                "tool_name": tc["name"],
-                                "result": tool_result,
-                                "success": True
-                            })
-                        except Exception as e:
-                            result["tool_results"].append({
-                                "tool_call_id": tc["id"],
-                                "tool_name": tc["name"],
-                                "error": str(e),
-                                "success": False
-                            })
+            # Execute tool calls if present and requested
+            if result["tool_calls"] and execute_tools and tool_executor:
+                for tc in result["tool_calls"]:
+                    try:
+                        tool_result = await tool_executor(
+                            tc["name"],
+                            tc["arguments"]
+                        )
+                        result["tool_results"].append({
+                            "tool_call_id": tc["id"],
+                            "tool_name": tc["name"],
+                            "result": tool_result,
+                            "success": True
+                        })
+                    except Exception as e:
+                        result["tool_results"].append({
+                            "tool_call_id": tc["id"],
+                            "tool_name": tc["name"],
+                            "error": str(e),
+                            "success": False
+                        })
             
             return result
             
         except Exception as e:
             error_msg = str(e)
-            logger.error(f"AI chat error: {e}")
+            logger.error(f"AI chat error ({provider}): {e}")
             
             # Provide more helpful error messages based on error type
-            if "401" in error_msg or "Unauthorized" in error_msg or "invalid_api_key" in error_msg.lower():
-                provider = self.model_providers.get(model_to_use, "unknown")
+            if "401" in error_msg or "Unauthorized" in error_msg or "invalid_api_key" in error_msg.lower() or "authentication" in error_msg.lower():
                 user_message = f"API key error for {provider}: Please check your API key in Settings. The key may be invalid or expired."
-            elif "404" in error_msg or "model_not_found" in error_msg.lower():
+            elif "404" in error_msg or "model_not_found" in error_msg.lower() or "not found" in error_msg.lower():
                 user_message = f"Model '{api_model_name}' not found. This model may not be available yet or the name may have changed."
             elif "429" in error_msg or "rate_limit" in error_msg.lower():
                 user_message = "Rate limit exceeded. Please wait a moment before trying again."
@@ -1071,7 +1033,7 @@ class UE5AIChatService:
             elif "connection" in error_msg.lower() or "network" in error_msg.lower():
                 user_message = "Connection error. Please check your internet connection and try again."
             else:
-                user_message = f"I encountered an error: {error_msg}"
+                user_message = f"Error from {provider}: {error_msg}"
             
             return {
                 "content": user_message,
@@ -1080,46 +1042,47 @@ class UE5AIChatService:
                 "error": error_msg,
                 "error_type": "api_error",
                 "model_used": model_to_use,
-                "api_model": api_model_name
+                "api_model": api_model_name,
+                "provider": provider
             }
     
     async def chat_stream(
         self,
         messages: List[Dict[str, Any]],
+        model: Optional[str] = None,
         tool_executor: Optional[callable] = None
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream chat response with tool execution.
+        Uses native API clients for each provider.
         
         Yields chunks of the response as they arrive, including
         tool calls and their results.
         """
-        full_messages = [
-            {"role": "system", "content": self.system_prompt}
-        ] + messages
+        model_to_use = model or self.model
+        client, api_model_name, provider = self._get_native_client(model_to_use)
+        
+        if not client:
+            yield {
+                "type": "error",
+                "error": "No AI provider available. Please configure API keys in Settings."
+            }
+            return
+        
+        logger.info(f"Streaming with native {provider} client: {api_model_name}")
         
         try:
-            # First, get tool calls (non-streaming for reliability)
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=full_messages,
+            # Get response with tool calls using native client
+            response = await client.chat_with_tools(
+                messages=messages,
                 tools=self.tools,
-                tool_choice="auto",
-                temperature=0.7,
-                max_tokens=2048
+                model=api_model_name,
+                system_prompt=self.system_prompt
             )
             
-            message = response.choices[0].message
-            
             # If there are tool calls, execute them
-            if message.tool_calls:
-                for tool_call in message.tool_calls:
-                    tc = {
-                        "id": tool_call.id,
-                        "name": tool_call.function.name,
-                        "arguments": json.loads(tool_call.function.arguments)
-                    }
-                    
+            if response.get("tool_calls"):
+                for tc in response["tool_calls"]:
                     # Yield tool call info
                     yield {
                         "type": "tool_call",
@@ -1141,25 +1104,6 @@ class UE5AIChatService:
                                 "success": True
                             }
                             
-                            # Add tool result to messages for follow-up
-                            full_messages.append({
-                                "role": "assistant",
-                                "content": None,
-                                "tool_calls": [{
-                                    "id": tc["id"],
-                                    "type": "function",
-                                    "function": {
-                                        "name": tc["name"],
-                                        "arguments": json.dumps(tc["arguments"])
-                                    }
-                                }]
-                            })
-                            full_messages.append({
-                                "role": "tool",
-                                "tool_call_id": tc["id"],
-                                "content": json.dumps(tool_result)
-                            })
-                            
                         except Exception as e:
                             yield {
                                 "type": "tool_result",
@@ -1168,55 +1112,45 @@ class UE5AIChatService:
                                 "error": str(e),
                                 "success": False
                             }
-                
-                # Get follow-up response after tool execution
-                follow_up = await self.client.chat.completions.create(
-                    model=self.model,
-                    messages=full_messages,
-                    temperature=0.7,
-                    max_tokens=1024,
-                    stream=True
-                )
-                
-                async for chunk in follow_up:
-                    if chunk.choices[0].delta.content:
-                        yield {
-                            "type": "content",
-                            "content": chunk.choices[0].delta.content
-                        }
-            else:
-                # No tool calls, just stream the content
-                if message.content:
-                    yield {
-                        "type": "content",
-                        "content": message.content
-                    }
             
-            yield {"type": "done"}
+            # Yield the content
+            if response.get("content"):
+                yield {
+                    "type": "content",
+                    "content": response["content"]
+                }
+            
+            yield {"type": "done", "provider": provider, "model": api_model_name}
             
         except Exception as e:
-            logger.error(f"AI chat stream error: {e}")
+            logger.error(f"AI chat stream error ({provider}): {e}")
             yield {
                 "type": "error",
-                "error": str(e)
+                "error": str(e),
+                "provider": provider
             }
     
-    async def get_tool_suggestion(self, partial_command: str) -> List[Dict[str, Any]]:
+    async def get_tool_suggestion(self, partial_command: str, model: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Get AI-powered suggestions for partial commands.
+        Uses native client for the selected model.
         """
+        model_to_use = model or self.model
+        client, api_model_name, provider = self._get_native_client(model_to_use)
+        
+        if not client:
+            return []
+        
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are a UE5 command assistant. Given a partial command, suggest 3-5 complete commands the user might want. Return only a JSON array of strings."},
-                    {"role": "user", "content": f"Suggest completions for: {partial_command}"}
-                ],
-                temperature=0.5,
-                max_tokens=256
+            # Use the native client for suggestions
+            response = await client.chat_with_tools(
+                messages=[{"role": "user", "content": f"Suggest completions for: {partial_command}"}],
+                tools=[],  # No tools for suggestions
+                model=api_model_name,
+                system_prompt="You are a UE5 command assistant. Given a partial command, suggest 3-5 complete commands the user might want. Return only a JSON array of strings."
             )
             
-            content = response.choices[0].message.content
+            content = response.get("content", "")
             # Try to parse as JSON
             try:
                 suggestions = json.loads(content)
@@ -1228,7 +1162,7 @@ class UE5AIChatService:
             return []
             
         except Exception as e:
-            logger.error(f"Suggestion error: {e}")
+            logger.error(f"Suggestion error ({provider}): {e}")
             return []
 
 
