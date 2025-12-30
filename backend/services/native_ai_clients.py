@@ -5,7 +5,7 @@ This module provides native API clients for all AI providers:
 - OpenAI: Native openai SDK
 - Anthropic Claude: Native anthropic SDK  
 - Google Gemini: Native google-generativeai SDK
-- DeepSeek: OpenAI-compatible API (they officially support this)
+- DeepSeek: Native httpx client with direct API calls
 
 Each provider has its own client class that handles:
 - Authentication
@@ -23,6 +23,7 @@ from abc import ABC, abstractmethod
 from openai import AsyncOpenAI
 import anthropic
 import google.generativeai as genai
+import httpx
 
 # Import API key management
 from api.api_keys import get_api_key
@@ -100,14 +101,35 @@ class OpenAIClient(BaseAIClient):
 
 
 class DeepSeekClient(BaseAIClient):
-    """DeepSeek client using OpenAI-compatible API"""
+    """
+    Native DeepSeek client using direct HTTP requests.
+    
+    DeepSeek API Documentation: https://api-docs.deepseek.com/
+    Supports:
+    - deepseek-chat: DeepSeek-V3 for general conversation
+    - deepseek-reasoner: DeepSeek-R1 for reasoning tasks
+    """
+    
+    BASE_URL = "https://api.deepseek.com"
     
     def __init__(self, api_key: str):
-        self.client = AsyncOpenAI(
-            api_key=api_key,
-            base_url="https://api.deepseek.com/v1"
+        self.api_key = api_key
+        self.client = httpx.AsyncClient(
+            base_url=self.BASE_URL,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            timeout=60.0
         )
-        logger.info("DeepSeek client initialized")
+        logger.info("DeepSeek native client initialized (using httpx)")
+    
+    def _convert_tools_to_deepseek_format(self, openai_tools: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Convert OpenAI tool format to DeepSeek format.
+        DeepSeek uses the same format as OpenAI for tools.
+        """
+        return openai_tools
     
     async def chat_with_tools(
         self,
@@ -116,35 +138,72 @@ class DeepSeekClient(BaseAIClient):
         model: str,
         system_prompt: str
     ) -> Dict[str, Any]:
-        """DeepSeek chat with tools (OpenAI-compatible)"""
+        """
+        Native DeepSeek chat with tools using direct HTTP requests.
+        
+        API Endpoint: POST /chat/completions
+        """
         full_messages = [{"role": "system", "content": system_prompt}] + messages
         
-        response = await self.client.chat.completions.create(
-            model=model,
-            messages=full_messages,
-            tools=tools,
-            tool_choice="auto",
-            temperature=0.7,
-            max_tokens=2048
-        )
-        
-        message = response.choices[0].message
-        
-        result = {
-            "content": message.content or "",
-            "tool_calls": [],
-            "finish_reason": response.choices[0].finish_reason
+        # Build request payload
+        payload = {
+            "model": model,
+            "messages": full_messages,
+            "temperature": 0.7,
+            "max_tokens": 2048,
+            "stream": False
         }
         
-        if message.tool_calls:
-            for tc in message.tool_calls:
-                result["tool_calls"].append({
-                    "id": tc.id,
-                    "name": tc.function.name,
-                    "arguments": json.loads(tc.function.arguments)
-                })
+        # Add tools if provided
+        if tools:
+            payload["tools"] = self._convert_tools_to_deepseek_format(tools)
+            payload["tool_choice"] = "auto"
+        
+        logger.info(f"DeepSeek API request: model={model}, messages={len(full_messages)}, tools={len(tools) if tools else 0}")
+        
+        # Make the API request
+        response = await self.client.post("/chat/completions", json=payload)
+        
+        # Check for errors
+        if response.status_code != 200:
+            error_detail = response.text
+            logger.error(f"DeepSeek API error: {response.status_code} - {error_detail}")
+            raise Exception(f"DeepSeek API error ({response.status_code}): {error_detail}")
+        
+        # Parse response
+        data = response.json()
+        logger.info(f"DeepSeek API response: {data.get('usage', {})}")
+        
+        choice = data["choices"][0]
+        message = choice["message"]
+        
+        result = {
+            "content": message.get("content") or "",
+            "tool_calls": [],
+            "finish_reason": choice.get("finish_reason", "stop"),
+            "usage": data.get("usage", {})
+        }
+        
+        # Parse tool calls if present
+        if message.get("tool_calls"):
+            for tc in message["tool_calls"]:
+                tool_call = {
+                    "id": tc["id"],
+                    "name": tc["function"]["name"],
+                    "arguments": json.loads(tc["function"]["arguments"]) if isinstance(tc["function"]["arguments"], str) else tc["function"]["arguments"]
+                }
+                result["tool_calls"].append(tool_call)
+        
+        # Handle reasoning_content for deepseek-reasoner model
+        if message.get("reasoning_content"):
+            result["reasoning_content"] = message["reasoning_content"]
+            logger.info(f"DeepSeek reasoning content length: {len(message['reasoning_content'])}")
         
         return result
+    
+    async def close(self):
+        """Close the HTTP client"""
+        await self.client.aclose()
 
 
 class AnthropicClient(BaseAIClient):
