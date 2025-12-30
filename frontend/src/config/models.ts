@@ -86,17 +86,7 @@ export const AI_PROVIDERS: AIProvider[] = [
     freeAccessDetails: 'Official Chat: ~30-50 free messages/day. Coding tools like Rovo, Kilo, Warp offer free credits for Sonnet/Opus.',
     docsUrl: 'https://docs.anthropic.com'
   },
-  { 
-    id: 'opensource', 
-    name: 'Open-Source', 
-    icon: '🌐', 
-    color: '#8B5CF6',
-    description: 'Freely modifiable, deployable on your hardware',
-    apiKeyName: 'ollama',
-    baseUrl: 'http://localhost:11434/v1',
-    freeAccessDetails: 'Direct Download: Weights are open-source (Apache/MIT license). Hosted via Hugging Face, Ollama, or Perplexity.',
-    docsUrl: 'https://ollama.ai/docs'
-  },
+
 ];
 
 // All Available AI Models - Updated December 2025
@@ -114,17 +104,7 @@ export const AI_MODELS: AIModel[] = [
     contextWindow: '128K',
     isNew: true,
   },
-  {
-    id: 'deepseek-v3.2-speciale',
-    name: 'DeepSeek V3.2 Speciale',
-    provider: 'deepseek',
-    description: 'Enhanced version with specialized capabilities',
-    costTier: '$',
-    capabilities: { vision: false, reasoning: true, fast: true, creative: true, code: true, longContext: true },
-    recommended_for: ['complex_tasks', 'code', 'blueprint'],
-    contextWindow: '128K',
-    isNew: true,
-  },
+
   {
     id: 'deepseek-reasoner',
     name: 'DeepSeek R1-0528',
@@ -137,16 +117,7 @@ export const AI_MODELS: AIModel[] = [
     contextWindow: '128K',
     isNew: true,
   },
-  {
-    id: 'deepseek-coder-v2',
-    name: 'DeepSeek Coder V2',
-    provider: 'deepseek',
-    description: 'Specialized for code generation and analysis',
-    costTier: '$',
-    capabilities: { vision: false, reasoning: true, fast: true, creative: false, code: true, longContext: true },
-    recommended_for: ['code', 'blueprint', 'cpp_development', 'debugging'],
-    contextWindow: '128K',
-  },
+
   
   // ==================== Google Gemini Models ====================
   {
@@ -326,87 +297,7 @@ export const AI_MODELS: AIModel[] = [
     recommended_for: ['creative_generation', 'complex_tasks', 'material_design'],
     contextWindow: '200K',
   },
-  
-  // ==================== Open-Source Models ====================
-  {
-    id: 'llama-3-405b',
-    name: 'Llama 3 405B',
-    provider: 'opensource',
-    description: 'Meta\'s largest open-source model',
-    costTier: 'free',
-    capabilities: { vision: false, reasoning: true, fast: false, creative: true, code: true, longContext: true },
-    recommended_for: ['complex_tasks', 'reasoning', 'code', 'architecture'],
-    freeAccessInfo: 'Open-source (Apache license). Run locally or via Hugging Face.',
-    contextWindow: '128K',
-  },
-  {
-    id: 'llama-3-70b',
-    name: 'Llama 3 70B',
-    provider: 'opensource',
-    description: 'Balanced size and capability',
-    costTier: 'free',
-    capabilities: { vision: false, reasoning: true, fast: true, creative: true, code: true, longContext: true },
-    recommended_for: ['general', 'code', 'ue5_development'],
-    freeAccessInfo: 'Open-source. Run locally with Ollama.',
-    contextWindow: '128K',
-  },
-  {
-    id: 'llama-3-8b',
-    name: 'Llama 3 8B',
-    provider: 'opensource',
-    description: 'Lightweight, runs on consumer hardware',
-    costTier: 'free',
-    capabilities: { vision: false, reasoning: false, fast: true, creative: false, code: true, longContext: false },
-    recommended_for: ['fast_generation', 'simple_tasks', 'local_development'],
-    freeAccessInfo: 'Open-source. Runs on 8GB+ VRAM.',
-    contextWindow: '8K',
-  },
-  {
-    id: 'qwen3-coder-480b',
-    name: 'Qwen3 Coder 480B',
-    provider: 'opensource',
-    description: 'Specialized for code generation',
-    costTier: 'free',
-    capabilities: { vision: false, reasoning: true, fast: false, creative: false, code: true, longContext: true },
-    recommended_for: ['code', 'blueprint', 'cpp_development', 'debugging'],
-    freeAccessInfo: 'Open-source. Available via Qwen Code tools.',
-    contextWindow: '128K',
-    isNew: true,
-  },
-  {
-    id: 'mistral-7b',
-    name: 'Mistral 7B',
-    provider: 'opensource',
-    description: 'Efficient small model for local use',
-    costTier: 'free',
-    capabilities: { vision: false, reasoning: false, fast: true, creative: false, code: true, longContext: false },
-    recommended_for: ['fast_generation', 'local_development', 'simple_tasks'],
-    freeAccessInfo: 'Open-source (Apache). Runs on consumer GPUs.',
-    contextWindow: '32K',
-  },
-  {
-    id: 'mistral-8x7b',
-    name: 'Mistral 8x7B (Mixtral)',
-    provider: 'opensource',
-    description: 'Mixture of experts for better performance',
-    costTier: 'free',
-    capabilities: { vision: false, reasoning: true, fast: true, creative: true, code: true, longContext: false },
-    recommended_for: ['general', 'code', 'ue5_development'],
-    freeAccessInfo: 'Open-source. Available via Ollama or Perplexity.',
-    contextWindow: '32K',
-  },
-  {
-    id: 'mistral-devstral-24b',
-    name: 'Mistral Devstral 24B',
-    provider: 'opensource',
-    description: 'Fine-tuned for development tasks',
-    costTier: 'free',
-    capabilities: { vision: false, reasoning: true, fast: true, creative: false, code: true, longContext: true },
-    recommended_for: ['code', 'blueprint', 'debugging', 'cpp_development'],
-    freeAccessInfo: 'Open-source. Specialized for coding.',
-    contextWindow: '64K',
-    isNew: true,
-  },
+
 ];
 
 // Model groups by provider
@@ -454,58 +345,55 @@ export const TASK_MODEL_RECOMMENDATIONS: Record<string, string[]> = {
   general: ['deepseek-chat', 'claude-4-sonnet', 'gemini-2.5-flash', 'gpt-4o-mini'],
   
   // Coding tasks
-  code: ['deepseek-coder-v2', 'qwen3-coder-480b', 'claude-4-sonnet', 'gpt-4.1-mini'],
-  cpp_development: ['deepseek-coder-v2', 'qwen3-coder-480b', 'mistral-devstral-24b'],
+  code: ['deepseek-chat', 'claude-4-sonnet', 'gpt-4.1-mini'],
+  cpp_development: ['deepseek-chat', 'claude-4-sonnet', 'deepseek-reasoner'],
   blueprint: ['deepseek-reasoner', 'claude-4-sonnet', 'gemini-2.5-pro'],
-  debugging: ['deepseek-coder-v2', 'qwen3-coder-480b', 'claude-4-sonnet'],
+  debugging: ['deepseek-chat', 'claude-4-sonnet', 'gemini-2.5-flash'],
   
   // Creative tasks
-  creative: ['claude-4-opus', 'gpt-5', 'gemini-3-pro'],
-  creative_generation: ['claude-4-opus', 'gpt-5', 'gemini-3-pro'],
-  material_design: ['claude-4-opus', 'gpt-4o', 'gemini-3-pro'],
+  creative: ['claude-4-opus', 'gpt-4o', 'gemini-2.5-pro'],
+  creative_generation: ['claude-4-opus', 'gpt-4o', 'gemini-2.5-pro'],
+  material_design: ['claude-4-opus', 'gpt-4o', 'gemini-2.5-pro'],
   
   // Speed-focused
-  fast: ['gemini-3-flash', 'gpt-4.1-nano', 'claude-4-haiku', 'mistral-7b'],
-  fast_generation: ['gpt-4.1-nano', 'claude-4-haiku', 'deepseek-chat', 'llama-3-8b'],
-  simple_tasks: ['gpt-4.1-nano', 'claude-4-haiku', 'mistral-7b'],
+  fast: ['gemini-2.5-flash', 'gpt-4.1-nano', 'claude-4-haiku'],
+  fast_generation: ['gpt-4.1-nano', 'claude-4-haiku', 'deepseek-chat'],
+  simple_tasks: ['gpt-4.1-nano', 'claude-4-haiku', 'gemini-2.5-flash'],
   
   // Reasoning tasks
-  reasoning: ['deepseek-reasoner', 'gpt-5', 'claude-4-opus', 'gemini-2.5-pro'],
-  complex_analysis: ['deepseek-reasoner', 'gpt-5', 'claude-4-opus'],
-  architecture: ['deepseek-reasoner', 'gpt-5', 'claude-4-opus', 'llama-3-405b'],
+  reasoning: ['deepseek-reasoner', 'claude-4-opus', 'gemini-2.5-pro'],
+  complex_analysis: ['deepseek-reasoner', 'claude-4-opus', 'gemini-2.5-pro'],
+  architecture: ['deepseek-reasoner', 'claude-4-opus', 'gemini-2.5-pro'],
   
   // UE5 specific
-  ue5_development: ['deepseek-chat', 'claude-4-sonnet', 'gemini-2.5-flash', 'llama-3-70b'],
+  ue5_development: ['deepseek-chat', 'claude-4-sonnet', 'gemini-2.5-flash'],
   scene_building: ['gemini-2.5-flash', 'claude-4-sonnet', 'deepseek-chat'],
-  vision_tasks: ['gpt-4o', 'gemini-3-pro', 'claude-4-opus'],
+  vision_tasks: ['gpt-4o', 'gemini-2.5-pro', 'claude-4-opus'],
   
   // Analysis
   prompt_analysis: ['gpt-4.1-mini', 'claude-4-sonnet', 'gemini-2.5-flash'],
-  
-  // Local/Privacy
-  local_development: ['llama-3-70b', 'llama-3-8b', 'mistral-7b', 'mistral-8x7b'],
 };
 
 // UE5 Development Guide - Which model to use
 export const UE5_MODEL_GUIDE = {
   daily_use: {
     title: 'Main Development & Daily Use',
-    description: 'Start with DeepSeek-V3.2 - most generous free tier for a top-tier model, excellent for coding.',
+    description: 'Start with DeepSeek V3 - excellent for coding and general UE5 development.',
     recommended: ['deepseek-chat', 'gemini-2.5-flash'],
   },
   specialized_coding: {
     title: 'Specialized Coding Tasks',
-    description: 'For code-specific tasks, use Qwen3-Coder-480B or Mistral Devstral 24B.',
-    recommended: ['qwen3-coder-480b', 'deepseek-coder-v2', 'mistral-devstral-24b'],
+    description: 'For complex code tasks, use DeepSeek Reasoner or Claude Sonnet.',
+    recommended: ['deepseek-reasoner', 'claude-4-sonnet', 'gemini-2.5-pro'],
   },
   complex_reasoning: {
-    title: 'Complex Reasoning on a Budget',
-    description: 'Use daily free messages for Claude or limited GPT-5 credits for complex problems.',
-    recommended: ['claude-4-sonnet', 'gpt-5-mini', 'deepseek-reasoner'],
+    title: 'Complex Reasoning',
+    description: 'Use DeepSeek R1 for reasoning or Claude Opus for complex problems.',
+    recommended: ['deepseek-reasoner', 'claude-4-opus', 'gemini-2.5-pro'],
   },
-  full_control: {
-    title: 'Full Control & Privacy',
-    description: 'Download open-source models and run locally. Free with no limits but requires setup.',
-    recommended: ['llama-3-70b', 'mistral-8x7b', 'llama-3-8b'],
+  fast_tasks: {
+    title: 'Fast & Simple Tasks',
+    description: 'Use fast models for quick queries and simple tasks.',
+    recommended: ['claude-4-haiku', 'gemini-2.5-flash', 'gpt-4.1-nano'],
   },
 };

@@ -806,9 +806,7 @@ class UE5AIChatService:
         self.model_providers = {
             # DeepSeek Models
             "deepseek-chat": "deepseek",
-            "deepseek-v3.2-speciale": "deepseek",
             "deepseek-reasoner": "deepseek",
-            "deepseek-coder-v2": "deepseek",
             
             # Google Gemini Models
             "gemini-3-pro": "google",
@@ -858,22 +856,18 @@ class UE5AIChatService:
         
         # Model ID to actual API model name mapping
         # Updated December 2025 based on official API documentation
-        # Some model IDs in our system differ from what the API expects
         self.model_api_names = {
             # DeepSeek Models - API uses these exact names (verified Dec 2025)
             # https://api-docs.deepseek.com/quick_start/pricing
-            "deepseek-chat": "deepseek-chat",  # DeepSeek-V3.2 Non-thinking Mode
-            "deepseek-v3.2-speciale": "deepseek-chat",  # Uses same API model
-            "deepseek-reasoner": "deepseek-reasoner",  # DeepSeek-V3.2 Thinking Mode
-            "deepseek-coder-v2": "deepseek-coder",
+            "deepseek-chat": "deepseek-chat",  # DeepSeek-V3
+            "deepseek-reasoner": "deepseek-reasoner",  # DeepSeek-R1
             
-            # Google Gemini Models - OpenAI Compatible API format (verified Dec 2025)
+            # Google Gemini Models - Native API format (verified Dec 2025)
             # https://ai.google.dev/gemini-api/docs/models
-            "gemini-3-pro": "gemini-3-pro-preview",  # Latest Gemini 3 Pro (Preview)
-            "gemini-3-flash": "gemini-3-flash-preview",  # Latest Gemini 3 Flash (Preview)
+            "gemini-3-pro": "gemini-2.5-pro",  # Gemini 3 Pro not yet available
+            "gemini-3-flash": "gemini-2.5-flash",  # Gemini 3 Flash not yet available
             "gemini-2.5-pro": "gemini-2.5-pro",  # Stable
             "gemini-2.5-flash": "gemini-2.5-flash",  # Stable - recommended
-            "gemini-2.5-flash-lite": "gemini-2.5-flash-lite",  # Ultra fast
             "gemini-2.0-flash": "gemini-2.0-flash",  # Previous gen stable
             
             # OpenAI Models - API format
@@ -886,22 +880,11 @@ class UE5AIChatService:
             
             # Anthropic Claude Models - API format (verified Dec 2025)
             # https://platform.claude.com/docs/en/about-claude/models/overview
-            # Claude 4.5 is the latest version - using full model IDs with dates for stability
             "claude-4-sonnet": "claude-sonnet-4-5-20250929",  # Claude Sonnet 4.5
             "claude-4-opus": "claude-opus-4-5-20251101",  # Claude Opus 4.5
             "claude-4-haiku": "claude-haiku-4-5-20251001",  # Claude Haiku 4.5
             "claude-3-5-sonnet": "claude-3-5-sonnet-20241022",  # Legacy
             "claude-3-opus": "claude-3-opus-20240229",  # Legacy
-            "claude-3-haiku": "claude-3-haiku-20240307",  # Legacy
-            
-            # Open-Source Models (Ollama) - Use local model names
-            "llama-3-405b": "llama3.3:70b",
-            "llama-3-70b": "llama3.3:70b",
-            "llama-3-8b": "llama3.2:3b",
-            "qwen3-coder-480b": "qwen2.5-coder:32b",
-            "mistral-7b": "mistral:7b",
-            "mistral-8x7b": "mixtral:8x7b",
-            "mistral-devstral-24b": "codestral:22b",
         }
     
     def _get_native_client(self, model: str) -> tuple[Optional[BaseAIClient], str, str]:
