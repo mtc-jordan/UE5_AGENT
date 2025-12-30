@@ -833,6 +833,8 @@ class UE5AIChatService:
         Uses API keys from Settings page configuration.
         """
         provider = self.model_providers.get(model, "openai")
+        logger.info(f"Model selection: model='{model}' -> provider='{provider}'")
+        logger.info(f"Available model mappings: {list(self.model_providers.keys())}")
         
         # Check if we already have a client for this provider
         if provider in self._clients:
@@ -842,11 +844,13 @@ class UE5AIChatService:
         api_key = get_api_key(provider)
         
         if not api_key:
-            logger.warning(f"No API key found for provider {provider}, falling back to default")
+            logger.warning(f"No API key found for provider {provider}, falling back to default OpenAI")
             # Fall back to default OpenAI client
             if "openai" not in self._clients:
                 self._clients["openai"] = AsyncOpenAI()
             return self._clients["openai"]
+        
+        logger.info(f"Found API key for provider {provider}: {api_key[:10]}...{api_key[-4:]}")
         
         # Create client with the appropriate base URL and API key
         base_url = self.provider_base_urls.get(provider)
@@ -866,7 +870,7 @@ class UE5AIChatService:
             base_url=base_url
         )
         
-        logger.info(f"Created client for provider {provider} with base URL {base_url}")
+        logger.info(f"Created new client for provider {provider} with base URL {base_url}")
         return self._clients[provider]
     
     async def chat(
