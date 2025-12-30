@@ -852,52 +852,122 @@ class UE5AIChatService:
         
         # Cache for clients (created on demand)
         self._clients: Dict[str, AsyncOpenAI] = {}
-    
-    def _get_client_for_model(self, model: str) -> AsyncOpenAI:
-        """
-        Get the appropriate client for the given model.
-        Uses API keys from Settings page configuration.
-        """
-        provider = self.model_providers.get(model, "openai")
-        logger.info(f"Model selection: model='{model}' -> provider='{provider}'")
-        logger.info(f"Available model mappings: {list(self.model_providers.keys())}")
         
-        # Check if we already have a client for this provider
-        if provider in self._clients:
-            return self._clients[provider]
+        # Model ID to actual API model name mapping
+        # Updated December 2025 based on official API documentation
+        # Some model IDs in our system differ from what the API expects
+        self.model_api_names = {
+            # DeepSeek Models - API uses these exact names (verified Dec 2025)
+            # https://api-docs.deepseek.com/quick_start/pricing
+            "deepseek-chat": "deepseek-chat",  # DeepSeek-V3.2 Non-thinking Mode
+            "deepseek-v3.2-speciale": "deepseek-chat",  # Uses same API model
+            "deepseek-reasoner": "deepseek-reasoner",  # DeepSeek-V3.2 Thinking Mode
+            "deepseek-coder-v2": "deepseek-coder",
+            
+            # Google Gemini Models - OpenAI Compatible API format (verified Dec 2025)
+            # https://ai.google.dev/gemini-api/docs/models
+            "gemini-3-pro": "gemini-3-pro-preview",  # Latest Gemini 3 Pro (Preview)
+            "gemini-3-flash": "gemini-3-flash-preview",  # Latest Gemini 3 Flash (Preview)
+            "gemini-2.5-pro": "gemini-2.5-pro",  # Stable
+            "gemini-2.5-flash": "gemini-2.5-flash",  # Stable - recommended
+            "gemini-2.5-flash-lite": "gemini-2.5-flash-lite",  # Ultra fast
+            "gemini-2.0-flash": "gemini-2.0-flash",  # Previous gen stable
+            
+            # OpenAI Models - API format
+            "gpt-5": "gpt-4o",  # GPT-5 not yet available, use GPT-4o
+            "gpt-5-mini": "gpt-4o-mini",
+            "gpt-4o": "gpt-4o",
+            "gpt-4o-mini": "gpt-4o-mini",
+            "gpt-4.1-mini": "gpt-4.1-mini",
+            "gpt-4.1-nano": "gpt-4.1-nano",
+            
+            # Anthropic Claude Models - API format (verified Dec 2025)
+            # https://platform.claude.com/docs/en/about-claude/models/overview
+            # Note: Claude 4.5 is the latest version as of Dec 2025
+            "claude-4-sonnet": "claude-sonnet-4-5",  # Claude Sonnet 4.5 (alias)
+            "claude-4-opus": "claude-opus-4-5",  # Claude Opus 4.5 (alias)
+            "claude-4-haiku": "claude-haiku-4-5",  # Claude Haiku 4.5 (alias)
+            "claude-3-5-sonnet": "claude-3-5-sonnet-20241022",  # Legacy
+            "claude-3-opus": "claude-3-opus-20240229",  # Legacy
+            "claude-3-haiku": "claude-3-haiku-20240307",  # Legacy
+            
+            # Open-Source Models (Ollama) - Use local model names
+            "llama-3-405b": "llama3.3:70b",
+            "llama-3-70b": "llama3.3:70b",
+            "llama-3-8b": "llama3.2:3b",
+            "qwen3-coder-480b": "qwen2.5-coder:32b",
+            "mistral-7b": "mistral:7b",
+            "mistral-8x7b": "mixtral:8x7b",
+            "mistral-devstral-24b": "codestral:22b",
+        }
+    
+    def _get_client_for_model(self, model: str) -> tuple[AsyncOpenAI, str]:
+        """
+        Get the appropriate client and API model name for the given model.
+        Uses API keys from Settings page configuration.
+        
+        Returns:
+            Tuple of (client, api_model_name)
+        """
+        # Get provider and API model name for the requested model
+        provider = self.model_providers.get(model, "openai")
+        api_model_name = self.model_api_names.get(model, model)  # Get actual API model name
+        
+        logger.info(f"=== Model Routing ===")
+        logger.info(f"  Requested model: '{model}'")
+        logger.info(f"  Provider: '{provider}'")
+        logger.info(f"  API model name: '{api_model_name}'")
         
         # Get API key from Settings (stored in .api_keys.json) or environment
         api_key = get_api_key(provider)
         
         if not api_key:
-            logger.warning(f"No API key found for provider {provider}, falling back to default OpenAI")
-            # Fall back to default OpenAI client
-            if "openai" not in self._clients:
-                self._clients["openai"] = AsyncOpenAI()
-            return self._clients["openai"]
+            logger.warning(f"No API key found for provider '{provider}'")
+            
+            # Try to fall back to OpenAI if available
+            openai_key = get_api_key("openai")
+            if openai_key:
+                logger.info(f"Falling back to OpenAI with gpt-4.1-mini")
+                if "openai" not in self._clients:
+                    self._clients["openai"] = AsyncOpenAI(api_key=openai_key)
+                return self._clients["openai"], "gpt-4.1-mini"
+            else:
+                # Last resort: use default OpenAI client (may use OPENAI_API_KEY env var)
+                logger.info(f"Using default OpenAI client")
+                if "openai" not in self._clients:
+                    self._clients["openai"] = AsyncOpenAI()
+                return self._clients["openai"], "gpt-4.1-mini"
         
-        logger.info(f"Found API key for provider {provider}: {api_key[:10]}...{api_key[-4:]}")
+        logger.info(f"  API key found: {api_key[:8]}...{api_key[-4:]}")
         
         # Create client with the appropriate base URL and API key
         base_url = self.provider_base_urls.get(provider)
+        logger.info(f"  Base URL: {base_url}")
         
         # Special handling for Anthropic (doesn't use OpenAI-compatible API for tool calling)
-        # For now, we'll use OpenAI-compatible providers only
+        # TODO: Implement native Anthropic API support for tool calling
         if provider == "anthropic":
-            logger.warning(f"Anthropic models don't support OpenAI-compatible tool calling, falling back to OpenAI")
+            logger.warning(f"Anthropic models don't support OpenAI-compatible tool calling")
+            logger.warning(f"Falling back to OpenAI. To use Claude, we need to implement native Anthropic API.")
+            openai_key = get_api_key("openai")
             if "openai" not in self._clients:
-                openai_key = get_api_key("openai")
                 self._clients["openai"] = AsyncOpenAI(api_key=openai_key) if openai_key else AsyncOpenAI()
-            return self._clients["openai"]
+            return self._clients["openai"], "gpt-4.1-mini"
+        
+        # Check if we already have a client for this provider
+        if provider in self._clients:
+            logger.info(f"  Using cached client for provider '{provider}'")
+            return self._clients[provider], api_model_name
         
         # Create and cache the client
+        logger.info(f"  Creating new client for provider '{provider}'")
         self._clients[provider] = AsyncOpenAI(
             api_key=api_key,
             base_url=base_url
         )
         
-        logger.info(f"Created new client for provider {provider} with base URL {base_url}")
-        return self._clients[provider]
+        logger.info(f"=== Model Routing Complete ===")
+        return self._clients[provider], api_model_name
     
     async def chat(
         self,
@@ -921,8 +991,10 @@ class UE5AIChatService:
         # Determine which model to use
         model_to_use = model or self.model
         
-        # Get the appropriate client for this model
-        client = self._get_client_for_model(model_to_use)
+        # Get the appropriate client and API model name for this model
+        client, api_model_name = self._get_client_for_model(model_to_use)
+        
+        logger.info(f"Using client for model '{model_to_use}' with API model name '{api_model_name}'")
         
         # Prepare messages with system prompt
         full_messages = [
@@ -932,7 +1004,7 @@ class UE5AIChatService:
         try:
             # Call the AI model with tools
             response = await client.chat.completions.create(
-                model=model_to_use,
+                model=api_model_name,  # Use the actual API model name
                 messages=full_messages,
                 tools=self.tools,
                 tool_choice="auto",
@@ -983,12 +1055,32 @@ class UE5AIChatService:
             return result
             
         except Exception as e:
+            error_msg = str(e)
             logger.error(f"AI chat error: {e}")
+            
+            # Provide more helpful error messages based on error type
+            if "401" in error_msg or "Unauthorized" in error_msg or "invalid_api_key" in error_msg.lower():
+                provider = self.model_providers.get(model_to_use, "unknown")
+                user_message = f"API key error for {provider}: Please check your API key in Settings. The key may be invalid or expired."
+            elif "404" in error_msg or "model_not_found" in error_msg.lower():
+                user_message = f"Model '{api_model_name}' not found. This model may not be available yet or the name may have changed."
+            elif "429" in error_msg or "rate_limit" in error_msg.lower():
+                user_message = "Rate limit exceeded. Please wait a moment before trying again."
+            elif "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
+                user_message = "Request timed out. The AI service may be experiencing high load. Please try again."
+            elif "connection" in error_msg.lower() or "network" in error_msg.lower():
+                user_message = "Connection error. Please check your internet connection and try again."
+            else:
+                user_message = f"I encountered an error: {error_msg}"
+            
             return {
-                "content": f"I encountered an error: {str(e)}",
+                "content": user_message,
                 "tool_calls": [],
                 "tool_results": [],
-                "error": str(e)
+                "error": error_msg,
+                "error_type": "api_error",
+                "model_used": model_to_use,
+                "api_model": api_model_name
             }
     
     async def chat_stream(
