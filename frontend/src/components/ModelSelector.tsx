@@ -15,11 +15,13 @@ const providerStyles: Record<string, { icon: string; color: string; bgColor: str
   openai: { icon: '🤖', color: 'text-green-400', bgColor: 'bg-green-500/20' },
   anthropic: { icon: '🧠', color: 'text-orange-400', bgColor: 'bg-orange-500/20' },
   google: { icon: '🔮', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
-  deepseek: { icon: '🔍', color: 'text-purple-400', bgColor: 'bg-purple-500/20' }
+  deepseek: { icon: '🔍', color: 'text-purple-400', bgColor: 'bg-purple-500/20' },
+  opensource: { icon: '🌐', color: 'text-violet-400', bgColor: 'bg-violet-500/20' }
 };
 
 // Cost tier badges
 const costTierStyles: Record<string, { label: string; color: string }> = {
+  'free': { label: 'FREE', color: 'text-emerald-400' },
   '$': { label: '$', color: 'text-green-400' },
   '$$': { label: '$$', color: 'text-yellow-400' },
   '$$$': { label: '$$$', color: 'text-red-400' }
@@ -187,8 +189,8 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                           </div>
                           <p className="text-xs text-gray-500 truncate">{model.description}</p>
                         </div>
-                        <span className={`text-xs ${costTierStyles[model.costTier].color}`}>
-                          {costTierStyles[model.costTier].label}
+                        <span className={`text-xs ${costTierStyles[model.costTier]?.color || 'text-gray-400'}`}>
+                          {costTierStyles[model.costTier]?.label || model.costTier}
                         </span>
                       </div>
                       
@@ -289,8 +291,8 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                       {model.capabilities.vision && (
                         <span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full">👁️ Vision</span>
                       )}
-                      <span className={`text-sm font-medium ${costTierStyles[model.costTier].color}`}>
-                        {costTierStyles[model.costTier].label}
+                      <span className={`text-sm font-medium ${costTierStyles[model.costTier]?.color || 'text-gray-400'}`}>
+                        {costTierStyles[model.costTier]?.label || model.costTier}
                       </span>
                     </div>
                   </div>
