@@ -816,9 +816,10 @@ class UE5AIChatService:
             "gemini-2.5-flash-lite": "google",
             "gemini-2.0-flash": "google",
             
-            # OpenAI Models
-            "gpt-5": "openai",
-            "gpt-5-mini": "openai",
+            # OpenAI Models - GPT-5.2 series (Dec 2025)
+            "gpt-5.2-chat": "openai",
+            "gpt-5.2-pro": "openai",
+            "gpt-5.1-codex": "openai",
             "gpt-4o": "openai",
             "gpt-4o-mini": "openai",
             "gpt-4.1-mini": "openai",
@@ -870,9 +871,11 @@ class UE5AIChatService:
             "gemini-2.5-flash": "gemini-2.5-flash",  # Stable - recommended
             "gemini-2.0-flash": "gemini-2.0-flash",  # Previous gen stable
             
-            # OpenAI Models - API format
-            "gpt-5": "gpt-4o",  # GPT-5 not yet available, use GPT-4o
-            "gpt-5-mini": "gpt-4o-mini",
+            # OpenAI Models - GPT-5.2 series (Dec 2025)
+            # https://platform.openai.com/docs/models
+            "gpt-5.2-chat": "gpt-5.2-chat-latest",  # GPT-5.2 with CoT reasoning
+            "gpt-5.2-pro": "gpt-5.2-pro",  # GPT-5.2 Pro for complex tasks
+            "gpt-5.1-codex": "gpt-5.1-codex-max",  # GPT-5.1 Codex for coding
             "gpt-4o": "gpt-4o",
             "gpt-4o-mini": "gpt-4o-mini",
             "gpt-4.1-mini": "gpt-4.1-mini",

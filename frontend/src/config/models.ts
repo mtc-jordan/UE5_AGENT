@@ -177,10 +177,21 @@ export const AI_MODELS: AIModel[] = [
   
   // ==================== OpenAI Models ====================
   {
-    id: 'gpt-5',
-    name: 'GPT-5',
+    id: 'gpt-5.2-chat',
+    name: 'GPT-5.2 Chat',
     provider: 'openai',
-    description: 'Latest frontier model with advanced reasoning',
+    description: 'Latest GPT-5.2 with chain-of-thought reasoning and tool use',
+    costTier: '$$$',
+    capabilities: { vision: true, reasoning: true, fast: false, creative: true, code: true, longContext: true },
+    recommended_for: ['complex_tasks', 'reasoning', 'architecture', 'ue5_development'],
+    contextWindow: '128K',
+    isNew: true,
+  },
+  {
+    id: 'gpt-5.2-pro',
+    name: 'GPT-5.2 Pro',
+    provider: 'openai',
+    description: 'GPT-5.2 Pro for complex multi-step tasks',
     costTier: '$$$',
     capabilities: { vision: true, reasoning: true, fast: false, creative: true, code: true, longContext: true },
     recommended_for: ['complex_tasks', 'creative_generation', 'architecture', 'reasoning'],
@@ -188,14 +199,13 @@ export const AI_MODELS: AIModel[] = [
     isNew: true,
   },
   {
-    id: 'gpt-5-mini',
-    name: 'GPT-5 Mini',
+    id: 'gpt-5.1-codex',
+    name: 'GPT-5.1 Codex Max',
     provider: 'openai',
-    description: 'Efficient version of GPT-5 for speed & cost',
+    description: 'Specialized for code generation with apply_patch and shell tools',
     costTier: '$$',
-    capabilities: { vision: true, reasoning: true, fast: true, creative: true, code: true, longContext: true },
-    recommended_for: ['general', 'code', 'fast_generation'],
-    freeAccessInfo: 'Limited free credits in coding tools like Cursor',
+    capabilities: { vision: false, reasoning: true, fast: true, creative: false, code: true, longContext: true },
+    recommended_for: ['code', 'blueprint', 'cpp_development', 'debugging'],
     contextWindow: '128K',
     isNew: true,
   },
@@ -345,14 +355,14 @@ export const TASK_MODEL_RECOMMENDATIONS: Record<string, string[]> = {
   general: ['deepseek-chat', 'claude-4-sonnet', 'gemini-2.5-flash', 'gpt-4o-mini'],
   
   // Coding tasks
-  code: ['deepseek-chat', 'claude-4-sonnet', 'gpt-4.1-mini'],
-  cpp_development: ['deepseek-chat', 'claude-4-sonnet', 'deepseek-reasoner'],
-  blueprint: ['deepseek-reasoner', 'claude-4-sonnet', 'gemini-2.5-pro'],
-  debugging: ['deepseek-chat', 'claude-4-sonnet', 'gemini-2.5-flash'],
+  code: ['gpt-5.1-codex', 'deepseek-chat', 'claude-4-sonnet', 'gpt-4.1-mini'],
+  cpp_development: ['gpt-5.1-codex', 'deepseek-chat', 'claude-4-sonnet', 'deepseek-reasoner'],
+  blueprint: ['deepseek-reasoner', 'gpt-5.2-chat', 'claude-4-sonnet', 'gemini-2.5-pro'],
+  debugging: ['gpt-5.1-codex', 'deepseek-chat', 'claude-4-sonnet', 'gemini-2.5-flash'],
   
   // Creative tasks
-  creative: ['claude-4-opus', 'gpt-4o', 'gemini-2.5-pro'],
-  creative_generation: ['claude-4-opus', 'gpt-4o', 'gemini-2.5-pro'],
+  creative: ['gpt-5.2-pro', 'claude-4-opus', 'gpt-4o', 'gemini-2.5-pro'],
+  creative_generation: ['gpt-5.2-pro', 'claude-4-opus', 'gpt-4o', 'gemini-2.5-pro'],
   material_design: ['claude-4-opus', 'gpt-4o', 'gemini-2.5-pro'],
   
   // Speed-focused
@@ -361,12 +371,12 @@ export const TASK_MODEL_RECOMMENDATIONS: Record<string, string[]> = {
   simple_tasks: ['gpt-4.1-nano', 'claude-4-haiku', 'gemini-2.5-flash'],
   
   // Reasoning tasks
-  reasoning: ['deepseek-reasoner', 'claude-4-opus', 'gemini-2.5-pro'],
-  complex_analysis: ['deepseek-reasoner', 'claude-4-opus', 'gemini-2.5-pro'],
-  architecture: ['deepseek-reasoner', 'claude-4-opus', 'gemini-2.5-pro'],
+  reasoning: ['gpt-5.2-chat', 'deepseek-reasoner', 'claude-4-opus', 'gemini-2.5-pro'],
+  complex_analysis: ['gpt-5.2-pro', 'deepseek-reasoner', 'claude-4-opus', 'gemini-2.5-pro'],
+  architecture: ['gpt-5.2-chat', 'deepseek-reasoner', 'claude-4-opus', 'gemini-2.5-pro'],
   
   // UE5 specific
-  ue5_development: ['deepseek-chat', 'claude-4-sonnet', 'gemini-2.5-flash'],
+  ue5_development: ['deepseek-chat', 'gpt-5.2-chat', 'claude-4-sonnet', 'gemini-2.5-flash'],
   scene_building: ['gemini-2.5-flash', 'claude-4-sonnet', 'deepseek-chat'],
   vision_tasks: ['gpt-4o', 'gemini-2.5-pro', 'claude-4-opus'],
   
