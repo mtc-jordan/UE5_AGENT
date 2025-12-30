@@ -23,41 +23,45 @@ Example from docs: model="gemini-2.5-flash"
 ## Anthropic Claude API Models (Claude 4.5 - Latest)
 Based on official documentation (https://platform.claude.com/docs/en/about-claude/models/overview):
 
-| Frontend ID | API Model Name (Full) | API Alias |
-|-------------|----------------------|-----------|
-| claude-4-sonnet | claude-sonnet-4-5-20250929 | claude-sonnet-4-5 |
-| claude-4-haiku | claude-haiku-4-5-20251001 | claude-haiku-4-5 |
-| claude-4-opus | claude-opus-4-5-20251101 | claude-opus-4-5 |
-| claude-3-5-sonnet | claude-3-5-sonnet-20241022 | (legacy) |
-| claude-3-opus | claude-3-opus-20240229 | (legacy) |
+| Frontend ID | API Model Name (Full) | Description |
+|-------------|----------------------|-------------|
+| claude-4-sonnet | claude-sonnet-4-5-20250929 | Smart model for complex agents and coding |
+| claude-4-haiku | claude-haiku-4-5-20251001 | Fastest model with near-frontier intelligence |
+| claude-4-opus | claude-opus-4-5-20251101 | Premium model with maximum intelligence |
+| claude-3-5-sonnet | claude-3-5-sonnet-20241022 | Legacy |
+| claude-3-opus | claude-3-opus-20240229 | Legacy |
+| claude-3-haiku | claude-3-haiku-20240307 | Legacy |
+
+**Note**: Using full model IDs with dates (e.g., `claude-opus-4-5-20251101`) ensures stability as aliases may change.
 
 **IMPORTANT**: Anthropic API is NOT OpenAI-compatible for tool calling!
 - Need to use Anthropic's native API or a compatibility layer
 - Current backend falls back to OpenAI when Anthropic is selected
 
-## Summary of Required Backend Changes:
+## Summary of Backend Model Mappings:
 
-### 1. DeepSeek - CORRECT (no changes needed)
+### DeepSeek - CORRECT
 - deepseek-chat → deepseek-chat ✓
 - deepseek-reasoner → deepseek-reasoner ✓
 
-### 2. Google Gemini - NEEDS UPDATE
-- gemini-3-pro → gemini-3-pro-preview
-- gemini-3-flash → gemini-3-flash-preview  
-- gemini-2.5-pro → gemini-2.5-pro (correct)
-- gemini-2.5-flash → gemini-2.5-flash (correct)
-- gemini-2.0-flash → gemini-2.0-flash (correct)
+### Google Gemini - CORRECT
+- gemini-3-pro → gemini-3-pro-preview ✓
+- gemini-3-flash → gemini-3-flash-preview ✓
+- gemini-2.5-pro → gemini-2.5-pro ✓
+- gemini-2.5-flash → gemini-2.5-flash ✓
+- gemini-2.0-flash → gemini-2.0-flash ✓
 
-### 3. Anthropic Claude - NEEDS UPDATE
-- claude-4-sonnet → claude-sonnet-4-5 (alias) or claude-sonnet-4-5-20250929
-- claude-4-opus → claude-opus-4-5 (alias) or claude-opus-4-5-20251101
-- claude-4-haiku → claude-haiku-4-5 (alias) or claude-haiku-4-5-20251001
-- claude-3-5-sonnet → claude-3-5-sonnet-20241022 (correct)
-- claude-3-opus → claude-3-opus-20240229 (correct)
+### Anthropic Claude - CORRECT (using full IDs)
+- claude-4-sonnet → claude-sonnet-4-5-20250929 ✓
+- claude-4-opus → claude-opus-4-5-20251101 ✓
+- claude-4-haiku → claude-haiku-4-5-20251001 ✓
+- claude-3-5-sonnet → claude-3-5-sonnet-20241022 ✓
+- claude-3-opus → claude-3-opus-20240229 ✓
+- claude-3-haiku → claude-3-haiku-20240307 ✓
 
-### 4. OpenAI - VERIFY
-- gpt-5 → May not exist yet, fallback to gpt-4o
-- gpt-4o → gpt-4o (correct)
-- gpt-4o-mini → gpt-4o-mini (correct)
-- gpt-4.1-mini → gpt-4.1-mini (verify availability)
-- gpt-4.1-nano → gpt-4.1-nano (verify availability)
+### OpenAI
+- gpt-5 → gpt-4o (GPT-5 not available)
+- gpt-4o → gpt-4o ✓
+- gpt-4o-mini → gpt-4o-mini ✓
+- gpt-4.1-mini → gpt-4.1-mini ✓
+- gpt-4.1-nano → gpt-4.1-nano ✓

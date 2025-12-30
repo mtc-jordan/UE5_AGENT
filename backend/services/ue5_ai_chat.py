@@ -883,10 +883,10 @@ class UE5AIChatService:
             
             # Anthropic Claude Models - API format (verified Dec 2025)
             # https://platform.claude.com/docs/en/about-claude/models/overview
-            # Note: Claude 4.5 is the latest version as of Dec 2025
-            "claude-4-sonnet": "claude-sonnet-4-5",  # Claude Sonnet 4.5 (alias)
-            "claude-4-opus": "claude-opus-4-5",  # Claude Opus 4.5 (alias)
-            "claude-4-haiku": "claude-haiku-4-5",  # Claude Haiku 4.5 (alias)
+            # Claude 4.5 is the latest version - using full model IDs with dates for stability
+            "claude-4-sonnet": "claude-sonnet-4-5-20250929",  # Claude Sonnet 4.5
+            "claude-4-opus": "claude-opus-4-5-20251101",  # Claude Opus 4.5
+            "claude-4-haiku": "claude-haiku-4-5-20251001",  # Claude Haiku 4.5
             "claude-3-5-sonnet": "claude-3-5-sonnet-20241022",  # Legacy
             "claude-3-opus": "claude-3-opus-20240229",  # Legacy
             "claude-3-haiku": "claude-3-haiku-20240307",  # Legacy
