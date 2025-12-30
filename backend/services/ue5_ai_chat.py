@@ -807,6 +807,7 @@ class UE5AIChatService:
             # DeepSeek Models
             "deepseek-chat": "deepseek",
             "deepseek-reasoner": "deepseek",
+            "deepseek-coder": "deepseek",
             
             # Google Gemini Models
             "gemini-3-pro": "google",
@@ -862,6 +863,7 @@ class UE5AIChatService:
             # https://api-docs.deepseek.com/quick_start/pricing
             "deepseek-chat": "deepseek-chat",  # DeepSeek-V3
             "deepseek-reasoner": "deepseek-reasoner",  # DeepSeek-R1
+            "deepseek-coder": "deepseek-coder",  # DeepSeek Coder - code specialized
             
             # Google Gemini Models - Native API format (verified Dec 2025)
             # https://ai.google.dev/gemini-api/docs/models

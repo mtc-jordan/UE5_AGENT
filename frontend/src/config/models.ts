@@ -117,8 +117,18 @@ export const AI_MODELS: AIModel[] = [
     contextWindow: '128K',
     isNew: true,
   },
+  {
+    id: 'deepseek-coder',
+    name: 'DeepSeek Coder',
+    provider: 'deepseek',
+    description: 'Specialized for code generation, completion, and analysis',
+    costTier: '$',
+    capabilities: { vision: false, reasoning: true, fast: true, creative: false, code: true, longContext: true },
+    recommended_for: ['code', 'blueprint', 'cpp_development', 'debugging'],
+    contextWindow: '128K',
+    isNew: true,
+  },
 
-  
   // ==================== Google Gemini Models ====================
   {
     id: 'gemini-3-pro',
