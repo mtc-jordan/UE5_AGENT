@@ -142,6 +142,19 @@ async def recall_memories(
     return [MemoryResponse.model_validate(m) for m in memories]
 
 
+@router.get("/search", response_model=List[MemoryResponse])
+async def search_memories(
+    query: str,
+    project_id: Optional[int] = None,
+    agents: Optional[str] = None,
+    limit: int = 10,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Search memories (alias for recall)."""
+    return await recall_memories(query, project_id, agents, limit, current_user, db)
+
+
 @router.get("/stats", response_model=MemoryStats)
 async def get_memory_stats(
     project_id: Optional[int] = None,

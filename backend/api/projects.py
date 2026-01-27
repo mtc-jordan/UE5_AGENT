@@ -70,6 +70,33 @@ async def create_project(
     return ProjectResponse.model_validate(project)
 
 
+@router.get("/stats")
+async def get_projects_stats(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get statistics for all user projects."""
+    result = await db.execute(
+        select(Project).where(Project.user_id == current_user.id)
+    )
+    projects = result.scalars().all()
+    
+    total_projects = len(projects)
+    total_chats = 0
+    
+    for project in projects:
+        chat_result = await db.execute(
+            select(func.count()).select_from(Chat).where(Chat.project_id == project.id)
+        )
+        total_chats += chat_result.scalar() or 0
+    
+    return {
+        "total_projects": total_projects,
+        "total_chats": total_chats,
+        "average_chats_per_project": round(total_chats / total_projects, 2) if total_projects > 0 else 0
+    }
+
+
 @router.get("/{project_id}", response_model=ProjectDetailResponse)
 async def get_project(
     project_id: int,
