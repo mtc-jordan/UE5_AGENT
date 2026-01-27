@@ -43,3 +43,4 @@ websockets
 # Native AI Provider SDKs
 anthropic>=0.75.0
 google-generativeai>=0.8.0
+psutil>=5.9.0

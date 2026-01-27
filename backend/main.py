@@ -20,6 +20,10 @@ import os
 import sys
 import logging
 
+# Import monitoring and logging middleware
+from middleware.request_logging import RequestLoggingMiddleware
+from core.monitoring import performance_monitor
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -36,6 +40,7 @@ from core.config import settings
 from core.database import init_db, engine, async_session
 from core.error_handlers import setup_error_handlers
 from api import api_router
+from api import monitoring as monitoring_api
 from models.agent import Agent, DEFAULT_AGENTS
 from services.mcp import mcp_manager
 from services.presence import presence_service
@@ -155,6 +160,10 @@ app = FastAPI(
     openapi_url="/api/openapi.json"
 )
 
+# Add request logging middleware
+app.add_middleware(RequestLoggingMiddleware)
+
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -169,6 +178,7 @@ setup_error_handlers(app)
 
 # Include API routes
 app.include_router(api_router)
+app.include_router(monitoring_api.router, prefix="/api")
 
 
 @app.get("/health")
