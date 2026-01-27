@@ -19,7 +19,7 @@ export default defineConfig({
       // The page will need manual refresh for updates
       clientPort: 443,
       protocol: 'wss',
-      host: '5173-i3ldruj09nj1z4l4mqxyl-8f88ccf5.sg1.manus.computer',
+      host: '5173-io6yyu9n1f3mz3rrxwxiy-0171a592.sg1.manus.computer',
     },
     proxy: {
       '/api': {
