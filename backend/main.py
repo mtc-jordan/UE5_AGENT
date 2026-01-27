@@ -34,6 +34,7 @@ if backend_dir not in sys.path:
 
 from core.config import settings
 from core.database import init_db, engine, async_session
+from core.error_handlers import setup_error_handlers
 from api import api_router
 from models.agent import Agent, DEFAULT_AGENTS
 from services.mcp import mcp_manager
@@ -162,6 +163,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Setup error handlers
+setup_error_handlers(app)
 
 # Include API routes
 app.include_router(api_router)
