@@ -220,7 +220,7 @@ const GlassCard = ({
 };
 
 // Animated connection line
-const ConnectionLine = ({ active, label }: { active: boolean; label: string }) => (
+const _ConnectionLine = ({ active, label }: { active: boolean; label: string }) => (
   <div className="flex flex-col items-center mx-2">
     <div className="relative h-1 w-16 md:w-24 bg-gray-700 rounded-full overflow-hidden">
       {active && (
@@ -411,7 +411,7 @@ export default function UE5Connection() {
 
   // AI Assistant state
   const [aiCommand, setAiCommand] = useState('');
-  const [aiSuggestions, setAiSuggestions] = useState<string[]>([
+  const [_aiSuggestions, setAiSuggestions] = useState<string[]>([
     'Create a cube at position 0, 0, 100',
     'Take a screenshot of the viewport',
     'Start playing the game',
@@ -419,7 +419,7 @@ export default function UE5Connection() {
     'Save the current level'
   ]);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
-  const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [_aiResponse, setAiResponse] = useState<string | null>(null);
   const [aiToolCalls, setAiToolCalls] = useState<Array<{id: string; name: string; arguments: any}>>([]);
   const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'assistant' | 'system'; content: string; timestamp?: Date; toolCalls?: any[]; toolResults?: any[]; screenshot?: Screenshot; beforeAfter?: BeforeAfterPair; modelUsed?: {id: string; name: string; provider: string}; isStreaming?: boolean}>>([]);
   
@@ -439,12 +439,12 @@ export default function UE5Connection() {
 
   // Command Feedback & Error Recovery state
   const [currentExecution, setCurrentExecution] = useState<CommandExecution | null>(null);
-  const [commandExecutions, setCommandExecutions] = useState<CommandExecution[]>([]);
+  const [__commandExecutions, _setCommandExecutions] = useState<CommandExecution[]>([]);
   const [currentError, setCurrentError] = useState<string | null>(null);
   const [failedCommand, setFailedCommand] = useState<string | null>(null);
   const [undoHistory, setUndoHistory] = useState<UndoAction[]>([]);
   const [redoHistory, setRedoHistory] = useState<UndoAction[]>([]);
-  const [sceneContext, setSceneContext] = useState<SceneContext | undefined>(undefined);
+  const [__sceneContext, _setSceneContext] = useState<SceneContext | undefined>(undefined);
 
   const resultRef = useRef<HTMLDivElement>(null);
   const statusPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -797,8 +797,8 @@ export default function UE5Connection() {
   };
 
   // Manual screenshot capture
-  const captureScreenshot = async () => {
-    if (!agentStatus.mcp_connected) return;
+  const captureScreenshot = async (): Promise<string> => {
+    if (!agentStatus.mcp_connected) return '';
     
     setIsCapturing(true);
     try {
@@ -818,9 +818,12 @@ export default function UE5Connection() {
       if (response.ok) {
         const screenshot = await response.json();
         setScreenshots(prev => [screenshot, ...prev.slice(0, 49)]);
+        return screenshot.url || screenshot.id || '';
       }
+      return '';
     } catch (error) {
       console.error('Failed to capture screenshot:', error);
+      return '';
     } finally {
       setIsCapturing(false);
     }
@@ -1824,11 +1827,11 @@ export default function UE5Connection() {
 
           {/* Real-Time Command Feedback */}
           <CommandFeedback
-            executions={commandExecutions}
+            executions={_commandExecutions}
             currentExecution={currentExecution || undefined}
             onCaptureScreenshot={captureScreenshot}
             onRetry={(executionId) => {
-              const exec = commandExecutions.find(e => e.id === executionId);
+              const exec = __commandExecutions.find(e => e.id === executionId);
               if (exec) {
                 setAiCommand(exec.command);
                 processAiCommand(exec.command);
@@ -1845,7 +1848,7 @@ export default function UE5Connection() {
           <ErrorRecovery
             error={currentError || undefined}
             command={failedCommand || undefined}
-            sceneContext={sceneContext}
+            _sceneContext={_sceneContext}
             undoHistory={undoHistory}
             redoHistory={redoHistory}
             onRetry={(modifiedCommand) => {
@@ -1894,7 +1897,7 @@ export default function UE5Connection() {
             <ViewportPreview
               screenshots={screenshots}
               pairs={beforeAfterPairs}
-              onCapture={captureScreenshot}
+              onCapture={async () => { await captureScreenshot(); }}
               onRefresh={loadScreenshots}
               isCapturing={isCapturing}
               autoCapture={autoCapture}
@@ -2003,11 +2006,12 @@ export default function UE5Connection() {
 
           {/* Scene Quick Actions */}
           <SceneQuickActions
-            onExecuteAction={(action) => {
-              setAiCommand(action);
-              processAiCommand(action);
-            }}
+            authToken={authToken || ''}
             isConnected={agentStatus.mcp_connected}
+            onExecuteCommand={(command: string) => {
+              setAiCommand(command);
+              processAiCommand(command);
+            }}
           />
 
           {/* Action Timeline (Undo/Redo) */}
@@ -2046,7 +2050,7 @@ export default function UE5Connection() {
               setChatHistory(prev => [...prev, {
                 role: 'assistant',
                 content: `Created ${asset.graph.asset_type}: ${asset.graph.name}`,
-                timestamp: new Date().toISOString()
+                timestamp: new Date()
               }]);
             }}
           />
@@ -2057,14 +2061,14 @@ export default function UE5Connection() {
               setChatHistory(prev => [...prev, {
                 role: 'assistant',
                 content: `Generated PBR texture: ${texture.prompt}`,
-                timestamp: new Date().toISOString()
+                timestamp: new Date()
               }]);
             }}
             onApplyToActor={(_texture, actorName) => {
               setChatHistory(prev => [...prev, {
                 role: 'assistant',
                 content: `Applied texture to actor: ${actorName}`,
-                timestamp: new Date().toISOString()
+                timestamp: new Date()
               }]);
             }}
           />
@@ -2089,7 +2093,7 @@ export default function UE5Connection() {
               setChatHistory(prev => [...prev, {
                 role: 'assistant',
                 content: `Applied lighting preset: ${preset.name} - ${preset.description}`,
-                timestamp: new Date().toISOString()
+                timestamp: new Date()
               }]);
             }}
           />
@@ -2103,7 +2107,7 @@ export default function UE5Connection() {
               setChatHistory(prev => [...prev, {
                 role: 'assistant',
                 content: `Playing animation: ${animation.name} (${animation.duration.toFixed(1)}s)`,
-                timestamp: new Date().toISOString()
+                timestamp: new Date()
               }]);
             }}
           />
@@ -2121,29 +2125,23 @@ export default function UE5Connection() {
         <div className="space-y-6">
           {/* Command Templates & Workflow Presets */}
           <CommandTemplates
-            onExecuteTemplate={(template, params) => {
-              // Build command from template
-              let command = template.template;
-              template.parameters.forEach(param => {
-                const value = params[param.name] || param.defaultValue || '';
-                command = command.replace(`{{${param.name}}}`, String(value));
-              });
+            onExecuteTemplate={(command: string, _params: Record<string, any>) => {
               setAiCommand(command);
               processAiCommand(command);
               setChatHistory(prev => [...prev, {
-                role: 'assistant',
-                content: `Executing template: ${template.name}`,
-                timestamp: new Date().toISOString()
+                role: 'assistant' as const,
+                content: `Executing template`,
+                timestamp: new Date()
               }]);
             }}
-            onExecuteWorkflow={async (workflow) => {
+            onExecuteWorkflow={async (steps: any[]) => {
               setChatHistory(prev => [...prev, {
-                role: 'assistant',
-                content: `Starting workflow: ${workflow.name} (${workflow.steps.length} steps)`,
-                timestamp: new Date().toISOString()
+                role: 'assistant' as const,
+                content: `Starting workflow (${steps.length} steps)`,
+                timestamp: new Date()
               }]);
               
-              for (const step of workflow.steps) {
+              for (const step of steps) {
                 setAiCommand(step.command);
                 await processAiCommand(step.command);
                 if (step.waitForCompletion) {
@@ -2157,22 +2155,8 @@ export default function UE5Connection() {
                 timestamp: new Date()
               }]);
             }}
-            onSaveTemplate={(template) => {
-              console.log('Save template:', template);
-            }}
-            onDeleteTemplate={(templateId) => {
-              console.log('Delete template:', templateId);
-            }}
-            onSaveWorkflow={(workflow) => {
-              console.log('Save workflow:', workflow);
-            }}
-            onDeleteWorkflow={(workflowId) => {
-              console.log('Delete workflow:', workflowId);
-            }}
-            onImportWorkflows={(workflows) => {
-              console.log('Import workflows:', workflows);
-            }}
             isConnected={agentStatus.mcp_connected}
+            isExecuting={false}
           />
 
           {/* Advanced AI Features */}

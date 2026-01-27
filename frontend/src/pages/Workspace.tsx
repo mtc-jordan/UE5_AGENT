@@ -274,36 +274,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
 // STATS PANEL COMPONENT
 // =============================================================================
 
-interface StatsPanelProps {
-  stats: WorkspaceStats | null;
-}
 
-const StatsPanel: React.FC<StatsPanelProps> = ({ stats }) => {
-  if (!stats) return null;
-  
-  return (
-    <div className="grid grid-cols-4 gap-4 p-4 bg-gray-800 border-b border-gray-700">
-      <div className="text-center">
-        <div className="text-2xl font-bold text-white">{stats.file_count}</div>
-        <div className="text-xs text-gray-400">Files</div>
-      </div>
-      <div className="text-center">
-        <div className="text-2xl font-bold text-white">{stats.folder_count}</div>
-        <div className="text-xs text-gray-400">Folders</div>
-      </div>
-      <div className="text-center">
-        <div className="text-2xl font-bold text-white">
-          {formatFileSize(stats.total_size)}
-        </div>
-        <div className="text-xs text-gray-400">Total Size</div>
-      </div>
-      <div className="text-center">
-        <div className="text-2xl font-bold text-purple-400">{stats.generated_count}</div>
-        <div className="text-xs text-gray-400">AI Generated</div>
-      </div>
-    </div>
-  );
-};
 
 // =============================================================================
 // MAIN WORKSPACE PAGE
