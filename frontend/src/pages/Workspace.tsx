@@ -10,8 +10,10 @@
 
 import React, { useState, useRef} from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { FileBrowser } from '../components/FileBrowser';
 import { CodeEditor } from '../components/CodeEditor';
+import { EmptyState } from '../components/EmptyState';
 import {
   WorkspaceFile,
   WorkspaceStats,
@@ -22,6 +24,7 @@ import {
   SearchResult,
   formatFileSize,
   getFile} from '../lib/workspace-api';
+import { workspaceToasts } from '../lib/toast';
 
 // =============================================================================
 // TYPES
@@ -522,6 +525,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ projectId }) => {
           />
         )}
       </div>
+      
+      {/* Toast Notifications */}
+      <Toaster position="bottom-right" />
     </div>
   );
 };

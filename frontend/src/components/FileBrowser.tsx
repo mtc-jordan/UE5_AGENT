@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { ChevronRight, ChevronDown } from 'lucide-react';
 import {
   FileTreeNode,
   WorkspaceFile,
@@ -18,8 +19,8 @@ import {
   createFolder,
   deleteFile,
   renameFile,
-  getFileIcon,
   formatFileSize} from '../lib/workspace-api';
+import { FileIcon, LanguageBadge, FileSizeBadge } from '../lib/file-icons';
 
 // =============================================================================
 // TYPES
@@ -92,9 +93,10 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     <div className="select-none">
       <div
         className={`
-          flex items-center gap-1 px-2 py-1 cursor-pointer rounded
-          hover:bg-gray-700/50 transition-colors
-          ${isSelected ? 'bg-blue-600/30 text-blue-300' : 'text-gray-300'}
+          flex items-center gap-2 px-2 py-1.5 cursor-pointer rounded-md
+          hover:bg-gray-700/50 transition-all duration-150
+          hover:scale-[1.01] hover:shadow-sm
+          ${isSelected ? 'bg-blue-600/30 text-blue-300 ring-1 ring-blue-500/50' : 'text-gray-300'}
         `}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
         onClick={handleClick}
@@ -103,30 +105,44 @@ const TreeNode: React.FC<TreeNodeProps> = ({
       >
         {/* Expand/Collapse Icon */}
         {isFolder && (
-          <span className="w-4 text-gray-500 text-xs">
-            {isExpanded ? '▼' : '▶'}
+          <span className="w-4 flex items-center justify-center transition-transform duration-200">
+            {isExpanded ? (
+              <ChevronDown size={14} className="text-gray-400" />
+            ) : (
+              <ChevronRight size={14} className="text-gray-400" />
+            )}
           </span>
         )}
         {!isFolder && <span className="w-4" />}
         
         {/* File Icon */}
-        <span className="text-sm">{getFileIcon(node)}</span>
+        <FileIcon
+          fileName={node.name}
+          fileType={node.file_type}
+          language={node.language}
+          isOpen={isExpanded}
+          size={16}
+        />
         
         {/* File Name */}
-        <span className="truncate flex-1 text-sm">{node.name}</span>
+        <span className="truncate flex-1 text-sm font-medium">{node.name}</span>
+        
+        {/* Language Badge */}
+        {!isFolder && (
+          <LanguageBadge fileName={node.name} language={node.language} />
+        )}
         
         {/* AI Generated Badge */}
         {node.is_generated && (
-          <span className="text-xs px-1 bg-purple-600/30 text-purple-300 rounded">
+          <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 bg-purple-600/20 text-purple-300 rounded border border-purple-500/30">
+            <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse"></span>
             AI
           </span>
         )}
         
         {/* Size (for files) */}
         {!isFolder && node.size > 0 && (
-          <span className="text-xs text-gray-500">
-            {formatFileSize(node.size)}
-          </span>
+          <FileSizeBadge size={node.size} />
         )}
       </div>
       

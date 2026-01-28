@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useEffect, useRef} from 'react';
+import { EmptyState } from './EmptyState';
 import {
   WorkspaceFile,
   updateFile,
@@ -407,11 +408,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   
   if (!file) {
     return (
-      <div className={`flex items-center justify-center h-full bg-gray-900 text-gray-500 ${className}`}>
-        <div className="text-center">
-          <div className="text-4xl mb-4">📝</div>
-          <p>Select a file to edit</p>
-        </div>
+      <div className={className}>
+        <EmptyState />
       </div>
     );
   }
