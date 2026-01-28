@@ -15,6 +15,12 @@ import { FileBrowser } from '../components/FileBrowser';
 import { CodeEditor } from '../components/CodeEditor';
 import { EmptyState } from '../components/EmptyState';
 import { AIFileGenerator } from '../components/AIFileGenerator';
+import { GitPanel } from '../components/GitPanel';
+import { GitBranchDropdown } from '../components/GitBranchDropdown';
+import { GitCommitHistory } from '../components/GitCommitHistory';
+import { GitDiffViewer } from '../components/GitDiffViewer';
+import { GitCloneModal } from '../components/GitCloneModal';
+import { GitStatusBar } from '../components/GitStatusBar';
 import {
   WorkspaceFile,
   WorkspaceStats,
@@ -297,6 +303,13 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ projectId }) => {
   const [stats, setStats] = useState<WorkspaceStats | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   
+  // Git-related state
+  const [showGitPanel, setShowGitPanel] = useState(true);
+  const [showCommitHistory, setShowCommitHistory] = useState(false);
+  const [showCloneModal, setShowCloneModal] = useState(false);
+  const [diffFile, setDiffFile] = useState<string | null>(null);
+  const [showDiffViewer, setShowDiffViewer] = useState(false);
+  
   // Load stats
   React.useEffect(() => {
     const loadStats = async () => {
@@ -409,6 +422,11 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ projectId }) => {
           <span className="text-sm text-gray-400">
             {stats && `${stats.file_count} files, ${formatFileSize(stats.total_size)}`}
           </span>
+          <GitBranchDropdown onBranchChange={() => setRefreshKey(k => k + 1)} />
+          <GitStatusBar 
+            onCommitHistoryClick={() => setShowCommitHistory(true)}
+            onCloneClick={() => setShowCloneModal(true)}
+          />
         </div>
         
         <div className="flex items-center gap-2">
@@ -482,6 +500,13 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ projectId }) => {
           />
         </div>
         
+        {/* Git Panel Sidebar (Right) */}
+        {showGitPanel && (
+          <div className="absolute right-0 top-0 bottom-0 w-80 border-l border-gray-700 bg-gray-900 z-10">
+            <GitPanel onRefresh={() => setRefreshKey(k => k + 1)} />
+          </div>
+        )}
+        
         {/* Editor Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Tabs */}
@@ -548,6 +573,29 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ projectId }) => {
           }}
         />
       )}
+      
+      {/* Git Commit History */}
+      <GitCommitHistory
+        isOpen={showCommitHistory}
+        onClose={() => setShowCommitHistory(false)}
+      />
+      
+      {/* Git Diff Viewer */}
+      <GitDiffViewer
+        filePath={diffFile}
+        isOpen={showDiffViewer}
+        onClose={() => {
+          setShowDiffViewer(false);
+          setDiffFile(null);
+        }}
+      />
+      
+      {/* Git Clone Modal */}
+      <GitCloneModal
+        isOpen={showCloneModal}
+        onClose={() => setShowCloneModal(false)}
+        onSuccess={() => setRefreshKey(k => k + 1)}
+      />
       
       {/* Toast Notifications */}
       <Toaster position="bottom-right" />
