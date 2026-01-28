@@ -262,32 +262,40 @@ async def save_api_key(
     
     valid, error = await validators[provider](key)
     
+    # ALWAYS save the key, even if validation fails
+    # This allows users to save keys even if validation endpoint is unreachable
+    keys = load_api_keys()
+    keys[provider] = key
+    save_api_keys(keys)
+    
+    # Update usage stats with validation timestamp
+    stats = load_usage_stats()
+    if provider not in stats:
+        stats[provider] = {"usage_count": 0}
+    stats[provider]["last_tested"] = datetime.utcnow().isoformat()
+    stats[provider]["valid"] = valid
+    stats[provider]["validation_error"] = error if not valid else None
+    save_usage_stats(stats)
+    
+    # Also set as environment variable for immediate use
+    env_var_names = {
+        'openai': 'OPENAI_API_KEY',
+        'deepseek': 'DEEPSEEK_API_KEY',
+        'anthropic': 'ANTHROPIC_API_KEY',
+        'google': 'GOOGLE_API_KEY'
+    }
+    os.environ[env_var_names[provider]] = key
+    
+    # Return success with validation warning if validation failed
     if valid:
-        # Save the key
-        keys = load_api_keys()
-        keys[provider] = key
-        save_api_keys(keys)
-        
-        # Update usage stats with validation timestamp
-        stats = load_usage_stats()
-        if provider not in stats:
-            stats[provider] = {"usage_count": 0}
-        stats[provider]["last_tested"] = datetime.utcnow().isoformat()
-        stats[provider]["valid"] = True
-        save_usage_stats(stats)
-        
-        # Also set as environment variable for immediate use
-        env_var_names = {
-            'openai': 'OPENAI_API_KEY',
-            'deepseek': 'DEEPSEEK_API_KEY',
-            'anthropic': 'ANTHROPIC_API_KEY',
-            'google': 'GOOGLE_API_KEY'
-        }
-        os.environ[env_var_names[provider]] = key
-        
         return ApiKeyResponse(valid=True, masked_key=mask_key(key))
     else:
-        return ApiKeyResponse(valid=False, error=error)
+        # Key saved but validation failed - return warning
+        return ApiKeyResponse(
+            valid=False, 
+            error=f"Key saved but validation failed: {error}. The key will still be used for API calls.",
+            masked_key=mask_key(key)
+        )
 
 @router.put("/{provider}", response_model=ApiKeyResponse)
 async def update_api_key(

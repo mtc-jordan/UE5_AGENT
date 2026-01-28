@@ -300,6 +300,11 @@ export default function Settings() {
           setTimeout(() => {
             setApiKeyStatus(prev => ({ ...prev, [provider]: 'configured' }))
           }, 2000)
+        } else if (data.masked_key) {
+          // Key was saved but validation failed - show warning
+          setApiKeyStatus(prev => ({ ...prev, [provider]: 'configured' }))
+          setApiKeys(prev => ({ ...prev, [provider]: '' }))
+          toast.warning(`${provider.charAt(0).toUpperCase() + provider.slice(1)} API key saved! ${data.error || 'Validation could not be completed, but the key will be used.'}`)
         } else {
           setApiKeyStatus(prev => ({ ...prev, [provider]: 'invalid' }))
           toast.error(data.error || 'API key validation failed')
