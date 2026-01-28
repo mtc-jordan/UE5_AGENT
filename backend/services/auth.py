@@ -25,6 +25,11 @@ def get_password_hash(password: str) -> str:
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
+    
+    # Ensure "sub" is always a string (JWT standard requirement)
+    if "sub" in to_encode and not isinstance(to_encode["sub"], str):
+        to_encode["sub"] = str(to_encode["sub"])
+    
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:

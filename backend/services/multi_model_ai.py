@@ -281,9 +281,18 @@ class OpenAIClient(BaseAIClient):
     """OpenAI API client"""
     
     def __init__(self):
+        self._client = None
+    
+    def _get_client(self):
+        """Get client with fresh API key loaded from file"""
         from api.api_keys import get_api_key
         api_key = get_api_key('openai') or os.getenv("OPENAI_API_KEY")
-        self.client = AsyncOpenAI(api_key=api_key) if api_key else AsyncOpenAI()
+        return AsyncOpenAI(api_key=api_key) if api_key else AsyncOpenAI()
+    
+    @property
+    def client(self):
+        """Always return a fresh client with current API key"""
+        return self._get_client()
     
     async def chat(
         self,
@@ -415,10 +424,18 @@ class GoogleClient(BaseAIClient):
     """Google Gemini API client (via OpenAI-compatible endpoint)"""
     
     def __init__(self):
-        # Use OpenAI-compatible endpoint for Gemini
+        self._client = None
+    
+    def _get_client(self):
+        """Get client with fresh API key loaded from file"""
         from api.api_keys import get_api_key
         api_key = get_api_key('google') or os.getenv("GOOGLE_API_KEY")
-        self.client = AsyncOpenAI(api_key=api_key) if api_key else AsyncOpenAI()
+        return AsyncOpenAI(api_key=api_key) if api_key else AsyncOpenAI()
+    
+    @property
+    def client(self):
+        """Always return a fresh client with current API key"""
+        return self._get_client()
     
     async def chat(
         self,
@@ -462,14 +479,22 @@ class DeepSeekClient(BaseAIClient):
     """DeepSeek API client"""
     
     def __init__(self):
-        # Try to load API key from file first, then fallback to env var
-        from api.api_keys import get_api_key
-        self.api_key = get_api_key('deepseek') or os.getenv("DEEPSEEK_API_KEY", "")
         self.base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
-        self.client = AsyncOpenAI(
-            api_key=self.api_key,
+        self._client = None
+    
+    def _get_client(self):
+        """Get client with fresh API key loaded from file"""
+        from api.api_keys import get_api_key
+        api_key = get_api_key('deepseek') or os.getenv("DEEPSEEK_API_KEY", "")
+        return AsyncOpenAI(
+            api_key=api_key,
             base_url=self.base_url
         )
+    
+    @property
+    def client(self):
+        """Always return a fresh client with current API key"""
+        return self._get_client()
     
     async def chat(
         self,

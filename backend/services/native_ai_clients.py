@@ -472,8 +472,8 @@ class NativeAIClientFactory:
     def get_client(cls, provider: str) -> Optional[BaseAIClient]:
         """Get or create a native client for the provider"""
         
-        if provider in cls._clients:
-            return cls._clients[provider]
+        # DO NOT cache clients - always reload API key from file
+        # This ensures API keys saved in Settings are immediately available
         
         api_key = get_api_key(provider)
         if not api_key:
