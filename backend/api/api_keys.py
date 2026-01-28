@@ -334,10 +334,9 @@ async def delete_api_key(
     
     return {"success": True, "message": f"{provider} API key deleted"}
 
-@router.post("/{provider}/test")
+@router.get("/test/{provider}")
 async def test_api_key(
-    provider: str,
-    current_user: User = Depends(get_current_user)
+    provider: str
 ):
     """Test if an API key is working and return available models"""
     provider = provider.lower()
