@@ -14,6 +14,7 @@ import { Toaster } from 'react-hot-toast';
 import { FileBrowser } from '../components/FileBrowser';
 import { CodeEditor } from '../components/CodeEditor';
 import { EmptyState } from '../components/EmptyState';
+import { AIFileGenerator } from '../components/AIFileGenerator';
 import {
   WorkspaceFile,
   WorkspaceStats,
@@ -292,6 +293,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ projectId }) => {
   const [currentPath, setCurrentPath] = useState('/');
   const [showSearch, setShowSearch] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [stats, setStats] = useState<WorkspaceStats | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   
@@ -431,6 +433,13 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ projectId }) => {
             📤 Upload
           </button>
           
+          <button
+            onClick={() => setShowAIGenerator(true)}
+            className="px-3 py-1.5 text-sm bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded hover:from-purple-500 hover:to-blue-500 transition-colors flex items-center gap-1"
+          >
+            ✨ AI Generate
+          </button>
+          
           {selectedFile && selectedFile.file_type === 'file' && (
             <button
               onClick={handleDownload}
@@ -525,6 +534,20 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ projectId }) => {
           />
         )}
       </div>
+      
+      {/* AI File Generator */}
+      {showAIGenerator && (
+        <AIFileGenerator
+          onClose={() => setShowAIGenerator(false)}
+          onFileSaved={(fileId, path) => {
+            // Refresh file browser and open the new file
+            setRefreshKey((prev) => prev + 1);
+            setShowAIGenerator(false);
+            // Optionally open the file
+            getFile(fileId, projectId).then(handleFileOpen).catch(console.error);
+          }}
+        />
+      )}
       
       {/* Toast Notifications */}
       <Toaster position="bottom-right" />

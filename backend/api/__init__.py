@@ -39,6 +39,7 @@ from api.advanced_ai import router as advanced_ai_router
 from api.api_keys import router as api_keys_router
 from api.admin import router as admin_router
 from api.connection import router as connection_router
+from api.ai_workspace import router as ai_workspace_router
 
 api_router = APIRouter(prefix="/api")
 
@@ -82,5 +83,6 @@ api_router.include_router(advanced_ai_router)
 api_router.include_router(api_keys_router)
 api_router.include_router(admin_router)
 api_router.include_router(connection_router)
+api_router.include_router(ai_workspace_router)
 
 __all__ = ["api_router"]

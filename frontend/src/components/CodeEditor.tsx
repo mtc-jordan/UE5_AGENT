@@ -10,6 +10,9 @@
 
 import React, { useState, useEffect, useRef} from 'react';
 import { EmptyState } from './EmptyState';
+import { AICodeExplanation } from './AICodeExplanation';
+import { AISuggestionPanel } from './AISuggestionPanel';
+import { AIFileGenerator } from './AIFileGenerator';
 import {
   WorkspaceFile,
   updateFile,
@@ -296,6 +299,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const [showVersions, setShowVersions] = useState(false);
   const [cursorPosition, setCursorPosition] = useState({ line: 1, col: 1 });
   
+  // AI Features State
+  const [showAIExplanation, setShowAIExplanation] = useState(false);
+  const [showAISuggestions, setShowAISuggestions] = useState(false);
+  const [selectedCode, setSelectedCode] = useState('');
+  
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -361,6 +369,27 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault();
       handleSave();
+    }
+    
+    // Ctrl/Cmd + K for AI Code Explanation
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      const textarea = textareaRef.current;
+      if (textarea) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selected = content.substring(start, end);
+        if (selected) {
+          setSelectedCode(selected);
+          setShowAIExplanation(true);
+        }
+      }
+    }
+    
+    // Ctrl/Cmd + Space for AI Suggestions
+    if ((e.ctrlKey || e.metaKey) && e.key === ' ') {
+      e.preventDefault();
+      setShowAISuggestions(true);
     }
     
     // Tab for indentation
@@ -543,6 +572,39 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           )}
         </div>
       </div>
+      
+      {/* AI Features */}
+      {showAIExplanation && (
+        <AICodeExplanation
+          code={selectedCode}
+          fileId={file?.id}
+          onClose={() => setShowAIExplanation(false)}
+          onApplyFix={(newCode) => {
+            // Replace selected code with AI fix
+            setContent(content.replace(selectedCode, newCode));
+            setIsDirty(true);
+          }}
+        />
+      )}
+      
+      {showAISuggestions && file && (
+        <AISuggestionPanel
+          fileId={file.id}
+          cursorPosition={cursorPosition}
+          contextBefore={content.split('\n').slice(0, cursorPosition.line - 1).join('\n')}
+          contextAfter={content.split('\n').slice(cursorPosition.line).join('\n')}
+          onAccept={(suggestion) => {
+            // Insert suggestion at cursor
+            const lines = content.split('\n');
+            lines[cursorPosition.line - 1] += suggestion;
+            setContent(lines.join('\n'));
+            setIsDirty(true);
+            setShowAISuggestions(false);
+          }}
+          onReject={() => setShowAISuggestions(false)}
+          visible={showAISuggestions}
+        />
+      )}
     </div>
   );
 };
