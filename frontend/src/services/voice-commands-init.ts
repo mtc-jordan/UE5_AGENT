@@ -5,6 +5,9 @@
 
 import { commandRegistry } from './command-registry';
 import { basicCommands } from './commands/basic-commands';
+import { gitCommands } from './commands/git-commands';
+import { aiCommands } from './commands/ai-commands';
+import { collaborationCommands } from './commands/collaboration-commands';
 
 /**
  * Initialize voice command system
@@ -12,14 +15,24 @@ import { basicCommands } from './commands/basic-commands';
 export function initializeVoiceCommands(): void {
   console.log('Initializing voice command system...');
 
-  // Register basic commands
+  // Register all command categories
   commandRegistry.registerBatch(basicCommands);
+  commandRegistry.registerBatch(gitCommands);
+  commandRegistry.registerBatch(aiCommands);
+  commandRegistry.registerBatch(collaborationCommands);
 
   // Log statistics
   const stats = commandRegistry.getStats();
   console.log(`Voice commands initialized:`, stats);
   console.log(`- Total commands: ${stats.total}`);
   console.log(`- By category:`, stats.byCategory);
+  console.log(`  • File: ${stats.byCategory.file || 0}`);
+  console.log(`  • Navigation: ${stats.byCategory.navigation || 0}`);
+  console.log(`  • Git: ${stats.byCategory.git || 0}`);
+  console.log(`  • AI: ${stats.byCategory.ai || 0}`);
+  console.log(`  • Collaboration: ${stats.byCategory.collaboration || 0}`);
+  console.log(`  • Workspace: ${stats.byCategory.workspace || 0}`);
+  console.log(`  • General: ${stats.byCategory.general || 0}`);
 }
 
 /**
@@ -34,4 +47,18 @@ export function getCommandStats() {
  */
 export function getAllCommandsHelp(): string {
   return commandRegistry.getAllCommandsHelp();
+}
+
+/**
+ * Get commands by category
+ */
+export function getCommandsByCategory(category: string) {
+  return commandRegistry.getCommandsByCategory(category);
+}
+
+/**
+ * Search commands
+ */
+export function searchCommands(keyword: string) {
+  return commandRegistry.searchCommands(keyword);
 }
