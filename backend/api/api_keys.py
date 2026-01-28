@@ -239,8 +239,7 @@ async def get_api_key_info(
 
 @router.post("", response_model=ApiKeyResponse)
 async def save_api_key(
-    request: ApiKeyRequest,
-    current_user: User = Depends(get_current_user)
+    request: ApiKeyRequest
 ):
     """Save and validate an API key"""
     provider = request.provider.lower()

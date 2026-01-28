@@ -1,1 +1,1 @@
-{"openai": {"usage_count": 1, "last_used": "2026-01-28T00:39:27.675358"}}
+{"openai": {"usage_count": 1, "last_used": "2026-01-28T00:39:27.675358"}, "deepseek": {"usage_count": 2, "last_tested": "2026-01-28T01:31:46.862200", "valid": true, "validation_error": null, "last_used": "2026-01-28T01:31:52.625728"}}
