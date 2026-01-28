@@ -190,7 +190,7 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       mode: 'team',
       model: 'deepseek-chat',
-      activeAgents: ['architect', 'developer', 'blueprint', 'qa'],
+      activeAgents: ['architect', 'developer', 'blueprint', 'qa', 'devops', 'artist'],
       soloAgent: 'architect',
       setMode: (mode) => set({ mode }),
       setModel: (model) => set({ model }),

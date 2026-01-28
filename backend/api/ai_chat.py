@@ -43,6 +43,10 @@ class ChatRequest(BaseModel):
     execute_tools: bool = True  # Whether to automatically execute MCP tools
     auto_capture: bool = True  # Whether to auto-capture screenshots after visual changes
     context: Optional[Dict[str, Any]] = None  # Additional context (e.g., selected actors)
+    # Multi-agent collaboration parameters
+    mode: str = "solo"  # Collaboration mode: "solo", "team", or "roundtable"
+    active_agents: List[str] = ["architect"]  # List of agent IDs for team/roundtable mode
+    solo_agent: Optional[str] = "architect"  # Agent ID for solo mode
 
 
 class ToolCallResult(BaseModel):
@@ -185,6 +189,10 @@ async def chat(
     agent_relay = get_agent_relay()
     multi_model_service = get_multi_model_service()
     
+    # Import multi-agent service for collaboration modes
+    from services.multi_agent_chat import get_multi_agent_service
+    multi_agent_service = get_multi_agent_service(ai_service)
+    
     # Determine which model to use
     model_to_use = request.model
     if request.auto_select_model and request.messages:
@@ -245,12 +253,25 @@ async def chat(
         return result
     
     # Get AI response with tool execution
-    result = await ai_service.chat(
-        messages=messages,
-        model=model_to_use,
-        execute_tools=request.execute_tools,
-        tool_executor=tool_executor if request.execute_tools else None
-    )
+    # Use multi-agent service if mode is specified
+    if request.mode and request.mode != "solo" or (request.mode == "solo" and request.solo_agent):
+        result = await multi_agent_service.chat(
+            messages=messages,
+            mode=request.mode,
+            agent_ids=request.active_agents,
+            solo_agent=request.solo_agent,
+            model=model_to_use,
+            execute_tools=request.execute_tools,
+            tool_executor=tool_executor if request.execute_tools else None
+        )
+    else:
+        # Default single-agent mode
+        result = await ai_service.chat(
+            messages=messages,
+            model=model_to_use,
+            execute_tools=request.execute_tools,
+            tool_executor=tool_executor if request.execute_tools else None
+        )
     
     # Convert tool results to response format
     tool_results = [

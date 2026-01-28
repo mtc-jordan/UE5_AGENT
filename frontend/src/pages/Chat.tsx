@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useChatStore, useSettingsStore } from '../lib/store'
+import { AI_MODELS } from '../config/models'
 import { chatsApi, aiApi, projectsApi, preferencesApi } from '../lib/api'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -90,19 +91,29 @@ const agentNames: Record<string, string> = {
   devops: 'DevOps Engineer',
   artist: 'Technical Artist'}
 
-const models = [
-  // DeepSeek Models
-  { id: 'deepseek-chat', name: 'DeepSeek V3', description: 'Fast & efficient', provider: 'deepseek' },
-  { id: 'deepseek-reasoner', name: 'DeepSeek R1', description: 'Advanced reasoning', provider: 'deepseek' },
-  // Anthropic Claude Models
-  { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', description: 'Balanced', provider: 'anthropic' },
-  { id: 'claude-3-opus', name: 'Claude 3 Opus', description: 'Highest quality', provider: 'anthropic' },
-  // Google Gemini Models
-  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Fast & balanced', provider: 'google' },
-  { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite', description: 'Fastest', provider: 'google' },
-  { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', description: 'Best reasoning', provider: 'google' },
-  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', description: 'Previous gen', provider: 'google' },
-]
+const agentRoles: Record<string, string> = {
+  architect: 'System Architecture & Design',
+  developer: 'C++ Implementation',
+  blueprint: 'Visual Scripting',
+  qa: 'Quality Assurance & Testing',
+  devops: 'Build & Deployment',
+  artist: 'Visuals & Optimization'}
+
+const agentExpertise: Record<string, string> = {
+  architect: 'System design, architecture patterns, performance optimization, scalability',
+  developer: 'C++ programming, UE5 API, gameplay programming, code optimization',
+  blueprint: 'Blueprint systems, visual scripting, rapid prototyping, game logic',
+  qa: 'Testing strategies, debugging, quality assurance, performance profiling',
+  devops: 'Build systems, CI/CD, deployment, version control',
+  artist: 'Materials, shaders, rendering, visual optimization'}
+
+// Import models from central config for consistency
+const models = AI_MODELS.map(model => ({
+  id: model.id,
+  name: model.name,
+  description: model.description,
+  provider: model.provider
+}))
 
 const allAgents = ['architect', 'developer', 'blueprint', 'qa', 'devops', 'artist']
 
@@ -145,6 +156,7 @@ export default function Chat() {
   const [showMessageActions, setShowMessageActions] = useState<string | null>(null)
   const [streamStartTime, setStreamStartTime] = useState<number | null>(null)
   const [tokenCount, setTokenCount] = useState(0)
+  const [showModeInfo, setShowModeInfo] = useState(false)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -293,7 +305,15 @@ export default function Chat() {
     setInput('')
     setAttachments([])
     setLoading(true)
-    setCurrentPhase('')
+    
+    // Set mode-specific initial phase
+    const initialPhase = mode === 'roundtable' 
+      ? 'Agents joining roundtable discussion...'
+      : mode === 'team'
+      ? `${activeAgents.length} agents preparing responses...`
+      : `${soloAgent} is thinking...`
+    setCurrentPhase(initialPhase)
+    
     setStreamingMessages(new Map())
     setStreamStartTime(Date.now())
     setTokenCount(0)
@@ -625,39 +645,50 @@ export default function Chat() {
           </div>
           
           {/* Mode Toggle */}
-          <div className="flex items-center bg-ue-bg rounded-lg p-1">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center bg-ue-bg rounded-lg p-1">
+              <button
+                onClick={() => setMode('solo')}
+                className={cn(
+                  'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all',
+                  mode === 'solo' ? 'bg-ue-surface text-ue-text shadow-sm' : 'text-ue-muted hover:text-ue-text'
+                )}
+                title="Single agent responds"
+              >
+                <User className="w-4 h-4" />
+                Solo
+              </button>
+              <button
+                onClick={() => setMode('team')}
+                className={cn(
+                  'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all',
+                  mode === 'team' ? 'bg-ue-surface text-ue-text shadow-sm' : 'text-ue-muted hover:text-ue-text'
+                )}
+                title="Agents respond sequentially"
+              >
+                <Users className="w-4 h-4" />
+                Team
+              </button>
+              <button
+                onClick={() => setMode('roundtable')}
+                className={cn(
+                  'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all',
+                  mode === 'roundtable' ? 'bg-ue-accent/20 text-ue-accent border border-ue-accent/30' : 'text-ue-muted hover:text-ue-text'
+                )}
+                title="Agents discuss together"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Round Table
+              </button>
+            </div>
+            
+            {/* Mode Info Button */}
             <button
-              onClick={() => setMode('solo')}
-              className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all',
-                mode === 'solo' ? 'bg-ue-surface text-ue-text shadow-sm' : 'text-ue-muted hover:text-ue-text'
-              )}
-              title="Single agent responds"
+              onClick={() => setShowModeInfo(!showModeInfo)}
+              className="btn btn-secondary p-2"
+              title="Learn about collaboration modes"
             >
-              <User className="w-4 h-4" />
-              Solo
-            </button>
-            <button
-              onClick={() => setMode('team')}
-              className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all',
-                mode === 'team' ? 'bg-ue-surface text-ue-text shadow-sm' : 'text-ue-muted hover:text-ue-text'
-              )}
-              title="Agents respond sequentially"
-            >
-              <Users className="w-4 h-4" />
-              Team
-            </button>
-            <button
-              onClick={() => setMode('roundtable')}
-              className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all',
-                mode === 'roundtable' ? 'bg-ue-accent/20 text-ue-accent border border-ue-accent/30' : 'text-ue-muted hover:text-ue-text'
-              )}
-              title="Agents discuss together"
-            >
-              <MessageCircle className="w-4 h-4" />
-              Round Table
+              <Info className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -698,6 +729,81 @@ export default function Chat() {
               </div>
             )}
           </div>
+
+          {/* Mode Info Dialog */}
+          {showModeInfo && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowModeInfo(false)}>
+              <div className="bg-ue-surface border border-ue-border rounded-lg shadow-2xl max-w-2xl w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold">Collaboration Modes</h2>
+                  <button onClick={() => setShowModeInfo(false)} className="p-1 hover:bg-ue-bg rounded">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  {/* Solo Mode */}
+                  <div className="p-4 bg-ue-bg rounded-lg">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                        <User className="w-5 h-5 text-blue-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">Solo Mode</h3>
+                        <p className="text-xs text-ue-muted">Single agent responds</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-ue-muted">
+                      Choose one specialized agent to handle your request. Best for focused expertise and quick answers.
+                    </p>
+                  </div>
+                  
+                  {/* Team Mode */}
+                  <div className="p-4 bg-ue-bg rounded-lg">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                        <Users className="w-5 h-5 text-green-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">Team Mode</h3>
+                        <p className="text-xs text-ue-muted">Multiple agents respond sequentially</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-ue-muted mb-2">
+                      Multiple agents provide their perspectives one after another. Each agent contributes independently based on their expertise.
+                    </p>
+                    <div className="text-xs text-ue-muted">
+                      <strong>Best for:</strong> Getting multiple perspectives, comprehensive analysis, diverse viewpoints
+                    </div>
+                  </div>
+                  
+                  {/* Roundtable Mode */}
+                  <div className="p-4 bg-ue-accent/10 border border-ue-accent/30 rounded-lg">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 bg-ue-accent/20 rounded-lg flex items-center justify-center">
+                        <MessageCircle className="w-5 h-5 text-ue-accent" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-ue-accent">Roundtable Mode ⭐</h3>
+                        <p className="text-xs text-ue-muted">Agents discuss together collaboratively</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-ue-muted mb-2">
+                      Agents engage in a collaborative discussion, aware of each other's expertise. They reference and build upon each other's ideas before synthesizing a unified response.
+                    </p>
+                    <div className="text-xs text-ue-muted space-y-1">
+                      <div><strong>Phase 1:</strong> Agents join discussion and share initial perspectives</div>
+                      <div><strong>Phase 2:</strong> Agents reference and build on each other's ideas</div>
+                      <div><strong>Phase 3:</strong> Team synthesizes a consensus response</div>
+                    </div>
+                    <div className="mt-2 text-xs text-ue-muted">
+                      <strong>Best for:</strong> Complex decisions, collaborative problem-solving, strategic planning
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Project Info Button */}
           {project && (
@@ -885,6 +991,7 @@ export default function Chat() {
                             </div>
                             <div className="flex-1 text-left">
                               <div className="font-medium">{agentNames[agent]}</div>
+                              <div className="text-xs text-ue-muted">{agentRoles[agent]}</div>
                             </div>
                             {soloAgent === agent && <Check className="w-4 h-4" />}
                           </button>
@@ -921,6 +1028,7 @@ export default function Chat() {
                               <div className={cn('font-medium', !isActive && 'text-ue-muted')}>
                                 {agentNames[agent]}
                               </div>
+                              <div className="text-xs text-ue-muted">{agentRoles[agent]}</div>
                             </div>
                             <div
                               className={cn(
