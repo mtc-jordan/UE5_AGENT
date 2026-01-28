@@ -164,17 +164,17 @@ class DeepSeekClient(BaseAIClient):
         # Make the API request
         response = await self.client.post("/v1/chat/completions", json=payload)
         
-        # Raise for status to handle HTTP errors properly
-        response.raise_for_status()
-        
-        # Check for errors
+        # Check for errors before accessing response content
         if response.status_code != 200:
-            error_detail = await response.aread()  # Use aread() for async
-            error_text = error_detail.decode('utf-8')
-            logger.error(f"DeepSeek API error: {response.status_code} - {error_text}")
-            raise Exception(f"DeepSeek API error ({response.status_code}): {error_text}")
+            try:
+                error_data = response.json()
+                error_msg = error_data.get('error', {}).get('message', response.text)
+            except:
+                error_msg = response.text
+            logger.error(f"DeepSeek API error: {response.status_code} - {error_msg}")
+            raise Exception(f"DeepSeek API error ({response.status_code}): {error_msg}")
         
-        # Parse response
+        # Parse successful response
         data = response.json()
         logger.info(f"DeepSeek API response: {data.get('usage', {})}")
         
