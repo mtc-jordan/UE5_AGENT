@@ -9,6 +9,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
+import { FileLockIndicator, FileLock } from './FileLockIndicator';
 import {
   FileTreeNode,
   WorkspaceFile,
@@ -32,6 +33,8 @@ interface FileBrowserProps {
   onFileOpen?: (file: WorkspaceFile) => void;
   selectedFileId?: number;
   className?: string;
+  fileLocks?: Map<number, FileLock>;
+  currentUserId?: number;
 }
 
 interface TreeNodeProps {
@@ -43,6 +46,8 @@ interface TreeNodeProps {
   onSelect: (node: FileTreeNode) => void;
   onDoubleClick: (node: FileTreeNode) => void;
   onContextMenu: (e: React.MouseEvent, node: FileTreeNode) => void;
+  fileLocks?: Map<number, FileLock>;
+  currentUserId?: number;
 }
 
 interface ContextMenuProps {
@@ -65,7 +70,9 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   onToggle,
   onSelect,
   onDoubleClick,
-  onContextMenu}) => {
+  onContextMenu,
+  fileLocks,
+  currentUserId}) => {
   const isExpanded = expandedPaths.has(node.path);
   const isSelected = node.id === selectedId;
   const isFolder = node.file_type === 'folder';
@@ -140,6 +147,14 @@ const TreeNode: React.FC<TreeNodeProps> = ({
           </span>
         )}
         
+        {/* Lock indicator */}
+        {!isFolder && fileLocks && currentUserId && fileLocks.has(node.id) && (
+          <FileLockIndicator
+            lock={fileLocks.get(node.id)}
+            currentUserId={currentUserId}
+          />
+        )}
+        
         {/* Size (for files) */}
         {!isFolder && node.size > 0 && (
           <FileSizeBadge size={node.size} />
@@ -160,6 +175,8 @@ const TreeNode: React.FC<TreeNodeProps> = ({
               onSelect={onSelect}
               onDoubleClick={onDoubleClick}
               onContextMenu={onContextMenu}
+              fileLocks={fileLocks}
+              currentUserId={currentUserId}
             />
           ))}
         </div>
@@ -420,7 +437,9 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
   onFileSelect,
   onFileOpen,
   selectedFileId,
-  className = ''}) => {
+  className = '',
+  fileLocks,
+  currentUserId}) => {
   const [tree, setTree] = useState<FileTreeNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -660,6 +679,8 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
               onSelect={handleSelect}
               onDoubleClick={handleDoubleClick}
               onContextMenu={handleContextMenu}
+              fileLocks={fileLocks}
+              currentUserId={currentUserId}
             />
           ))
         )}

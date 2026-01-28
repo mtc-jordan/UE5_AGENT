@@ -24,6 +24,8 @@ import { GitStatusBar } from '../components/GitStatusBar';
 import { PresencePanel } from '../components/PresencePanel';
 import { LiveCursor } from '../components/LiveCursor';
 import { useCollaboration } from '../hooks/useCollaboration';
+import { useFileLocks } from '../hooks/useFileLocks';
+import { LockRequestModal } from '../components/LockRequestModal';
 import {
   WorkspaceFile,
   WorkspaceStats,
@@ -313,6 +315,27 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ projectId }) => {
   const [showPresencePanel, setShowPresencePanel] = useState(true);
   const token = localStorage.getItem('token') || '';
   const collaboration = useCollaboration({ token, autoConnect: true });
+  
+  // File locking state
+  const fileLocks = useFileLocks({ autoLoad: true, refreshInterval: 5000 });
+  const [lockRequestModal, setLockRequestModal] = useState<{
+    fileId: number;
+    fileName: string;
+    lock: any;
+  } | null>(null);
+  
+  // Get current user ID from token
+  const getCurrentUserId = () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return undefined;
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.sub || payload.user_id;
+    } catch {
+      return undefined;
+    }
+  };
+  const currentUserId = getCurrentUserId();
   const [showCommitHistory, setShowCommitHistory] = useState(false);
   const [showCloneModal, setShowCloneModal] = useState(false);
   const [diffFile, setDiffFile] = useState<string | null>(null);
@@ -340,23 +363,77 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ projectId }) => {
   };
   
   // Handle file open (double click)
-  const handleFileOpen = (file: WorkspaceFile) => {
+  const handleFileOpen = async (file: WorkspaceFile) => {
     if (file.file_type === 'folder') return;
     
-    // Check if already open
-    const existing = openFiles.find((f) => f.id === file.id);
-    if (!existing) {
-      setOpenFiles((prev) => [...prev, file]);
+    // Check file access
+    try {
+      const access = await fileLocks.checkAccess(file.id);
+      
+      if (!access.can_edit && access.lock) {
+        // File is locked - show request modal
+        setLockRequestModal({
+          fileId: file.id,
+          fileName: file.name,
+          lock: access.lock
+        });
+        return;
+      }
+      
+      // Acquire soft lock when opening
+      await fileLocks.acquireFileLock({
+        file_id: file.id,
+        lock_type: 'soft',
+        reason: 'Editing'
+      });
+      
+      // Check if already open
+      const existing = openFiles.find((f) => f.id === file.id);
+      if (!existing) {
+        setOpenFiles((prev) => [...prev, file]);
+      }
+      setActiveFileId(file.id);
+      
+      if (access.warning) {
+        console.warn(access.warning);
+      }
+    } catch (err) {
+      console.error('Failed to check file access:', err);
+      // Allow opening anyway
+      const existing = openFiles.find((f) => f.id === file.id);
+      if (!existing) {
+        setOpenFiles((prev) => [...prev, file]);
+      }
+      setActiveFileId(file.id);
     }
-    setActiveFileId(file.id);
   };
   
   // Handle tab close
-  const handleTabClose = (fileId: number) => {
+  const handleTabClose = async (fileId: number) => {
+    // Release lock when closing
+    try {
+      await fileLocks.releaseFileLock(fileId);
+    } catch (err) {
+      console.error('Failed to release lock:', err);
+    }
+    
     setOpenFiles((prev) => prev.filter((f) => f.id !== fileId));
     if (activeFileId === fileId) {
       const remaining = openFiles.filter((f) => f.id !== fileId);
       setActiveFileId(remaining.length > 0 ? remaining[remaining.length - 1].id : null);
+    }
+  };
+  
+  // Handle lock request
+  const handleRequestAccess = async (message?: string) => {
+    if (!lockRequestModal) return;
+    
+    try {
+      await fileLocks.requestAccess(lockRequestModal.fileId);
+      alert('Access request sent to the file owner');
+      setLockRequestModal(null);
+    } catch (err: any) {
+      alert(err.message || 'Failed to request access');
     }
   };
   
@@ -505,6 +582,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ projectId }) => {
             selectedFileId={selectedFile?.id}
             onFileSelect={handleFileSelect}
             onFileOpen={handleFileOpen}
+            fileLocks={fileLocks.locks}
+            currentUserId={currentUserId}
           />
         </div>
         
@@ -631,6 +710,17 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ projectId }) => {
         onClose={() => setShowCloneModal(false)}
         onSuccess={() => setRefreshKey(k => k + 1)}
       />
+      
+      {/* Lock Request Modal */}
+      {lockRequestModal && (
+        <LockRequestModal
+          isOpen={true}
+          onClose={() => setLockRequestModal(null)}
+          lock={lockRequestModal.lock}
+          fileName={lockRequestModal.fileName}
+          onRequestAccess={handleRequestAccess}
+        />
+      )}
       
       {/* Toast Notifications */}
       <Toaster position="bottom-right" />
