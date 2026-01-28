@@ -79,10 +79,27 @@ class AIService:
     }
     
     def __init__(self):
-        self.deepseek_key = settings.DEEPSEEK_API_KEY
-        self.anthropic_key = settings.ANTHROPIC_API_KEY
-        self.google_key = settings.GOOGLE_API_KEY
+        # Don't load API keys in __init__ - load them dynamically on each request
+        # This ensures keys saved in Settings are immediately available
         self.agents = {agent["key"]: agent for agent in DEFAULT_AGENTS}
+    
+    @property
+    def deepseek_key(self) -> Optional[str]:
+        """Get DeepSeek API key from file or environment"""
+        from api.api_keys import get_api_key
+        return get_api_key('deepseek') or settings.DEEPSEEK_API_KEY
+    
+    @property
+    def anthropic_key(self) -> Optional[str]:
+        """Get Anthropic API key from file or environment"""
+        from api.api_keys import get_api_key
+        return get_api_key('anthropic') or settings.ANTHROPIC_API_KEY
+    
+    @property
+    def google_key(self) -> Optional[str]:
+        """Get Google API key from file or environment"""
+        from api.api_keys import get_api_key
+        return get_api_key('google') or settings.GOOGLE_API_KEY
     
     def get_available_models(self) -> List[Dict[str, Any]]:
         """Get list of available models with their configurations."""

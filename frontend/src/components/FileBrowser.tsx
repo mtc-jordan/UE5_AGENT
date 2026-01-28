@@ -13,6 +13,7 @@ import {
   WorkspaceFile,
   getFileTree,
   listFiles,
+  getFile,
   createFile,
   createFolder,
   deleteFile,
@@ -476,8 +477,8 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
   const handleDoubleClick = async (node: FileTreeNode) => {
     if (node.file_type === 'file' && onFileOpen) {
       try {
-        const files = await listFiles(node.path.replace(`/${node.name}`, '') || '/');
-        const file = files.find(f => f.id === node.id);
+        // Fetch full file with content
+        const file = await getFile(node.id, projectId);
         if (file) {
           onFileOpen(file);
         }

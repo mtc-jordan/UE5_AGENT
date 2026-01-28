@@ -160,9 +160,12 @@ class DeepSeekClient(BaseAIClient):
             payload["tool_choice"] = "auto"
         
         logger.info(f"DeepSeek API request: model={model}, messages={len(full_messages)}, tools={len(tools) if tools else 0}")
+        logger.info(f"DeepSeek client headers: {self.client.headers}")
+        logger.info(f"DeepSeek API key being used: {self.api_key[:10]}...{self.api_key[-4:]}")
         
         # Make the API request
         response = await self.client.post("/v1/chat/completions", json=payload)
+        logger.info(f"DeepSeek API response status: {response.status_code}")
         
         # Check for errors before accessing response content
         if response.status_code != 200:
