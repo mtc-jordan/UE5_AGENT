@@ -21,6 +21,9 @@ import { GitCommitHistory } from '../components/GitCommitHistory';
 import { GitDiffViewer } from '../components/GitDiffViewer';
 import { GitCloneModal } from '../components/GitCloneModal';
 import { GitStatusBar } from '../components/GitStatusBar';
+import { PresencePanel } from '../components/PresencePanel';
+import { LiveCursor } from '../components/LiveCursor';
+import { useCollaboration } from '../hooks/useCollaboration';
 import {
   WorkspaceFile,
   WorkspaceStats,
@@ -305,6 +308,11 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ projectId }) => {
   
   // Git-related state
   const [showGitPanel, setShowGitPanel] = useState(true);
+  
+  // Collaboration state
+  const [showPresencePanel, setShowPresencePanel] = useState(true);
+  const token = localStorage.getItem('token') || '';
+  const collaboration = useCollaboration({ token, autoConnect: true });
   const [showCommitHistory, setShowCommitHistory] = useState(false);
   const [showCloneModal, setShowCloneModal] = useState(false);
   const [diffFile, setDiffFile] = useState<string | null>(null);
@@ -507,6 +515,16 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ projectId }) => {
           </div>
         )}
         
+        {/* Presence Panel Sidebar (Far Right) */}
+        {showPresencePanel && (
+          <div className="absolute right-80 top-0 bottom-0 w-64 border-l border-gray-700 bg-gray-900 z-10">
+            <PresencePanel 
+              users={collaboration.users} 
+              currentUserId={collaboration.currentUser?.user_id}
+            />
+          </div>
+        )}
+        
         {/* Editor Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Tabs */}
@@ -546,6 +564,23 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ projectId }) => {
               projectId={projectId}
               onSave={handleFileSave}
               onClose={activeFile ? () => handleTabClose(activeFile.id) : undefined}
+              onCursorChange={(position, selection) => {
+                if (activeFile) {
+                  collaboration.updateCursor(
+                    activeFile.id,
+                    activeFile.path,
+                    position,
+                    selection
+                  );
+                }
+              }}
+              renderOverlay={(editor) => (
+                <LiveCursor
+                  editor={editor}
+                  cursors={collaboration.cursors}
+                  currentFileId={activeFile?.id || null}
+                />
+              )}
             />
           </div>
         </div>
