@@ -23,6 +23,9 @@
     "remark-gfm": "^4.0.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^2.5.4",
+    "y-monaco": "^0.1.6",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.29",
     "zustand": "^5.0.1"
   },
   "devDependencies": {
