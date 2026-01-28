@@ -41,6 +41,7 @@ from api.admin import router as admin_router
 from api.connection import router as connection_router
 from api.ai_workspace import router as ai_workspace_router
 from api.git import router as git_router
+from api.workspace_collaboration import router as workspace_collaboration_router
 
 api_router = APIRouter(prefix="/api")
 
@@ -86,5 +87,6 @@ api_router.include_router(admin_router)
 api_router.include_router(connection_router)
 api_router.include_router(ai_workspace_router)
 api_router.include_router(git_router)
+api_router.include_router(workspace_collaboration_router)
 
 __all__ = ["api_router"]
