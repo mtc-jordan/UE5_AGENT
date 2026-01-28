@@ -281,7 +281,9 @@ class OpenAIClient(BaseAIClient):
     """OpenAI API client"""
     
     def __init__(self):
-        self.client = AsyncOpenAI()
+        from api.api_keys import get_api_key
+        api_key = get_api_key('openai') or os.getenv("OPENAI_API_KEY")
+        self.client = AsyncOpenAI(api_key=api_key) if api_key else AsyncOpenAI()
     
     async def chat(
         self,
@@ -325,7 +327,8 @@ class AnthropicClient(BaseAIClient):
     """Anthropic API client"""
     
     def __init__(self):
-        self.api_key = os.getenv("ANTHROPIC_API_KEY", "")
+        from api.api_keys import get_api_key
+        self.api_key = get_api_key('anthropic') or os.getenv("ANTHROPIC_API_KEY", "")
         self.base_url = "https://api.anthropic.com/v1"
     
     async def chat(
@@ -413,7 +416,9 @@ class GoogleClient(BaseAIClient):
     
     def __init__(self):
         # Use OpenAI-compatible endpoint for Gemini
-        self.client = AsyncOpenAI()
+        from api.api_keys import get_api_key
+        api_key = get_api_key('google') or os.getenv("GOOGLE_API_KEY")
+        self.client = AsyncOpenAI(api_key=api_key) if api_key else AsyncOpenAI()
     
     async def chat(
         self,
@@ -457,7 +462,9 @@ class DeepSeekClient(BaseAIClient):
     """DeepSeek API client"""
     
     def __init__(self):
-        self.api_key = os.getenv("DEEPSEEK_API_KEY", "")
+        # Try to load API key from file first, then fallback to env var
+        from api.api_keys import get_api_key
+        self.api_key = get_api_key('deepseek') or os.getenv("DEEPSEEK_API_KEY", "")
         self.base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
         self.client = AsyncOpenAI(
             api_key=self.api_key,
