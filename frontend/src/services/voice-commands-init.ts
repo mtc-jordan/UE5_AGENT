@@ -8,6 +8,9 @@ import { basicCommands } from './commands/basic-commands';
 import { gitCommands } from './commands/git-commands';
 import { aiCommands } from './commands/ai-commands';
 import { collaborationCommands } from './commands/collaboration-commands';
+import { ue5ActorCommands } from './commands/ue5-actor-commands';
+import { ue5LevelCommands } from './commands/ue5-level-commands';
+import { ue5AssetCommands } from './commands/ue5-asset-commands';
 
 /**
  * Initialize voice command system
@@ -20,6 +23,9 @@ export function initializeVoiceCommands(): void {
   commandRegistry.registerBatch(gitCommands);
   commandRegistry.registerBatch(aiCommands);
   commandRegistry.registerBatch(collaborationCommands);
+  commandRegistry.registerBatch(ue5ActorCommands);
+  commandRegistry.registerBatch(ue5LevelCommands);
+  commandRegistry.registerBatch(ue5AssetCommands);
 
   // Log statistics
   const stats = commandRegistry.getStats();
@@ -31,6 +37,7 @@ export function initializeVoiceCommands(): void {
   console.log(`  • Git: ${stats.byCategory.git || 0}`);
   console.log(`  • AI: ${stats.byCategory.ai || 0}`);
   console.log(`  • Collaboration: ${stats.byCategory.collaboration || 0}`);
+  console.log(`  • UE5: ${stats.byCategory.ue5 || 0}`);
   console.log(`  • Workspace: ${stats.byCategory.workspace || 0}`);
   console.log(`  • General: ${stats.byCategory.general || 0}`);
 }

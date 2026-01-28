@@ -9,6 +9,7 @@ import { actionExecutor } from '../services/action-executor';
 import { voiceContextManager } from '../services/voice-context';
 import { initializeVoiceCommands } from '../services/voice-commands-init';
 import { VoiceControlPanel } from './VoiceControlPanel';
+import * as ue5Api from '../lib/ue5-api';
 
 interface VoiceCommandIntegrationProps {
   // Workspace state
@@ -84,6 +85,97 @@ export const VoiceCommandIntegration: React.FC<VoiceCommandIntegrationProps> = (
     });
   }, [currentFile, openFiles, selectedText, gitBranch, onlineUsers]);
 
+  // Handle UE5 command execution
+  const handleUE5Command = useCallback(async (action: string, data: any) => {
+    try {
+      switch (action) {
+        case 'spawn_actor':
+          if (data.location) {
+            const loc = ue5Api.parseLocation(data.location);
+            await ue5Api.spawnActor(data.actorClass, loc, undefined, undefined, data.actorClass);
+          }
+          break;
+
+        case 'delete_actor':
+          await ue5Api.deleteActor(data.actorName);
+          break;
+
+        case 'select_actor':
+          await ue5Api.selectActor(data.actorName);
+          break;
+
+        case 'move_actor':
+          if (data.location) {
+            const loc = ue5Api.parseLocation(data.location);
+            await ue5Api.setActorTransform(data.actorName, loc);
+          }
+          break;
+
+        case 'rotate_actor':
+          if (data.rotation) {
+            const rot = ue5Api.parseRotation(data.rotation);
+            await ue5Api.setActorTransform(data.actorName, undefined, rot);
+          }
+          break;
+
+        case 'scale_actor':
+          if (data.scale) {
+            const scl = ue5Api.parseScale(data.scale);
+            await ue5Api.setActorTransform(data.actorName, undefined, undefined, scl);
+          }
+          break;
+
+        case 'get_selected':
+          await ue5Api.getSelectedActors();
+          break;
+
+        case 'save_level':
+          await ue5Api.saveLevel();
+          break;
+
+        case 'play_in_editor':
+          await ue5Api.playInEditor();
+          break;
+
+        case 'stop_play':
+          await ue5Api.stopPlay();
+          break;
+
+        case 'undo':
+          await ue5Api.undo();
+          break;
+
+        case 'redo':
+          await ue5Api.redo();
+          break;
+
+        case 'take_screenshot':
+          await ue5Api.takeScreenshot();
+          break;
+
+        case 'set_time_of_day':
+          if (data.time !== undefined) {
+            await ue5Api.setTimeOfDay(parseFloat(data.time));
+          }
+          break;
+
+        case 'play_animation':
+          await ue5Api.playAnimation(data.actorName, data.animationName);
+          break;
+
+        case 'stop_animation':
+          await ue5Api.stopAnimation(data.actorName);
+          break;
+
+        default:
+          console.log('UE5 command not implemented:', action, data);
+      }
+    } catch (error) {
+      console.error('UE5 command execution failed:', error);
+      throw error;
+    }
+  }, []);
+
   // Handle command execution
   const handleCommandExecuted = useCallback(async (command: ParsedCommand, _result: any) => {
     try {
@@ -99,6 +191,14 @@ export const VoiceCommandIntegration: React.FC<VoiceCommandIntegrationProps> = (
       const action = result.data?.action;
       const params = command.params;
 
+      // Check if it's a UE5 command
+      if (action && action.includes('actor') || action.includes('level') || action.includes('animation') || 
+          action.includes('material') || action.includes('blueprint') || action.includes('component')) {
+        await handleUE5Command(action, result.data);
+        return;
+      }
+
+      // Handle non-UE5 commands
       switch (action) {
         // File commands
         case 'open':
@@ -214,6 +314,7 @@ export const VoiceCommandIntegration: React.FC<VoiceCommandIntegrationProps> = (
       console.error('Error executing command:', error);
     }
   }, [
+    handleUE5Command,
     onFileOpen,
     onFileSave,
     onFileClose,
