@@ -1,207 +1,231 @@
 # UE5 AI Studio
 
-**AI-powered development assistant for Unreal Engine 5**
+**AI-Powered Development Assistant for Unreal Engine 5**
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/mtc-jordan/UE5_AGENT)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![CI/CD](https://github.com/mtc-jordan/UE5_AGENT/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/mtc-jordan/UE5_AGENT/actions)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-2.1.0-green.svg)](https://github.com/mtc-jordan/UE5_AGENT/releases)
 
 ---
 
-## Overview
+## 🚀 Overview
 
-UE5 AI Studio is a comprehensive platform that connects AI agents with Unreal Engine 5 through the Model Context Protocol (MCP). It enables natural language interaction with the UE5 editor, allowing developers to automate tasks, generate code, and manipulate the editor through conversational AI.
+UE5 AI Studio is a comprehensive AI-powered platform that enhances Unreal Engine 5 development through intelligent assistance, automation, and real-time collaboration. Built with FastAPI (backend) and React (frontend), it provides seamless integration with multiple AI providers and advanced development tools.
 
-## Architecture
+### ✨ Key Features
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        UE5 AI Studio                            │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────┐ │
-│  │   React     │◄──►│   FastAPI   │◄──►│   MCP Bridge        │ │
-│  │   Frontend  │    │   Backend   │    │   (UE5 Plugin)      │ │
-│  └─────────────┘    └─────────────┘    └─────────────────────┘ │
-│        │                  │                      │              │
-│        │                  ▼                      ▼              │
-│        │           ┌─────────────┐    ┌─────────────────────┐  │
-│        │           │  AI Service │    │   Unreal Engine 5   │  │
-│        │           │  (DeepSeek/ │    │   Editor            │  │
-│        │           │   Claude)   │    │                     │  │
-│        │           └─────────────┘    └─────────────────────┘  │
-│        │                                                        │
-│        ▼                                                        │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │                    Electron Agent                        │   │
-│  │              (Local Bridge Application)                  │   │
-│  └─────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
-```
+- 🤖 **20 AI Models** - DeepSeek, Google Gemini, Anthropic Claude, OpenAI
+- 🔌 **Native API Clients** - Direct integration with each provider's SDK
+- 💬 **Real-time Chat** - WebSocket-based AI chat with streaming responses
+- 🎨 **Modern UI** - Enhanced interface with model selector and quick actions
+- 🔐 **Authentication** - JWT-based auth with admin roles
+- 📊 **Monitoring** - Health monitoring and performance metrics
+- 🐳 **Docker Support** - Full containerization
+- 🚀 **CI/CD Pipeline** - Automated testing and deployment
+- 🔧 **101 MCP Tools** - Model Context Protocol for UE5 integration
 
-## Features
+---
 
-### Multi-Agent AI System
-- **Solo Mode**: Single agent conversation
-- **Team Mode**: Multiple agents collaborating
-- **Roundtable Mode**: Agents discussing and debating solutions
-
-### MCP Integration (101 Tools)
-- **Actor Management**: Spawn, delete, modify actors
-- **Blueprint Operations**: Create, compile, manage blueprints
-- **Material System**: Create materials, set parameters
-- **Animation & Sequencer**: Play animations, control sequences
-- **Viewport Control**: Camera, screenshots, view modes
-- **And much more...**
-
-### Enterprise-Grade Reliability
-- **Circuit Breaker Pattern**: Prevents cascade failures
-- **Connection Pooling**: Persistent HTTP/2 sessions
-- **Exponential Backoff**: Automatic retry with jitter
-- **Thread-Safe Operations**: Concurrent access protection
-
-## Project Structure
-
-```
-UE5_AGENT/
-├── backend/                 # FastAPI backend
-│   ├── api/                # API endpoints
-│   ├── core/               # Configuration & database
-│   ├── models/             # SQLAlchemy models
-│   ├── services/           # Business logic
-│   └── tests/              # Unit tests
-├── frontend/               # React frontend
-│   ├── src/
-│   │   ├── components/     # React components
-│   │   ├── pages/          # Page components
-│   │   └── lib/            # Utilities & API client
-│   └── package.json
-├── mcp-bridge/             # UE5 MCP Bridge Plugin
-│   └── UE5MCPBridge/
-│       └── Source/
-└── agent-source/           # Electron desktop agent
-    └── src/
-```
-
-## Quick Start
+## 📋 Quick Start
 
 ### Prerequisites
-- Python 3.11+
-- Node.js 18+
-- Unreal Engine 5.3+
 
-### Backend Setup
+- Docker 20.10+
+- Docker Compose 2.0+
+- Git
+
+### Installation
+
+```bash
+# Clone repository
+git clone https://github.com/mtc-jordan/UE5_AGENT.git
+cd UE5_AGENT
+
+# Configure environment
+cp .env.example .env
+nano .env
+
+# Start services
+docker-compose up -d
+
+# Check status
+docker-compose ps
+```
+
+### Access
+
+- **Frontend**: http://localhost
+- **Backend API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+
+---
+
+## 🤖 AI Models (20 Total)
+
+### DeepSeek (3 models)
+- `deepseek-chat` - DeepSeek V3
+- `deepseek-reasoner` - DeepSeek R1
+- `deepseek-coder` - Code specialized
+
+### Google Gemini (5 models)
+- `gemini-3-pro`, `gemini-3-flash` - Latest
+- `gemini-2.5-pro`, `gemini-2.5-flash` - Stable
+- `gemini-2.0-flash` - Previous gen
+
+### Anthropic Claude (5 models)
+- `claude-4-sonnet`, `claude-4-opus`, `claude-4-haiku` - Claude 4.5
+- `claude-3-5-sonnet`, `claude-3-opus` - Claude 3
+
+### OpenAI (7 models)
+- `gpt-5.2-chat`, `gpt-5.2-pro`, `gpt-5.1-codex` - GPT-5
+- `gpt-4o`, `gpt-4o-mini` - GPT-4
+- `gpt-4.1-mini`, `gpt-4.1-nano` - GPT-4.1
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────┐
+│   Client    │
+│  (Browser)  │
+└──────┬──────┘
+       │
+┌──────▼──────────────────────────────────────┐
+│           Nginx (Frontend)                  │
+└──────┬──────────────────────────────────────┘
+       │
+┌──────▼──────────────────────────────────────┐
+│           FastAPI Backend                   │
+│  ┌────────────────────────────────────────┐ │
+│  │  AI Chat Service (20 Models)          │ │
+│  │  - Native DeepSeek (httpx)            │ │
+│  │  - Native Gemini (google-ai)          │ │
+│  │  - Native Claude (anthropic)          │ │
+│  │  - Native OpenAI (openai)             │ │
+│  └────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────┐ │
+│  │  Core Services                         │ │
+│  │  - Auth  - Projects  - Memory          │ │
+│  │  - MCP   - Monitoring - Admin          │ │
+│  └────────────────────────────────────────┘ │
+└──────┬────────────────────┬─────────────────┘
+       │                    │
+┌──────▼──────┐      ┌──────▼──────┐
+│ PostgreSQL  │      │    Redis    │
+└─────────────┘      └─────────────┘
+```
+
+---
+
+## 📚 Documentation
+
+- [Deployment Guide](DEPLOYMENT_GUIDE.md)
+- [API Documentation](http://localhost:8000/docs)
+- [MCP Tools Reference](docs/MCP_TOOLS.md)
+- [Contributing Guidelines](CONTRIBUTING.md)
+
+---
+
+## 🛠️ Development
+
+### Backend
 
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python3.11 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
-# Edit .env with your configuration
-python run.py
+uvicorn main:app --reload
 ```
 
-### Frontend Setup
+### Frontend
 
 ```bash
 cd frontend
-pnpm install  # or npm install
-pnpm dev      # or npm run dev
+npm install
+npm run dev
 ```
-
-### UE5 Plugin Setup
-
-1. Copy `mcp-bridge/UE5MCPBridge` to your UE5 project's `Plugins` folder
-2. Enable the plugin in UE5 Editor
-3. The MCP server will start automatically on port 55557
-
-## API Endpoints
-
-### MCP Connection Management
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/mcp/connections` | GET | List all connections |
-| `/api/mcp/connections` | POST | Create new connection |
-| `/api/mcp/connections/{id}/connect` | POST | Establish connection |
-| `/api/mcp/connections/{id}/disconnect` | POST | Close connection |
-| `/api/mcp/connections/{id}/reconnect` | POST | Reconnect |
-| `/api/mcp/connections/{id}/status` | GET | Detailed status |
-| `/api/mcp/connections/{id}/health` | GET | Health check |
-
-### Tool Operations
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/mcp/connections/{id}/tools` | GET | List available tools |
-| `/api/mcp/connections/{id}/call` | POST | Call a tool |
-| `/api/mcp/connections/{id}/batch` | POST | Batch tool calls |
-| `/api/mcp/tools/catalog` | GET | Complete tool catalog |
-
-## MCP Tools Reference
-
-### Actor Management (19 tools)
-- `get_actor_list` - Get all actors in level
-- `spawn_actor` - Spawn new actor
-- `delete_actor` - Delete actor
-- `duplicate_actor` - Duplicate actor
-- `set_actor_property` - Set location/rotation/scale
-- And more...
-
-### Blueprint Operations (9 tools)
-- `create_blueprint` - Create new Blueprint
-- `compile_blueprint` - Compile Blueprint
-- `add_blueprint_variable` - Add variable
-- And more...
-
-### Material Operations (7 tools)
-- `create_material_instance` - Create material instance
-- `set_material_scalar` - Set scalar parameter
-- `apply_material_to_actor` - Apply material
-- And more...
-
-[See full tool documentation](docs/MCP_TOOLS.md)
-
-## Configuration
-
-### Environment Variables
-
-```env
-# Backend
-DATABASE_URL=sqlite+aiosqlite:///./ue5_ai_studio.db
-SECRET_KEY=your-secret-key
-DEEPSEEK_API_KEY=your-deepseek-key
-ANTHROPIC_API_KEY=your-anthropic-key
-
-# MCP
-MCP_DEFAULT_PORT=55557
-```
-
-## Testing
-
-```bash
-cd backend
-source venv/bin/activate
-pytest tests/ -v
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Unreal Engine by Epic Games
-- Model Context Protocol specification
-- DeepSeek and Anthropic for AI capabilities
 
 ---
 
-**Version 2.0.0** - Enhanced MCP Service with Circuit Breaker, Connection Pooling, and Thread-Safe Operations
+## 🚀 Deployment
+
+### Production Deploy
+
+```bash
+sudo ./scripts/deploy.sh
+```
+
+### Rollback
+
+```bash
+sudo ./scripts/rollback.sh
+```
+
+### Health Check
+
+```bash
+./scripts/health_check.sh
+```
+
+---
+
+## 📊 Monitoring
+
+### Health Check
+
+```bash
+curl http://localhost:8000/api/monitoring/health
+```
+
+### Metrics (Admin)
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8000/api/monitoring/metrics
+```
+
+---
+
+## 🔧 Configuration
+
+### API Keys
+
+Configure in Settings UI or `.env`:
+
+```env
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_API_KEY=AIza...
+DEEPSEEK_API_KEY=sk-...
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing`)
+3. Commit changes (`git commit -m 'Add feature'`)
+4. Push to branch (`git push origin feature/amazing`)
+5. Open Pull Request
+
+---
+
+## 📝 License
+
+MIT License - see [LICENSE](LICENSE) file
+
+---
+
+## 🙏 Acknowledgments
+
+- FastAPI, React, Unreal Engine
+- OpenAI, Anthropic, Google, DeepSeek
+
+---
+
+**Built with ❤️ for the Unreal Engine community**
+
+Version 2.1.0 | [Website](https://ue5studio.com) | [Discord](https://discord.gg/ue5studio)
