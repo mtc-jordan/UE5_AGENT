@@ -9,7 +9,7 @@ import json
 from services.collaboration_service import collaboration_service
 from services.auth import decode_token
 from models.user import User
-from database import get_db
+from core.database import get_db
 
 
 router = APIRouter(prefix="/workspace-collab", tags=["workspace-collaboration"])
